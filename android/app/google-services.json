@@ -1,13 +1,14 @@
 {
   "project_info": {
-    "project_number": "772950552143",
-    "project_id": "cuqter-d0951",
-    "storage_bucket": "cuqter-d0951.firebasestorage.app"
+    "project_number": "921725231252",
+    "firebase_url": "https://cuqter-2fa01-default-rtdb.firebaseio.com",
+    "project_id": "cuqter-2fa01",
+    "storage_bucket": "cuqter-2fa01.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:772950552143:android:7a1b4b5d94457698f3843a",
+        "mobilesdk_app_id": "1:921725231252:android:15df51907ca8af78299481",
         "android_client_info": {
           "package_name": "com.example.cuqter"
         }
@@ -15,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAUn19hUCOwo1GqydfPcTTYMUVC_8MmpIc"
+          "current_key": "AIzaSyDcMRHTUsoptsjL8WLzzbQ2pK4kBfGY_5U"
         }
       ],
       "services": {
