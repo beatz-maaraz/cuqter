@@ -9,12 +9,14 @@ Future <void> main() async {
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
-        apiKey: "AIzaSyDUjB57C5noLmLlTbXm88rtppyVscWvRSY",
-        authDomain: "cuqter-d0951.firebaseapp.com",
-        projectId: "cuqter-d0951",
-        storageBucket: "cuqter-d0951.firebasestorage.app",
-        messagingSenderId: "772950552143",
-        appId: "1:772950552143:web:39c4c8492e51054ff3843a"
+        apiKey: "AIzaSyBOvtzNFHyoCeq8pZZ_JdaG0dmd4a1DPHs",
+        authDomain: "cuqter-2fa01.firebaseapp.com",
+        databaseURL: "https://cuqter-2fa01-default-rtdb.firebaseio.com",
+        projectId: "cuqter-2fa01",
+        storageBucket: "cuqter-2fa01.firebasestorage.app",
+        messagingSenderId: "921725231252",
+        appId: "1:921725231252:web:a2dbfa0c97694cbf299481",
+        measurementId: "G-5TKLZ0RS2M"
       ),
     );
   } else {
