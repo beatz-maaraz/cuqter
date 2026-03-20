@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cuqter/Screen/chatbot.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Account/login.dart';
 import 'package:cuqter/Screen/chat_screen.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/utils/colors.dart';
+import 'package:cuqter/services/message_service.dart';
 import 'package:flutter/material.dart';
 
 class Homepage extends StatefulWidget {
@@ -19,6 +21,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final MessageService _messageService = MessageService();
   String searchQuery = "";
 
   @override
@@ -66,6 +69,14 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       }
     } catch (e) {
       print(e.toString());
+    }
+  }
+
+  String getChatId(String uid1, String uid2) {
+    if (uid1.compareTo(uid2) > 0) {
+      return '${uid1}_$uid2';
+    } else {
+      return '${uid2}_$uid1';
     }
   }
 
@@ -185,24 +196,50 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                     var userData = users[index].data() as Map<String, dynamic>;
                     String userName = userData['name'] ?? 'Unknown User';
                     String userBio = userData['bio'] ?? userData['email'] ?? '';
+                    String userId = users[index].id;
+                    String chatId = getChatId(_auth.currentUser!.uid, userId);
 
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        child: Text(userName.isNotEmpty ? userName[0].toUpperCase() : '?'),
-                      ),
-                      title: Text(userName),
-                      subtitle: Text(userBio, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatScreen(
-                              receiverId: users[index].id,
-                              receiverName: userName,
-                            ),
+                    return FutureBuilder<int>(
+                      future: _messageService.getUnreadMessageCount(chatId, _auth.currentUser!.uid),
+                      builder: (context, unreadSnapshot) {
+                        int unreadCount = unreadSnapshot.data ?? 0;
+
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            child: Text(userName.isNotEmpty ? userName[0].toUpperCase() : '?'),
                           ),
+                          title: Text(userName),
+                          subtitle: Text(userBio, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          trailing: unreadCount > 0
+                            ? Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                unreadCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )
+                            : null,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatScreen(
+                                  receiverId: userId,
+                                  receiverName: userName,
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     );
@@ -215,6 +252,20 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       ),
     ],
   ),
-);
+  floatingActionButton: FloatingActionButton(
+    backgroundColor: AppColors.secondary,
+    child: const Icon(Icons.ads_click, color: Colors.white),
+    onPressed: () {
+      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatApp(),
+                          ),
+                        );
+    },
+   
+  ),
+  );
+
   }
-}
+}

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cuqter/Account/login.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -63,6 +64,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  Future<void> _deleteUserAccount() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      String userId = _auth.currentUser!.uid;
+      
+      // Delete user data from Firestore
+      await _firestore.collection('users').doc(userId).delete();
+      
+      // Delete user authentication account
+      await _auth.currentUser!.delete();
+      
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account deleted successfully! Redirecting to login...'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        
+        // Wait for 2 seconds before navigation
+        await Future.delayed(const Duration(seconds: 2));
+        
+        // Sign out explicitly
+        await _auth.signOut();
+        
+        // Navigate to login page
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const Loginpage()),
+            (Route<dynamic> route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete account: $e')),
+        );
+      }
+    }
+  }
+
+  void _showDeleteConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Account'),
+          content: const Text(
+            'Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently deleted from our servers.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel', style: TextStyle(color: Colors.teal)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteUserAccount();
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,46 +153,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                   const CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.teal,
-                    child: Icon(Icons.person, size: 50, color: Colors.white),
-                   ),
-                   const SizedBox(height: 20),
-                   TextField(
-                     controller: _nameController,
-                     decoration: const InputDecoration(
-                       labelText: 'Name',
-                       border: OutlineInputBorder(),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                     const CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.teal,
+                      child: Icon(Icons.person, size: 50, color: Colors.white),
                      ),
-                   ),
-                   const SizedBox(height: 16),
-                   TextField(
-                     controller: _bioController,
-                     maxLines: 3,
-                     decoration: const InputDecoration(
-                       labelText: 'Bio',
-                       border: OutlineInputBorder(),
-                     ),
-                   ),
-                   const SizedBox(height: 24),
-                   SizedBox(
-                     width: double.infinity,
-                     child: ElevatedButton(
-                       style: ElevatedButton.styleFrom(
-                         backgroundColor: Colors.teal,
-                         padding: const EdgeInsets.symmetric(vertical: 14),
-                       ),
-                       onPressed: _updateProfile,
-                       child: const Text(
-                         'Save Changes',
-                         style: TextStyle(fontSize: 16, color: Colors.white),
+                     const SizedBox(height: 20),
+                     TextField(
+                       controller: _nameController,
+                       decoration: const InputDecoration(
+                         labelText: 'Name',
+                         border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(20)),
+                         ),
                        ),
                      ),
-                   )
-                ],
+                     const SizedBox(height: 16),
+                     TextField(
+                       controller: _bioController,
+                       maxLines: 3,
+                       decoration: const InputDecoration(
+                         labelText: 'Bio',
+                         border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(20)),
+                         ),
+                       ),
+                     ),
+                     const SizedBox(height: 24),
+                     SizedBox(
+                       width: 150,
+                       height: 50,
+                       child: ElevatedButton(
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: Colors.teal,
+                           padding: const EdgeInsets.symmetric(vertical: 14),
+                         ),
+                         onPressed: _updateProfile,
+                         child: const Text(
+                           'Save Changes',
+                           style: TextStyle(fontSize: 16, color: Colors.white),
+                         ),
+                       ),
+                     ),
+                     const SizedBox(height: 16),
+                     SizedBox(
+                       width: 150,
+                       height: 50,
+                       child: ElevatedButton(
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: const Color.fromARGB(255, 209, 114, 108),
+                           padding: const EdgeInsets.symmetric(vertical: 14),
+                         ),
+                         onPressed: _showDeleteConfirmationDialog,
+                         child: const Text(
+                           'Delete Account',
+                           style: TextStyle(fontSize: 16, color: Colors.white),
+                         ),
+                       ),
+                     )
+                  ],
+                ),
               ),
             ),
     );
