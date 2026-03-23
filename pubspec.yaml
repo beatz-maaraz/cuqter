@@ -1,7 +1,7 @@
 name: cuqter
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.2.0+1
+version: 0.3.0+3
 
 environment:
   sdk: ^3.11.1
@@ -19,19 +19,33 @@ dependencies:
   flutter_native_splash: ^2.4.7
   assets: ^0.0.2
   http: ^1.2.0
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
 flutter_native_splash:
-    color: "#A2DED7"
+    color: "BDA6CE"
     web: true
     android: true
     ios: true
+    branding: assets\icon\branding.png
+    image: assets\icon\icon.png
 
     android_12: 
-      color: "#A2DED7"
+      color: "BDA6CE"
+      branding: assets\icon\branding.png
+      image: assets\icon\icon.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
 
 flutter:
   uses-material-design: true
