@@ -8,6 +8,10 @@
     "description": "A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "hosting": {
+        "site": "cuqterz",
+        "public": "public"
+    },
     "icons": [
         {
             "src": "icons/Icon-192.png",
@@ -31,9 +35,5 @@
             "type": "image/png",
             "purpose": "maskable"
         }
-    ],
-  "hosting": {
-    "site": "cuqterz",
-    "public": "public"
-    }
+    ]
 }
