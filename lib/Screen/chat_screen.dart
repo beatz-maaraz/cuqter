@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../utils/colors.dart';
 import '../services/message_service.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -322,6 +321,8 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -342,20 +343,26 @@ class _ChatScreenState extends State<ChatScreen> {
             return Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.white24,
-                  child: Text(widget.receiverName[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
+                  backgroundColor: colorScheme.onPrimaryContainer,
+                  child: Text(
+                    widget.receiverName[0].toUpperCase(),
+                    style: TextStyle(color: colorScheme.primaryContainer),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(widget.receiverName, style: const TextStyle(fontSize: 18, color: Colors.white)),
+                    Text(
+                      widget.receiverName,
+                      style: TextStyle(fontSize: 18, color: colorScheme.onPrimary),
+                    ),
                     Text(
                       status,
                       style: TextStyle(
                         fontSize: 12,
-                        color: status == 'Active Now' ? Colors.green[300] : Colors.white70,
+                        color: status == 'Active Now' ? Colors.green[300] : colorScheme.onPrimary.withOpacity(0.7),
                         fontWeight: status == 'Active Now' ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
@@ -365,10 +372,11 @@ class _ChatScreenState extends State<ChatScreen> {
             );
           },
         ),
-        backgroundColor: Colors.teal,
+        backgroundColor: colorScheme.primary,
+        iconTheme: IconThemeData(color: colorScheme.onPrimary),
         actions: [
           IconButton(
-            icon: const Icon(Icons.wallpaper, color: Colors.white),
+            icon: const Icon(Icons.wallpaper),
             tooltip: 'Change Wallpaper',
             onPressed: _showWallpaperOptions,
           ),
@@ -385,170 +393,200 @@ class _ChatScreenState extends State<ChatScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const SizedBox(width: 12),
-                    const Text(
+                    Text(
                       'Drop Chat',
-                      style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.bold, fontSize: 14),
                     ),
-                    const SizedBox(width: 12
-                    ),
+                    const SizedBox(width: 12),
                   ],
                 ),
               ),
             ],
-            icon: const Icon(Icons.more_vert, color: Colors.white),
+            icon: Icon(Icons.more_vert, color: colorScheme.onPrimary),
           )
         ],
       ),
       body: _isLoadingWallpaper
-          ? const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : Container(
-        color: _wallpapers[_wallpaperIndex],
-        child: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection('chats')
-                  .doc(chatId)
-                  .collection('messages')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(child: Text('No messages yet.'));
-                }
+              color: _wallpaperIndex == 0 ? colorScheme.surface : _wallpapers[_wallpaperIndex],
+              child: Column(
+                children: [
+                  Expanded(
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: _firestore
+                          .collection('chats')
+                          .doc(chatId)
+                          .collection('messages')
+                          .orderBy('timestamp', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
 
-                var messages = snapshot.data!.docs;
-                
-                // Mark received messages as read
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  for (var messageDoc in messages) {
-                    var message = messageDoc.data() as Map<String, dynamic>;
-                    bool isReceived = message['senderId'] != _auth.currentUser!.uid;
-                    bool isRead = message['isRead'] ?? false;
-                    
-                    if (isReceived && !isRead) {
-                      _messageService.markMessageAsRead(chatId, messageDoc.id);
-                    }
-                  }
-                });
-                
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    var message = messages[index].data() as Map<String, dynamic>;
-                    String docId = messages[index].id;
-                    bool isMe = message['senderId'] == _auth.currentUser!.uid;
-                    bool isRead = message['isRead'] ?? false;
-                    String timeText = _formatTime(message['timestamp'] as Timestamp?);
-
-                    return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: GestureDetector(
-                        onLongPressStart: isMe ? (details) => _showDropMenu(context, details.globalPosition, docId) : null,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut,
-                          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: isMe ? Colors.teal[100] : Colors.grey[200],
-                            borderRadius: BorderRadius.only(
-                              topLeft: const Radius.circular(15),
-                              topRight: const Radius.circular(15),
-                              bottomLeft: isMe ? const Radius.circular(15) : const Radius.circular(0),
-                              bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(15),
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'No messages yet.',
+                              style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
                             ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                message['text'] ?? '',
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              if (timeText.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (isMe)
-                                        Padding(
-                                          padding: const EdgeInsets.only(right: 4.0),
-                                          child: Icon(
-                                            isRead ? Icons.done_all : Icons.done,
-                                            size: 12,
-                                            color: isRead ? Colors.blue : Colors.black54,
-                                          ),
-                                        ),
-                                      Text(
-                                        timeText,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.black54,
-                                        ),
+                          );
+                        }
+
+                        var messages = snapshot.data!.docs;
+
+                        // Mark received messages as read
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          for (var messageDoc in messages) {
+                            var message = messageDoc.data() as Map<String, dynamic>;
+                            bool isReceived = message['senderId'] != _auth.currentUser!.uid;
+                            bool isRead = message['isRead'] ?? false;
+
+                            if (isReceived && !isRead) {
+                              _messageService.markMessageAsRead(chatId, messageDoc.id);
+                            }
+                          }
+                        });
+
+                        return ListView.builder(
+                          reverse: true,
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            var message = messages[index].data() as Map<String, dynamic>;
+                            String docId = messages[index].id;
+                            bool isMe = message['senderId'] == _auth.currentUser!.uid;
+                            bool isRead = message['isRead'] ?? false;
+                            String timeText = _formatTime(message['timestamp'] as Timestamp?);
+
+                            return Align(
+                              alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                              child: GestureDetector(
+                                onLongPressStart: isMe
+                                    ? (details) => _showDropMenu(context, details.globalPosition, docId)
+                                    : null,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOut,
+                                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+                                  decoration: BoxDecoration(
+                                    color: isMe ? colorScheme.primaryContainer : colorScheme.surfaceVariant,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: const Radius.circular(16),
+                                      topRight: const Radius.circular(16),
+                                      bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
+                                      bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 2,
+                                        offset: const Offset(0, 1),
                                       ),
                                     ],
                                   ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        message['text'] ?? '',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                      if (timeText.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 4.0),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (isMe)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(right: 4.0),
+                                                  child: Icon(
+                                                    isRead ? Icons.done_all : Icons.done,
+                                                    size: 14,
+                                                    color: isRead ? Colors.blue : colorScheme.onPrimaryContainer.withOpacity(0.5),
+                                                  ),
+                                                ),
+                                              Text(
+                                                timeText,
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: isMe
+                                                      ? colorScheme.onPrimaryContainer.withOpacity(0.7)
+                                                      : colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    
-                    controller: _messageController,
-                    style: const TextStyle(color: Colors.white),
-                    hintLocales: [const Locale('en', 'US')],
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: const Color.fromARGB(255, 182, 182, 182),
-                      hintText: ' Type a message...',
-                      
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
-                ),
-                SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                      icon: const Icon(Icons.send,
-                       color: Colors.white),
-                        tooltip: 'Send Message',
-                       onPressed: sendMessage,
-                  ),
-                ),
-              ],
+                  _buildMessageInput(context),
+                ],
+              ),
             ),
+    );
+  }
+
+  Widget _buildMessageInput(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, -1),
           ),
         ],
       ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _messageController,
+                style: TextStyle(color: colorScheme.onSurface),
+                decoration: InputDecoration(
+                  hintText: 'Type a message...',
+                  hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                  filled: true,
+                  fillColor: colorScheme.surfaceVariant.withOpacity(0.5),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.white),
+                onPressed: sendMessage,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
