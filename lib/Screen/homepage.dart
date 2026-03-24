@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cuqter/Screen/chatbot.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cuqter/Account/login.dart';
 import 'package:cuqter/Screen/chat_screen.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
+import 'package:cuqter/Screen/settings_page.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/utils/colors.dart';
 import 'package:cuqter/services/message_service.dart';
@@ -97,17 +96,34 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) => const ProfileScreen(),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    const begin = Offset(1.0, 0.0);
+                    const end = Offset.zero;
+                    const curve = Curves.easeInOut;
+                    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                    return SlideTransition(position: animation.drive(tween), child: child);
+                  },
+                ),
               );
             },
           ),
           IconButton(
-            icon: const Icon(Icons.exit_to_app, color: Colors.white),
-            onPressed: () async {
-              await AuthMethod().signOut();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const Loginpage()),
-                (route) => false,
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) => const SettingsPage(),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    const begin = Offset(0.0, 1.0);
+                    const end = Offset.zero;
+                    const curve = Curves.easeInOut;
+                    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                    return SlideTransition(position: animation.drive(tween), child: child);
+                  },
+                ),
               );
             },
           )
@@ -203,26 +219,27 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                       future: _messageService.getUnreadMessageCount(chatId, _auth.currentUser!.uid),
                       builder: (context, unreadSnapshot) {
                         int unreadCount = unreadSnapshot.data ?? 0;
+                        final colorScheme = Theme.of(context).colorScheme;
 
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
                             child: Text(userName.isNotEmpty ? userName[0].toUpperCase() : '?'),
                           ),
-                          title: Text(userName),
+                          title: Text(userName, style: TextStyle(fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal)),
                           subtitle: Text(userBio, maxLines: 1, overflow: TextOverflow.ellipsis),
                           trailing: unreadCount > 0
                             ? Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.red,
+                                color: colorScheme.error,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
                                 unreadCount.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: colorScheme.onError,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -255,14 +272,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   floatingActionButton: FloatingActionButton(
     backgroundColor: AppColors.secondary,
     child: const Icon(Icons.ads_click, color: Colors.white),
-    onPressed: () {
-      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatApp(),
-                          ),
-                        );
-    },
+    onPressed: () {},
    
   ),
   );
