@@ -5,6 +5,7 @@ import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/Account/login.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cuqter/Screen/profile_screen.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -51,26 +52,17 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         title: Text(
           'Settings',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: colorScheme.primary,
+            color: colorScheme.onSurface,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -141,72 +133,93 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildProfileHeader(ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: colorScheme.primaryContainer,
-                child: Text(
-                  _name.isNotEmpty ? _name[0].toUpperCase() : '?',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: colorScheme.surface, width: 2),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => const ProfileScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeOut),
                   ),
-                  child: const Icon(Icons.edit, size: 12, color: Colors.white),
+                  child: child,
                 ),
-              ),
-            ],
+              );
+            },
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceVariant.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          children: [
+            Stack(
               children: [
-                Text(
-                  _name,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  _email,
-                  style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.6)),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: colorScheme.primaryContainer,
                   child: Text(
-                    'ACTIVE USER',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                    _name.isNotEmpty ? _name[0].toUpperCase() : '?',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
                       color: colorScheme.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colorScheme.surface, width: 2),
                     ),
+                    child: const Icon(Icons.edit, size: 12, color: Colors.white),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _name,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    _email,
+                    style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.6)),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'ACTIVE USER',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -263,23 +276,207 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildAppearanceTile(ThemeProvider themeProvider, ColorScheme colorScheme) {
-    return SwitchListTile(
-      secondary: Container(
-        padding: const EdgeInsets.all(8),
+    String themeText;
+    IconData themeIcon;
+    switch (themeProvider.themeMode) {
+      case ThemeMode.dark:
+        themeText = 'On';
+        themeIcon = Icons.dark_mode_outlined;
+        break;
+      case ThemeMode.light:
+        themeText = 'Off';
+        themeIcon = Icons.light_mode_outlined;
+        break;
+      case ThemeMode.system:
+        themeText = 'System';
+        themeIcon = Icons.settings_suggest_outlined;
+        break;
+    }
+
+    return _buildSettingsTile(
+      icon: themeIcon,
+      title: 'Dark Mode',
+      subtitle: themeText,
+      onTap: () => _showThemePicker(themeProvider, colorScheme),
+    );
+  }
+
+  void _showThemePicker(ThemeProvider themeProvider, ColorScheme colorScheme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Colors.deepPurple.withOpacity(0.1),
-          shape: BoxShape.circle,
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
-        child: Icon(
-          themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-          size: 20,
-          color: Colors.deepPurple,
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Appearance',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Customize how the interface looks and feels on your device.',
+              style: TextStyle(
+                color: colorScheme.onSurface.withOpacity(0.6),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                children: [
+                  _buildThemeOption(
+                    themeProvider, 
+                    ThemeMode.light, 
+                    'Off', 
+                    'Classic light theme', 
+                    Icons.wb_sunny_outlined,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildThemeOption(
+                    themeProvider, 
+                    ThemeMode.dark, 
+                    'On', 
+                    'Easy on the eyes', 
+                    Icons.nightlight_outlined,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildThemeOption(
+                    themeProvider, 
+                    ThemeMode.system, 
+                    'Use System', 
+                    'Sync with device settings', 
+                    Icons.settings_suggest_outlined,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: const Text('Adjust appearance'),
-      value: themeProvider.isDarkMode,
-      onChanged: (value) => themeProvider.toggleTheme(value),
+    );
+  }
+
+  Widget _buildThemeOption(ThemeProvider themeProvider, ThemeMode mode, String title, String subtitle, IconData icon) {
+    bool isSelected = themeProvider.themeMode == mode;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: () {
+        themeProvider.setThemeMode(mode);
+        Navigator.pop(context);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Selection Indicator
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 4,
+                margin: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.blue : Colors.transparent,
+                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Icon
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withOpacity(0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 24, color: isSelected ? Colors.blue : colorScheme.onSurface.withOpacity(0.7)),
+              ),
+              const SizedBox(width: 16),
+              // Content
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Radio
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.blue : colorScheme.onSurface.withOpacity(0.2),
+                      width: 2,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(3),
+                  child: isSelected 
+                    ? Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.blue,
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                    : null,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
