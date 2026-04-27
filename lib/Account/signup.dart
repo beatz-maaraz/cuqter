@@ -3,7 +3,7 @@ import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/utils/colors.dart';
-import 'package:cuqter/Screen/homepage.dart';
+import 'package:cuqter/Screen/navigation_screen.dart';
 
 class Sighuppage extends StatefulWidget {
   const Sighuppage({super.key});
@@ -35,7 +35,7 @@ class _SighuppageState extends State<Sighuppage> {
     if (res == 'success') {
       print(nameController.text);
       showSnackBar('Account created successfully', context);
-      Navigator.push(context, MaterialPageRoute(builder: (context) => Homepage()));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const NavigationScreen()));
     } else {
       showSnackBar(res, context);
     }

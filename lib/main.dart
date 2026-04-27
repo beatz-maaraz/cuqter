@@ -1,5 +1,6 @@
-import 'package:cuqter/Account/login.dart';
+ import 'package:cuqter/Account/login.dart';
 import 'package:cuqter/Screen/navigation_screen.dart';
+import 'package:cuqter/providers/chat_provider.dart';
 import 'package:cuqter/providers/theme_provider.dart';
 import 'package:cuqter/utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -30,6 +31,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: const MainApp(),
     ),

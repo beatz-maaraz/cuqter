@@ -1,6 +1,6 @@
+import 'package:cuqter/Screen/chatai.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/Screen/homepage.dart';
-import 'package:cuqter/Screen/profile_screen.dart';
 import 'package:cuqter/Screen/settings_page.dart';
 
 class NavigationScreen extends StatefulWidget {
@@ -15,9 +15,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   final List<Widget> _screens = [
     const Homepage(),
-    const Center(child: Text('Analytics', style: TextStyle(fontSize: 24))),
+    const AIChatScreen(),
     const SettingsPage(),
-    const ProfileScreen(),
   ];
 
   @override
@@ -61,10 +60,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
           unselectedLabelStyle: const TextStyle(fontSize: 10),
           items: [
-            _buildNavItem(Icons.chat_bubble, 'CHATS', 0, colorScheme),
-            _buildNavItem(Icons.group, 'GROUPS', 1, colorScheme),
-            _buildNavItem(Icons.call, 'CALLS', 2, colorScheme),
-            _buildNavItem(Icons.settings, 'SETTINGS', 3, colorScheme),
+            _buildNavItem(Icons.chat_bubble_outline, 'CHATS', 0, colorScheme),
+            _buildNavItem(Icons.auto_awesome, 'AI BOT', 1, colorScheme),
+            _buildNavItem(Icons.settings_outlined, 'SETTINGS', 2, colorScheme),
           ],
         ),
       ),
