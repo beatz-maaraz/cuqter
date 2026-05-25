@@ -112,13 +112,17 @@ class _SighuppageState extends State<Sighuppage> {
                   ),
                 ),
                 SizedBox(height: 20),
-                ElevatedButton(
-                  
+                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.tealGreenDark,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: signUpUser,
-                  child: Text('Sign Up'),
+                  child: const Text('Sign Up', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
                   SizedBox(height: 20),
                  Row(

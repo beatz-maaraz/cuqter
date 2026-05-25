@@ -204,13 +204,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                    const SizedBox(height: 4),
                    Text(
                      _bioController.text.isNotEmpty ? _bioController.text : 'Cuqter Member',
-                     style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.6)),
+                     style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withValues(alpha: 0.6)),
                    ),
                    const SizedBox(height: 32),
                    Container(
                      padding: const EdgeInsets.all(24),
                      decoration: BoxDecoration(
-                       color: colorScheme.surfaceVariant.withOpacity(0.3),
+                       color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                        borderRadius: BorderRadius.circular(24),
                      ),
                      child: Column(
@@ -269,12 +269,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                      width: double.infinity,
                      child: ElevatedButton.icon(
                        style: ElevatedButton.styleFrom(
-                         backgroundColor: Colors.blue[700],
-                         foregroundColor: Colors.white,
+                         backgroundColor: colorScheme.primary,
+                         foregroundColor: colorScheme.onPrimary,
                          padding: const EdgeInsets.symmetric(vertical: 16),
                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                          elevation: 4,
-                         shadowColor: Colors.blue.withOpacity(0.4),
+                         shadowColor: colorScheme.primary.withValues(alpha: 0.4),
                        ),
                        onPressed: _showEditDialog,
                        icon: const Icon(Icons.edit, size: 20),
@@ -288,8 +288,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                    TextButton(
                      onPressed: _showDeleteConfirmationDialog,
                      child: Text(
-                       'View Public Profile',
-                       style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
+                       'Delete Account',
+                       style: TextStyle(color: colorScheme.error),
                      ),
                    ),
                 ],

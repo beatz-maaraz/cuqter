@@ -123,7 +123,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                     },
                     child: CircleAvatar(
                       radius: 20,
-                      backgroundColor: colorScheme.primary.withOpacity(0.1),
+                      backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                       child: Icon(Icons.person_outline, color: colorScheme.primary),
                     ),
                   ),
@@ -140,7 +140,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                   hintText: 'Search users...',
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   filled: true,
-                  fillColor: colorScheme.onSurface.withOpacity(0.05),
+                  fillColor: colorScheme.onSurface.withValues(alpha: 0.05),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
                     borderSide: BorderSide.none,
@@ -225,7 +225,14 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                       CircleAvatar(
                                         radius: 28,
                                         backgroundColor: colorScheme.primaryContainer,
-                                        child: Text(userName[0].toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                        child: Text(
+                                          userName[0].toUpperCase(),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                            color: colorScheme.onPrimaryContainer,
+                                          ),
+                                        ),
                                       ),
                                       if (isOnline)
                                         Positioned(
@@ -237,7 +244,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                             decoration: BoxDecoration(
                                               color: Colors.green,
                                               shape: BoxShape.circle,
-                                              border: Border.all(color: Colors.white, width: 2),
+                                              border: Border.all(color: colorScheme.surface, width: 2),
                                             ),
                                           ),
                                         ),
@@ -258,7 +265,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                             ),
                                             Text(
                                               '14:20',
-                                              style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.5)),
+                                              style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5)),
                                             ),
                                           ],
                                         ),
@@ -271,7 +278,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                                 userBio,
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 14),
+                                                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14),
                                               ),
                                             ),
                                             FutureBuilder<int>(
@@ -283,8 +290,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                                     margin: const EdgeInsets.only(left: 8),
                                                     width: 10,
                                                     height: 10,
-                                                    decoration: const BoxDecoration(
-                                                      color: Colors.blue,
+                                                    decoration: BoxDecoration(
+                                                      color: colorScheme.primary,
                                                       shape: BoxShape.circle,
                                                     ),
                                                   );
@@ -313,9 +320,9 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: Colors.blue[700],
+        backgroundColor: colorScheme.primary,
         shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
+        child: Icon(Icons.add, color: colorScheme.onPrimary, size: 32),
       ),
     );
   }

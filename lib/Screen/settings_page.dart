@@ -156,7 +156,7 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceVariant.withOpacity(0.3),
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
@@ -240,11 +240,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildGroupedSection({required List<Widget> children}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: colorScheme.onSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
       ),
       child: Column(
         children: children,
@@ -258,20 +259,35 @@ class _SettingsPageState extends State<SettingsPage> {
     required String subtitle,
     Widget? trailing,
     required VoidCallback onTap,
+    Color? iconColor,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final themeIconColor = iconColor ?? colorScheme.primary;
     return ListTile(
       onTap: onTap,
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
+          color: themeIconColor.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 20, color: Colors.blue),
+        child: Icon(icon, size: 20, color: themeIconColor),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
-      trailing: trailing ?? const Icon(Icons.chevron_right, size: 20),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          fontSize: 12,
+          color: colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+      ),
+      trailing: trailing ?? Icon(Icons.chevron_right, size: 20, color: colorScheme.onSurface.withValues(alpha: 0.3)),
     );
   }
 
@@ -297,6 +313,7 @@ class _SettingsPageState extends State<SettingsPage> {
       icon: themeIcon,
       title: 'Dark Mode',
       subtitle: themeText,
+      iconColor: colorScheme.primary,
       onTap: () => _showThemePicker(themeProvider, colorScheme),
     );
   }
@@ -321,7 +338,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withOpacity(0.1),
+                  color: colorScheme.onSurface.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -335,7 +352,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Text(
               'Customize how the interface looks and feels on your device.',
               style: TextStyle(
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
                 fontSize: 14,
               ),
             ),
@@ -343,7 +360,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.onSurface.withOpacity(0.04),
+                color: colorScheme.onSurface.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
@@ -395,7 +412,7 @@ class _SettingsPageState extends State<SettingsPage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             )
@@ -410,7 +427,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 width: 4,
                 margin: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.blue : Colors.transparent,
+                  color: isSelected ? colorScheme.primary : Colors.transparent,
                   borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
                 ),
               ),
@@ -420,10 +437,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 margin: const EdgeInsets.symmetric(vertical: 16),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withOpacity(0.05),
+                  color: colorScheme.onSurface.withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 24, color: isSelected ? Colors.blue : colorScheme.onSurface.withOpacity(0.7)),
+                child: Icon(icon, size: 24, color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.7)),
               ),
               const SizedBox(width: 16),
               // Content
@@ -437,13 +454,14 @@ class _SettingsPageState extends State<SettingsPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       subtitle,
                       style: TextStyle(
                         fontSize: 12,
-                        color: colorScheme.onSurface.withOpacity(0.5),
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -458,15 +476,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected ? Colors.blue : colorScheme.onSurface.withOpacity(0.2),
+                      color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.2),
                       width: 2,
                     ),
                   ),
                   padding: const EdgeInsets.all(3),
                   child: isSelected 
                     ? Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
                           shape: BoxShape.circle,
                         ),
                       )
@@ -580,7 +598,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 width: double.infinity,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                     foregroundColor: colorScheme.onSurface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),

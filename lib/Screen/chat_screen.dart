@@ -74,12 +74,13 @@ class _ChatScreenState extends State<ChatScreen> {
       Rect.fromPoints(position, position),
       Offset.zero & overlay.size,
     );
+    final colorScheme = Theme.of(context).colorScheme;
 
     final result = await showMenu(
       context: context,
       position: positionRect,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      color: Colors.white,
+      color: colorScheme.surface,
       elevation: 8,
       items: [
         PopupMenuItem(
@@ -90,7 +91,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.1),
+                  color: Colors.redAccent.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
@@ -167,14 +168,15 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showDeleteConfirmation() {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete All Chat?'),
-          content: const Text(
+          content: Text(
             'Are you sure you want to delete all messages in this chat? This action cannot be undone.',
-            style: TextStyle(color: Colors.black87),
+            style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.8)),
           ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           actions: [
@@ -248,6 +250,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showWallpaperOptions() {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -282,12 +285,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           decoration: BoxDecoration(
                             color: _wallpapers[index],
                             border: _wallpaperIndex == index && _customWallpaperUrl == null
-                                ? Border.all(color: Colors.blue, width: 3)
+                                ? Border.all(color: colorScheme.primary, width: 3)
                                 : null,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: _wallpaperIndex == index && _customWallpaperUrl == null
-                              ? const Icon(Icons.check, color: Colors.blue)
+                              ? Icon(Icons.check, color: colorScheme.primary)
                               : null,
                         ),
                       );
@@ -343,10 +346,10 @@ class _ChatScreenState extends State<ChatScreen> {
             return Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: colorScheme.onPrimaryContainer,
+                  backgroundColor: colorScheme.primaryContainer,
                   child: Text(
                     widget.receiverName[0].toUpperCase(),
-                    style: TextStyle(color: colorScheme.primaryContainer),
+                    style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -471,7 +474,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
                                   decoration: BoxDecoration(
-                                    color: isMe ? colorScheme.primaryContainer : colorScheme.surfaceVariant,
+                                    color: isMe ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest,
                                     borderRadius: BorderRadius.only(
                                       topLeft: const Radius.circular(16),
                                       topRight: const Radius.circular(16),
@@ -563,9 +566,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 style: TextStyle(color: colorScheme.onSurface),
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
-                  hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                  hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
                   filled: true,
-                  fillColor: colorScheme.surfaceVariant.withOpacity(0.5),
+                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
@@ -581,7 +584,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: const Icon(Icons.send, color: Colors.white),
+                icon: Icon(Icons.send, color: colorScheme.onPrimary),
                 onPressed: sendMessage,
               ),
             ),

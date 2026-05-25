@@ -92,12 +92,15 @@ class _LoginpageState extends State<Loginpage> {
 
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.tealGreenDark,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                onPressed: () {
-                  loginuser();
-                },
-                child: Text('Login'),
+                onPressed: loginuser,
+                child: const Text('Login', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
 
               SizedBox(height: 20),
