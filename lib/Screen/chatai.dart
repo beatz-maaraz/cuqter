@@ -98,6 +98,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -105,7 +106,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
           Icon(
             Icons.auto_awesome,
             size: 80,
-            color: Colors.blue.withOpacity(0.3),
+            color: colorScheme.primary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -118,6 +119,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildChatBubble(String text, bool isUser) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -128,8 +130,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
         ),
         decoration: BoxDecoration(
           color: isUser
-              ? Colors.blue[600]
-              : Theme.of(context).colorScheme.surfaceContainerHighest,
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
@@ -142,7 +144,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 5,
               offset: const Offset(0, 2),
             ),
@@ -152,8 +154,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
           text,
           style: TextStyle(
             color: isUser
-                ? Colors.white
-                : Theme.of(context).colorScheme.onSurface,
+                ? colorScheme.onPrimary
+                : colorScheme.onSurface,
             fontSize: 16,
             height: 1.4,
           ),
@@ -182,15 +184,16 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildInputArea(ChatProvider provider) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
-            offset: Offset(0, -2),
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -199,15 +202,16 @@ class _AIChatScreenState extends State<AIChatScreen> {
           Expanded(
             child: TextField(
               controller: _controller,
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: "ஏதேனும் கேள்வியைக் கேளுங்கள்...",
-                hintStyle: const TextStyle(color: Colors.grey),
+                hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
+                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -218,10 +222,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
           const SizedBox(width: 8),
           CircleAvatar(
-            backgroundColor: Colors.blue[600],
+            backgroundColor: colorScheme.primary,
             radius: 24,
             child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 20),
+              icon: Icon(Icons.send, color: colorScheme.onPrimary, size: 20),
               onPressed: () => _handleSend(provider),
             ),
           ),
