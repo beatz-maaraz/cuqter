@@ -17,6 +17,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   String _name = 'User';
   String _email = '';
+  String _profilepic = '';
   bool _isLoading = true;
 
   @override
@@ -34,6 +35,7 @@ class _SettingsPageState extends State<SettingsPage> {
           setState(() {
             if (doc.exists) {
               _name = doc.data()?['name'] ?? 'User';
+              _profilepic = doc.data()?['profilepic'] ?? '';
             } else {
               _name = user.displayName ?? 'User';
             }
@@ -161,7 +163,7 @@ class _SettingsPageState extends State<SettingsPage> {
               );
             },
           ),
-        );
+        ).then((_) => _loadUserData());
       },
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -176,10 +178,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: colorScheme.primaryContainer,
-                  child: Text(
+                  backgroundImage: _profilepic.isNotEmpty ? AssetImage(_profilepic) : null,
+                  child: _profilepic.isEmpty ? Text(
                     _name.isNotEmpty ? _name[0].toUpperCase() : '?',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
-                  ),
+                  ) : null,
                 ),
                 Positioned(
                   bottom: 0,
