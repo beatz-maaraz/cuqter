@@ -5,6 +5,7 @@ import 'package:cuqter/resources/auth_method.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
+import 'package:hugeicons/hugeicons.dart' as huge;
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -85,20 +86,20 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 10),
                 _buildGroupedSection(children: [
                    _buildSettingsTile(
-                    icon: Icons.person_outline,
+                    icon: huge.HugeIcons.strokeRoundedUser,
                     title: 'Profile',
                     subtitle: 'Manage your public identity',
                     onTap: () {},
                   ),
                   _buildSettingsTile(
-                    icon: Icons.notifications_none,
+                    icon: huge.HugeIcons.strokeRoundedNotification01,
                     title: 'Notifications',
                     subtitle: 'Tone and frequency control',
                     trailing: _buildBadge(context, '3 Active'),
                     onTap: () {},
                   ),
                   _buildSettingsTile(
-                    icon: Icons.security_outlined,
+                    icon: huge.HugeIcons.strokeRoundedSecurityValidation,
                     title: 'Security',
                     subtitle: 'Authentication and privacy',
                     onTap: () {},
@@ -110,13 +111,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 10),
                  _buildGroupedSection(children: [
                   _buildSettingsTile(
-                    icon: Icons.help_outline,
+                    icon: huge.HugeIcons.strokeRoundedHelpCircle,
                     title: 'Help Center',
                     subtitle: 'Guided solutions',
                     onTap: () {},
                   ),
                   _buildSettingsTile(
-                    icon: Icons.description_outlined,
+                    icon: huge.HugeIcons.strokeRoundedDocumentCode,
                     title: 'Terms',
                     subtitle: 'Legal clarity',
                     onTap: () {},
@@ -127,10 +128,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 20),
                 Center(
                   child: Text(
-                    'VERSION 1.0.0 • CUQTER UI',
+                    'VERSION 1.3.5 • CUQTER UI',
                     style: TextStyle(
                       fontSize: 10,
-                      color: colorScheme.onSurface.withOpacity(0.4),
+                      color: colorScheme.onSurface.withValues(alpha: 0.4),
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -206,13 +207,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   Text(
                     _email,
-                    style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withOpacity(0.6)),
+                    style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withValues(alpha: 0.6)),
                   ),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.1),
+                      color: colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -242,7 +243,7 @@ class _SettingsPageState extends State<SettingsPage> {
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.1,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
       ),
     );
@@ -263,7 +264,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildSettingsTile({
-    required IconData icon,
+    required List<List<dynamic>> icon,
     required String title,
     required String subtitle,
     Widget? trailing,
@@ -280,7 +281,7 @@ class _SettingsPageState extends State<SettingsPage> {
           color: themeIconColor.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 20, color: themeIconColor),
+        child: huge.HugeIcon(icon: icon, size: 20, color: themeIconColor),
       ),
       title: Text(
         title,
@@ -296,25 +297,25 @@ class _SettingsPageState extends State<SettingsPage> {
           color: colorScheme.onSurface.withValues(alpha: 0.6),
         ),
       ),
-      trailing: trailing ?? Icon(Icons.chevron_right, size: 20, color: colorScheme.onSurface.withValues(alpha: 0.3)),
+      trailing: trailing ?? huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedArrowRight01, size: 20, color: colorScheme.onSurface.withValues(alpha: 0.3)),
     );
   }
 
   Widget _buildAppearanceTile(ThemeProvider themeProvider, ColorScheme colorScheme) {
     String themeText;
-    IconData themeIcon;
+    List<List<dynamic>> themeIcon;
     switch (themeProvider.themeMode) {
       case ThemeMode.dark:
         themeText = 'On';
-        themeIcon = Icons.dark_mode_outlined;
+        themeIcon = huge.HugeIcons.strokeRoundedMoon02;
         break;
       case ThemeMode.light:
         themeText = 'Off';
-        themeIcon = Icons.light_mode_outlined;
+        themeIcon = huge.HugeIcons.strokeRoundedSun02;
         break;
       case ThemeMode.system:
         themeText = 'System';
-        themeIcon = Icons.settings_suggest_outlined;
+        themeIcon = huge.HugeIcons.strokeRoundedSettings02;
         break;
     }
 
@@ -380,7 +381,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ThemeMode.light, 
                     'Off', 
                     'Classic light theme', 
-                    Icons.wb_sunny_outlined,
+                    huge.HugeIcons.strokeRoundedSun02,
                   ),
                   const SizedBox(height: 8),
                   _buildThemeOption(
@@ -389,7 +390,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ThemeMode.dark, 
                     'On', 
                     'Easy on the eyes', 
-                    Icons.nightlight_outlined,
+                    huge.HugeIcons.strokeRoundedMoon02,
                   ),
                   const SizedBox(height: 8),
                   _buildThemeOption(
@@ -398,7 +399,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ThemeMode.system, 
                     'Use System', 
                     'Sync with device settings', 
-                    Icons.settings_suggest_outlined,
+                    huge.HugeIcons.strokeRoundedSettings02,
                   ),
                 ],
               ),
@@ -409,7 +410,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildThemeOption(BuildContext sheetContext, ThemeProvider themeProvider, ThemeMode mode, String title, String subtitle, IconData icon) {
+  Widget _buildThemeOption(BuildContext sheetContext, ThemeProvider themeProvider, ThemeMode mode, String title, String subtitle, List<List<dynamic>> icon) {
     bool isSelected = themeProvider.themeMode == mode;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -452,7 +453,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   color: colorScheme.onSurface.withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 24, color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.7)),
+                child: huge.HugeIcon(icon: icon, size: 24, color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.7)),
               ),
               const SizedBox(width: 16),
               // Content
@@ -533,14 +534,14 @@ class _SettingsPageState extends State<SettingsPage> {
       width: double.infinity,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.errorContainer.withOpacity(0.3),
+          backgroundColor: colorScheme.errorContainer.withValues(alpha: 0.3),
           foregroundColor: colorScheme.error,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         onPressed: () => _showSignOutDialog(context),
-        icon: const Icon(Icons.logout),
+        icon: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedLogout01, color: colorScheme.error, size: 20),
         label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
@@ -562,10 +563,10 @@ class _SettingsPageState extends State<SettingsPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: colorScheme.errorContainer.withOpacity(0.2),
+                  color: colorScheme.errorContainer.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.logout, color: colorScheme.error, size: 32),
+                child: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedLogout01, color: colorScheme.error, size: 32),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -576,7 +577,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Text(
                 'You\'re about to end your session. You\'ll need to enter your credentials again to access your account.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
+                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
               ),
               const SizedBox(height: 32),
               SizedBox(

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart' as huge;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -106,31 +107,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showDeleteConfirmationDialog() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Account'),
-          content: const Text(
-            'Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently deleted from our servers.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel', style: TextStyle(color: Colors.teal)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteUserAccount();
-              },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => DeleteConfirmationSheet(
+        onDelete: _deleteUserAccount,
+      ),
     );
   }
 
@@ -161,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                          Container(
                            padding: const EdgeInsets.all(4),
                            decoration: BoxDecoration(
-                             color: colorScheme.primary.withOpacity(0.1),
+                             color: colorScheme.primary.withValues(alpha: 0.1),
                              shape: BoxShape.circle,
                            ),
                            child: CircleAvatar(
@@ -224,14 +207,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                    style: TextStyle(
                                      fontSize: 10,
                                      fontWeight: FontWeight.bold,
-                                     color: colorScheme.onSurface.withOpacity(0.5),
+                                     color: colorScheme.onSurface.withValues(alpha: 0.5),
                                    ),
                                  ),
                                  const SizedBox(height: 8),
                                  Container(
                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                    decoration: BoxDecoration(
-                                     color: Colors.blue.withOpacity(0.1),
+                                     color: Colors.blue.withValues(alpha: 0.1),
                                      borderRadius: BorderRadius.circular(8),
                                    ),
                                    child: const Text(
@@ -249,7 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                'Renews Oct 2026',
                                style: TextStyle(
                                  fontSize: 10,
-                                 color: colorScheme.onSurface.withOpacity(0.5),
+                                 color: colorScheme.onSurface.withValues(alpha: 0.5),
                                ),
                              ),
                            ],
@@ -301,7 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface.withOpacity(0.5),
+            color: colorScheme.onSurface.withValues(alpha: 0.5),
           ),
         ),
         const SizedBox(height: 8),
@@ -342,6 +325,164 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('Save'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class DeleteConfirmationSheet extends StatefulWidget {
+  final VoidCallback onDelete;
+
+  const DeleteConfirmationSheet({Key? key, required this.onDelete}) : super(key: key);
+
+  @override
+  State<DeleteConfirmationSheet> createState() => _DeleteConfirmationSheetState();
+}
+
+class _DeleteConfirmationSheetState extends State<DeleteConfirmationSheet> with TickerProviderStateMixin {
+  late AnimationController _entryController;
+  late AnimationController _pulseController;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // Entry Animation (bouncy slide up + fade in)
+    _entryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _slideAnimation = Tween<double>(begin: 80.0, end: 0.0).animate(
+      CurvedAnimation(parent: _entryController, curve: Curves.easeOutBack),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _entryController, curve: Curves.easeOut),
+    );
+
+    // Pulse Animation for warning icon
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.25).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _entryController.forward();
+  }
+
+  @override
+  void dispose() {
+    _entryController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AnimatedBuilder(
+      animation: _entryController,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _slideAnimation.value),
+          child: Opacity(
+            opacity: _fadeAnimation.value,
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                ScaleTransition(
+                  scale: _pulseAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.error.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: huge.HugeIcon(
+                      icon: huge.HugeIcons.strokeRoundedAlert02,
+                      color: colorScheme.error,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Delete Account',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently deleted from our servers.',
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.error,
+                  foregroundColor: colorScheme.onError,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  widget.onDelete();
+                },
+                child: const Text('Delete Account', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  foregroundColor: colorScheme.onSurface,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

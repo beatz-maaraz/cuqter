@@ -26,6 +26,8 @@ class _ChatScreenState extends State<ChatScreen> {
   int _wallpaperIndex = 0;
   String? _customWallpaperUrl;
   bool _isLoadingWallpaper = true;
+  Stream<QuerySnapshot>? _messageStream;
+  Stream<DocumentSnapshot>? _receiverStream;
 
   final List<Color> _wallpapers = [
     Colors.white,
@@ -314,8 +316,16 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Mark all unread messages as read when opening the chat
     String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+    _messageStream = _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+    _receiverStream = _firestore.collection('users').doc(widget.receiverId).snapshots();
+
+    // Mark all unread messages as read when opening the chat
     _messageService.markAllMessagesAsRead(chatId, _auth.currentUser!.uid);
     // Load saved wallpaper preference
     _loadWallpaperPreference();
@@ -330,7 +340,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: StreamBuilder<DocumentSnapshot>(
-          stream: _firestore.collection('users').doc(widget.receiverId).snapshots(),
+          stream: _receiverStream,
           builder: (context, snapshot) {
             String status = 'Offline';
             Map<String, dynamic>? data;
@@ -436,12 +446,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: _firestore
-                          .collection('chats')
-                          .doc(chatId)
-                          .collection('messages')
-                          .orderBy('timestamp', descending: true)
-                          .snapshots(),
+                      stream: _messageStream,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(child: CircularProgressIndicator());
@@ -487,9 +492,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 onLongPressStart: isMe
                                     ? (details) => _showDropMenu(context, details.globalPosition, docId)
                                     : null,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOut,
+                                child: Container(
                                   margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
                                   decoration: BoxDecoration(

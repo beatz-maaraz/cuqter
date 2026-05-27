@@ -94,20 +94,30 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   BottomNavigationBarItem(
                     icon: Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
-                      child: huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedChat01,
-                        color: _selectedIndex == 0
-                            ? colorScheme.primary
-                            : colorScheme.onSurface.withValues(alpha: 0.4),
-                        size: 24,
+                      child: AnimatedScale(
+                        scale: _selectedIndex == 0 ? 1.15 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutBack,
+                        child: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedChat01,
+                          color: _selectedIndex == 0
+                              ? colorScheme.primary
+                              : colorScheme.onSurface.withValues(alpha: 0.4),
+                          size: 24,
+                        ),
                       ),
                     ),
                     activeIcon: Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
-                      child: huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedBubbleChat,
-                        color: colorScheme.primary,
-                        size: 24,
+                      child: AnimatedScale(
+                        scale: _selectedIndex == 0 ? 1.15 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutBack,
+                        child: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedBubbleChat,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
                       ),
                     ),
                     label: "CHATS",
@@ -115,20 +125,30 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   BottomNavigationBarItem(
                     icon: Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
-                      child: huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedAiBrain01,
-                        color: _selectedIndex == 1
-                            ? colorScheme.primary
-                            : colorScheme.onSurface.withValues(alpha: 0.4),
-                        size: 24,
+                      child: AnimatedScale(
+                        scale: _selectedIndex == 1 ? 1.15 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutBack,
+                        child: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedAiBrain01,
+                          color: _selectedIndex == 1
+                              ? colorScheme.primary
+                              : colorScheme.onSurface.withValues(alpha: 0.4),
+                          size: 24,
+                        ),
                       ),
                     ),
                     activeIcon: Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
-                      child: huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedAiBrain03,
-                        color: colorScheme.primary,
-                        size: 24,
+                      child: AnimatedScale(
+                        scale: _selectedIndex == 1 ? 1.15 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutBack,
+                        child: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedAiBrain03,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
                       ),
                     ),
                     label: "AI BOT",
@@ -136,20 +156,30 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   BottomNavigationBarItem(
                     icon: Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
-                      child: huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedSettings01,
-                        color: _selectedIndex == 2
-                            ? colorScheme.primary
-                            : colorScheme.onSurface.withValues(alpha: 0.4),
-                        size: 24,
+                      child: AnimatedScale(
+                        scale: _selectedIndex == 2 ? 1.15 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutBack,
+                        child: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedSettings01,
+                          color: _selectedIndex == 2
+                              ? colorScheme.primary
+                              : colorScheme.onSurface.withValues(alpha: 0.4),
+                          size: 24,
+                        ),
                       ),
                     ),
                     activeIcon: Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
-                      child: huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedSettings02,
-                        color: colorScheme.primary,
-                        size: 24,
+                      child: AnimatedScale(
+                        scale: _selectedIndex == 2 ? 1.15 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutBack,
+                        child: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedSettings02,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
                       ),
                     ),
                     label: "SETTINGS",
