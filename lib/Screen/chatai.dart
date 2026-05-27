@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cuqter/providers/chat_provider.dart';
+import '../widgets/animated_send_button.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -221,13 +222,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          CircleAvatar(
+          AnimatedSendButton(
+            onTap: () => _handleSend(provider),
             backgroundColor: colorScheme.primary,
-            radius: 24,
-            child: IconButton(
-              icon: Icon(Icons.send, color: colorScheme.onPrimary, size: 20),
-              onPressed: () => _handleSend(provider),
-            ),
+            iconColor: colorScheme.onPrimary,
+            iconSize: 22.0,
+            radius: 24.0,
           ),
         ],
       ),

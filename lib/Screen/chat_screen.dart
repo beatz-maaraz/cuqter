@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart' as huge;
+import '../widgets/animated_send_button.dart';
 
 import '../services/message_service.dart';
 
@@ -313,6 +315,130 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  void _showCallComingSoon(BuildContext context, {required bool isVideo}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 32,
+                offset: const Offset(0, -8),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(28, 16, 28, 48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Icon with gradient glow
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: isVideo
+                        ? [colorScheme.primary, colorScheme.tertiary]
+                        : [colorScheme.secondary, colorScheme.primary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.35),
+                      blurRadius: 28,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isVideo ? Icons.videocam_rounded : Icons.call_rounded,
+                  color: Colors.white,
+                  size: 42,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Coming Soon badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'COMING SOON',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onPrimaryContainer,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isVideo ? 'Video Calls' : 'Voice Calls',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                isVideo
+                    ? 'HD video calling is on its way.\nStay tuned for face-to-face conversations!'
+                    : 'Crystal-clear voice calling is coming.\nWe\'re working hard to bring it to you!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Got it!',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -413,33 +539,82 @@ class _ChatScreenState extends State<ChatScreen> {
         iconTheme: IconThemeData(color: colorScheme.onPrimary),
         actions: [
           IconButton(
-            icon: const Icon(Icons.wallpaper),
-            tooltip: 'Change Wallpaper',
-            onPressed: _showWallpaperOptions,
+            icon: huge.HugeIcon(
+              icon: huge.HugeIcons.strokeRoundedCall,
+              color: colorScheme.onPrimary,
+              size: 22,
+            ),
+            tooltip: 'Voice Call',
+            onPressed: () => _showCallComingSoon(context, isVideo: false),
+          ),
+          IconButton(
+            icon: huge.HugeIcon(
+              icon: huge.HugeIcons.strokeRoundedVideo01,
+              color: colorScheme.onPrimary,
+              size: 22,
+            ),
+            tooltip: 'Video Call',
+            onPressed: () => _showCallComingSoon(context, isVideo: true),
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
-              if (value == 'deleteAll') {
+              if (value == 'wallpaper') {
+                _showWallpaperOptions();
+              } else if (value == 'deleteAll') {
                 _showDeleteConfirmation();
               }
             },
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'wallpaper',
+                child: Row(
+                  children: [
+                    huge.HugeIcon(
+                      icon: huge.HugeIcons.strokeRoundedImage01,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Change Wallpaper',
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
               PopupMenuItem<String>(
                 value: 'deleteAll',
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    huge.HugeIcon(
+                      icon: huge.HugeIcons.strokeRoundedDelete01,
+                      color: colorScheme.error,
+                      size: 20,
+                    ),
                     const SizedBox(width: 12),
                     Text(
                       'Drop Chat',
-                      style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        color: colorScheme.error,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
-                    const SizedBox(width: 12),
                   ],
                 ),
               ),
             ],
-            icon: Icon(Icons.more_vert, color: colorScheme.onPrimary),
+            icon: huge.HugeIcon(
+              icon: huge.HugeIcons.strokeRoundedMore03,
+              color: colorScheme.onPrimary,
+              size: 22,
+            ),
           )
         ],
       ),
@@ -605,15 +780,12 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: Icon(Icons.send, color: colorScheme.onPrimary),
-                onPressed: sendMessage,
-              ),
+            AnimatedSendButton(
+              onTap: sendMessage,
+              backgroundColor: colorScheme.primary,
+              iconColor: colorScheme.onPrimary,
+              iconSize: 22.0,
+              radius: 24.0,
             ),
           ],
         ),
