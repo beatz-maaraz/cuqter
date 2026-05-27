@@ -1,5 +1,4 @@
 import 'package:cuqter/Account/signup.dart';
-import 'package:cuqter/Screen/navigation_screen.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:flutter/material.dart';
@@ -25,10 +24,6 @@ class _LoginpageState extends State<Loginpage> {
     );
     if (res == 'success') {
       showSnackBar('Login successful', context);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const NavigationScreen()),
-      );
       emailController.clear();
       passwordController.clear();
     } else {

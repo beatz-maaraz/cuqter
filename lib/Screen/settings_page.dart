@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cuqter/providers/theme_provider.dart';
 import 'package:cuqter/resources/auth_method.dart';
-import 'package:cuqter/Account/login.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
@@ -30,10 +29,20 @@ class _SettingsPageState extends State<SettingsPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        if (doc.exists && mounted) {
+        if (mounted) {
           setState(() {
-            _name = doc.data()?['name'] ?? 'User';
+            if (doc.exists) {
+              _name = doc.data()?['name'] ?? 'User';
+            } else {
+              _name = user.displayName ?? 'User';
+            }
             _email = user.email ?? '';
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
             _isLoading = false;
           });
         }
@@ -323,7 +332,7 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -366,6 +375,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Column(
                 children: [
                   _buildThemeOption(
+                    sheetContext,
                     themeProvider, 
                     ThemeMode.light, 
                     'Off', 
@@ -374,6 +384,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(height: 8),
                   _buildThemeOption(
+                    sheetContext,
                     themeProvider, 
                     ThemeMode.dark, 
                     'On', 
@@ -382,6 +393,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(height: 8),
                   _buildThemeOption(
+                    sheetContext,
                     themeProvider, 
                     ThemeMode.system, 
                     'Use System', 
@@ -397,14 +409,14 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildThemeOption(ThemeProvider themeProvider, ThemeMode mode, String title, String subtitle, IconData icon) {
+  Widget _buildThemeOption(BuildContext sheetContext, ThemeProvider themeProvider, ThemeMode mode, String title, String subtitle, IconData icon) {
     bool isSelected = themeProvider.themeMode == mode;
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
       onTap: () {
+        Navigator.pop(sheetContext);
         themeProvider.setThemeMode(mode);
-        Navigator.pop(context);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -577,18 +589,17 @@ class _SettingsPageState extends State<SettingsPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
                   onPressed: () async {
-                    await AuthMethod().signOut();
-                    if (context.mounted) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) => const Loginpage(),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            return FadeTransition(opacity: animation, child: child);
-                          },
-                        ),
-                        (route) => false,
-                      );
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user != null) {
+                      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+                        'isOnline': false,
+                        'lastSeen': FieldValue.serverTimestamp(),
+                      }).catchError((_) {});
                     }
+                    
+                    await AuthMethod().signOut();
                   },
                   child: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),

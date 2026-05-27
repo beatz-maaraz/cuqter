@@ -135,4 +135,19 @@ class MessageService {
       print('Error sending message: $e');
     }
   }
+
+  /// Get last message in a chat
+  Stream<Message?> getLastMessage(String chatId) {
+    return _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('timestamp', descending: true)
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.docs.isEmpty) return null;
+      return Message.fromJson(snapshot.docs.first.id, snapshot.docs.first.data());
+    });
+  }
 }

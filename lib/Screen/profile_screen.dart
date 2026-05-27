@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cuqter/Account/login.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -89,16 +88,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // Wait for 2 seconds before navigation
         await Future.delayed(const Duration(seconds: 2));
         
+        // Pop back to root route
+        Navigator.of(context).popUntil((route) => route.isFirst);
         // Sign out explicitly
         await _auth.signOut();
-        
-        // Navigate to login page
-        if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const Loginpage()),
-            (Route<dynamic> route) => false,
-          );
-        }
       }
     } catch (e) {
       setState(() {

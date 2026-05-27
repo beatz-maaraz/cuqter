@@ -333,8 +333,9 @@ class _ChatScreenState extends State<ChatScreen> {
           stream: _firestore.collection('users').doc(widget.receiverId).snapshots(),
           builder: (context, snapshot) {
             String status = 'Offline';
+            Map<String, dynamic>? data;
             if (snapshot.hasData && snapshot.data!.exists) {
-              var data = snapshot.data!.data() as Map<String, dynamic>?;
+              data = snapshot.data!.data() as Map<String, dynamic>?;
               if (data != null) {
                 if (data['isOnline'] == true) {
                   status = 'Active Now';
@@ -345,12 +346,30 @@ class _ChatScreenState extends State<ChatScreen> {
             }
             return Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: colorScheme.primaryContainer,
-                  child: Text(
-                    widget.receiverName[0].toUpperCase(),
-                    style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
-                  ),
+                Stack(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: colorScheme.primaryContainer,
+                      child: Text(
+                        widget.receiverName[0].toUpperCase(),
+                        style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    if (data != null && data['isOnline'] == true)
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colorScheme.primary, width: 2),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 10),
                 Column(

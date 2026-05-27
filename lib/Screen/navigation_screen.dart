@@ -35,17 +35,29 @@ class _NavigationScreenState extends State<NavigationScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 100, vertical: 25),
           child: Container(
             decoration: BoxDecoration(
-              color: colorScheme.surface,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? colorScheme.surfaceContainerHigh
+                  : colorScheme.surface,
               borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: colorScheme.onSurface.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark ? 0.08 : 0.03,
+                ),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withValues(
+                    alpha: Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.06,
+                  ),
                   blurRadius: 20,
                   spreadRadius: 0,
                   offset: const Offset(0, 10),
                 ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(
+                    alpha: Theme.of(context).brightness == Brightness.dark ? 0.15 : 0.03,
+                  ),
                   blurRadius: 10,
                   spreadRadius: -2,
                   offset: const Offset(0, 4),
@@ -65,7 +77,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 selectedItemColor: colorScheme.primary,
-                unselectedItemColor: colorScheme.onSurface.withOpacity(0.4),
+                unselectedItemColor: colorScheme.onSurface.withValues(alpha: 0.4),
                 showUnselectedLabels: true,
                 selectedLabelStyle: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -75,7 +87,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 ),
                 unselectedLabelStyle: TextStyle(
                   fontSize: 11,
-                  color: colorScheme.onSurface.withOpacity(0.4),
+                  color: colorScheme.onSurface.withValues(alpha: 0.4),
                   letterSpacing: 0.5,
                 ),
                 items: [
@@ -86,7 +98,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         icon: huge.HugeIcons.strokeRoundedChat01,
                         color: _selectedIndex == 0
                             ? colorScheme.primary
-                            : colorScheme.onSurface.withOpacity(0.4),
+                            : colorScheme.onSurface.withValues(alpha: 0.4),
                         size: 24,
                       ),
                     ),
@@ -107,7 +119,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         icon: huge.HugeIcons.strokeRoundedAiBrain01,
                         color: _selectedIndex == 1
                             ? colorScheme.primary
-                            : colorScheme.onSurface.withOpacity(0.4),
+                            : colorScheme.onSurface.withValues(alpha: 0.4),
                         size: 24,
                       ),
                     ),
@@ -128,7 +140,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         icon: huge.HugeIcons.strokeRoundedSettings01,
                         color: _selectedIndex == 2
                             ? colorScheme.primary
-                            : colorScheme.onSurface.withOpacity(0.4),
+                            : colorScheme.onSurface.withValues(alpha: 0.4),
                         size: 24,
                       ),
                     ),
