@@ -53,7 +53,19 @@ class MainApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.primary,
           brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.primary,
+          secondary: AppColors.secondary,
+          surface: AppColors.background,
+          onSurface: AppColors.text,
+          primaryContainer: AppColors.secondary,
+          onPrimaryContainer: AppColors.text,
+          surfaceContainerHighest: AppColors.card,
+          onSurfaceVariant: AppColors.text,
+          secondaryContainer: AppColors.accent,
+          onSecondaryContainer: Colors.white,
         ),
+        scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
       ),
       darkTheme: ThemeData(

@@ -21,6 +21,9 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final MessageService _messageService = MessageService();
   String searchQuery = "";
+  Stream<DocumentSnapshot>? _currentUserStream;
+  Stream<QuerySnapshot>? _usersStream;
+  final Map<String, Stream<Message?>> _lastMessageStreams = {};
 
   @override
   void initState() {
@@ -28,6 +31,17 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _setUserStatus(true);
     getUsername();
+    if (_auth.currentUser != null) {
+      _currentUserStream = _firestore.collection('users').doc(_auth.currentUser!.uid).snapshots();
+    }
+    _usersStream = _firestore.collection('users').snapshots();
+  }
+
+  Stream<Message?> _getLastMessageStream(String chatId) {
+    return _lastMessageStreams.putIfAbsent(
+      chatId,
+      () => _messageService.getLastMessage(chatId),
+    );
   }
 
   @override
@@ -169,7 +183,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
             // Chat List
             Expanded(
               child: StreamBuilder<DocumentSnapshot>(
-                stream: _auth.currentUser != null ? _firestore.collection('users').doc(_auth.currentUser!.uid).snapshots() : const Stream.empty(),
+                stream: _currentUserStream ?? const Stream.empty(),
                 builder: (context, userSnapshot) {
                   List<dynamic> myContacts = [];
                   if (userSnapshot.hasData && userSnapshot.data?.exists == true) {
@@ -180,7 +194,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                   }
 
                   return StreamBuilder<QuerySnapshot>(
-                    stream: _firestore.collection('users').snapshots(),
+                    stream: _usersStream,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
@@ -213,7 +227,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                           String chatId = getChatId(_auth.currentUser!.uid, userId);
 
                           return StreamBuilder<Message?>(
-                            stream: _messageService.getLastMessage(chatId),
+                            stream: _getLastMessageStream(chatId),
                             builder: (context, lastMsgSnapshot) {
                               final lastMsg = lastMsgSnapshot.data;
                               final isLastMsgFromMe = lastMsg != null && lastMsg.senderId == _auth.currentUser!.uid;
@@ -226,11 +240,29 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ChatScreen(
+                                    PageRouteBuilder(
+                                      pageBuilder: (context, animation, secondaryAnimation) => ChatScreen(
                                         receiverId: userId,
                                         receiverName: userName,
                                       ),
+                                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                        return SlideTransition(
+                                          position: Tween<Offset>(
+                                            begin: const Offset(1.0, 0.0),
+                                            end: Offset.zero,
+                                          ).animate(
+                                            CurvedAnimation(
+                                              parent: animation,
+                                              curve: Curves.easeOutCubic,
+                                            ),
+                                          ),
+                                          child: FadeTransition(
+                                            opacity: animation,
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      transitionDuration: const Duration(milliseconds: 250),
                                     ),
                                   );
                                 },
