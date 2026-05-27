@@ -17,11 +17,9 @@ dependencies:
   image_picker: ^1.2.1
   provider: ^6.1.5+1
   flutter_native_splash: ^2.4.7
-  assets: ^0.0.2
   http: ^1.2.0
   flutter_launcher_icons: ^0.14.4
   firebase_ai: ^3.10.0
-  firebase_vertexai: ^2.2.0
   google_generative_ai: ^0.4.5
   shared_preferences: ^2.5.5
   hugeicons: ^1.1.7

@@ -4,6 +4,7 @@ import 'package:cuqter/Screen/chat_screen.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/services/message_service.dart';
+import 'package:cuqter/modules/message.dart';
 import 'package:flutter/material.dart';
 
 class Homepage extends StatefulWidget {
@@ -75,6 +76,14 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     } else {
       return '${uid2}_$uid1';
     }
+  }
+
+  String _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return '';
+    final hour = dateTime.hour > 12 ? (dateTime.hour - 12).toString() : (dateTime.hour == 0 ? '12' : dateTime.hour.toString());
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final amPm = dateTime.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $amPm';
   }
 
   @override
@@ -203,110 +212,122 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                           bool isOnline = userData['isOnline'] ?? false;
                           String chatId = getChatId(_auth.currentUser!.uid, userId);
 
-                          return InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatScreen(
-                                    receiverId: userId,
-                                    receiverName: userName,
+                          return StreamBuilder<Message?>(
+                            stream: _messageService.getLastMessage(chatId),
+                            builder: (context, lastMsgSnapshot) {
+                              final lastMsg = lastMsgSnapshot.data;
+                              final isLastMsgFromMe = lastMsg != null && lastMsg.senderId == _auth.currentUser!.uid;
+                              final subtitle = lastMsg != null 
+                                  ? (isLastMsgFromMe ? 'You: ${lastMsg.text}' : lastMsg.text)
+                                  : userBio;
+                              final timeText = lastMsg != null ? _formatDateTime(lastMsg.timestamp) : '';
+
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ChatScreen(
+                                        receiverId: userId,
+                                        receiverName: userName,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                                  child: Row(
+                                    children: [
+                                      // Avatar with status
+                                      Stack(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 28,
+                                            backgroundColor: colorScheme.primaryContainer,
+                                            child: Text(
+                                              userName[0].toUpperCase(),
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 18,
+                                                color: colorScheme.onPrimaryContainer,
+                                              ),
+                                            ),
+                                          ),
+                                          if (isOnline)
+                                            Positioned(
+                                              bottom: 0,
+                                              right: 0,
+                                              child: Container(
+                                                width: 14,
+                                                height: 14,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(color: colorScheme.surface, width: 2),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // Content
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  userName,
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                ),
+                                                Text(
+                                                  timeText,
+                                                  style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    subtitle,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14),
+                                                  ),
+                                                ),
+                                                FutureBuilder<int>(
+                                                  future: _messageService.getUnreadMessageCount(chatId, _auth.currentUser!.uid),
+                                                  builder: (context, unreadSnapshot) {
+                                                    int count = unreadSnapshot.data ?? 0;
+                                                    if (count > 0 || userName == "Luv 🌺💕") { // Demo match for screenshot
+                                                      return Container(
+                                                        margin: const EdgeInsets.only(left: 8),
+                                                        width: 10,
+                                                        height: 10,
+                                                        decoration: BoxDecoration(
+                                                          color: colorScheme.primary,
+                                                          shape: BoxShape.circle,
+                                                        ),
+                                                      );
+                                                    }
+                                                    return const SizedBox.shrink();
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );
                             },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                              child: Row(
-                                children: [
-                                  // Avatar with status
-                                  Stack(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 28,
-                                        backgroundColor: colorScheme.primaryContainer,
-                                        child: Text(
-                                          userName[0].toUpperCase(),
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                            color: colorScheme.onPrimaryContainer,
-                                          ),
-                                        ),
-                                      ),
-                                      if (isOnline)
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Container(
-                                            width: 14,
-                                            height: 14,
-                                            decoration: BoxDecoration(
-                                              color: Colors.green,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(color: colorScheme.surface, width: 2),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 16),
-                                  // Content
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              userName,
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                            ),
-                                            Text(
-                                              '14:20',
-                                              style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5)),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                userBio,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14),
-                                              ),
-                                            ),
-                                            FutureBuilder<int>(
-                                              future: _messageService.getUnreadMessageCount(chatId, _auth.currentUser!.uid),
-                                              builder: (context, unreadSnapshot) {
-                                                int count = unreadSnapshot.data ?? 0;
-                                                if (count > 0 || userName == "Luv 🌺💕") { // Demo match for screenshot
-                                                  return Container(
-                                                    margin: const EdgeInsets.only(left: 8),
-                                                    width: 10,
-                                                    height: 10,
-                                                    decoration: BoxDecoration(
-                                                      color: colorScheme.primary,
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                  );
-                                                }
-                                                return const SizedBox.shrink();
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           );
                         },
                       );
