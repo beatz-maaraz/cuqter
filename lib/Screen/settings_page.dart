@@ -130,7 +130,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 20),
                 Center(
                   child: Text(
-                    'VERSION 1.3.5 • CUQTER UI',
+                    'VERSION 1.3.7 • CUQTER UI',
                     style: TextStyle(
                       fontSize: 10,
                       color: colorScheme.onSurface.withValues(alpha: 0.4),
