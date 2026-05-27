@@ -360,10 +360,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     CircleAvatar(
                       backgroundColor: colorScheme.primaryContainer,
-                      child: Text(
-                        widget.receiverName[0].toUpperCase(),
-                        style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
-                      ),
+                      backgroundImage: data != null && data['profilepic'] != null && data['profilepic'].toString().isNotEmpty
+                          ? AssetImage(data['profilepic'].toString())
+                          : null,
+                      child: data == null || data['profilepic'] == null || data['profilepic'].toString().isEmpty
+                          ? Text(
+                              widget.receiverName[0].toUpperCase(),
+                              style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
+                            )
+                          : null,
                     ),
                     if (data != null && data['isOnline'] == true)
                       Positioned(
@@ -394,7 +399,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       status,
                       style: TextStyle(
                         fontSize: 12,
-                        color: status == 'Active Now' ? Colors.green[300] : colorScheme.onPrimary.withOpacity(0.7),
+                        color: status == 'Active Now' ? Colors.green[300] : colorScheme.onPrimary.withValues(alpha: 0.7),
                         fontWeight: status == 'Active Now' ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
@@ -456,7 +461,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           return Center(
                             child: Text(
                               'No messages yet.',
-                              style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                              style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
                             ),
                           );
                         }
@@ -505,7 +510,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
+                                        color: Colors.black.withValues(alpha: 0.05),
                                         blurRadius: 2,
                                         offset: const Offset(0, 1),
                                       ),
@@ -533,7 +538,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                   child: Icon(
                                                     isRead ? Icons.done_all : Icons.done,
                                                     size: 14,
-                                                    color: isRead ? Colors.blue : colorScheme.onPrimaryContainer.withOpacity(0.5),
+                                                    color: isRead ? Colors.blue : colorScheme.onPrimaryContainer.withValues(alpha: 0.5),
                                                   ),
                                                 ),
                                               Text(
@@ -541,8 +546,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                                 style: TextStyle(
                                                   fontSize: 10,
                                                   color: isMe
-                                                      ? colorScheme.onPrimaryContainer.withOpacity(0.7)
-                                                      : colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                                      ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
+                                                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                                                 ),
                                               ),
                                             ],
@@ -573,7 +578,7 @@ class _ChatScreenState extends State<ChatScreen> {
         color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, -1),
           ),

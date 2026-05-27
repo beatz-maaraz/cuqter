@@ -124,31 +124,46 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                       letterSpacing: -1,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) => const ProfileScreen(),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: ScaleTransition(
-                                scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-                                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
-                                ),
-                                child: child,
-                              ),
-                            );
-                          },
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: _currentUserStream,
+                    builder: (context, snapshot) {
+                      String profilePic = '';
+                      if (snapshot.hasData && snapshot.data!.exists) {
+                        var data = snapshot.data!.data() as Map<String, dynamic>?;
+                        if (data != null) {
+                          profilePic = data['profilepic'] ?? '';
+                        }
+                      }
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => const ProfileScreen(),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: ScaleTransition(
+                                    scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+                                      CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                                    ),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                          backgroundImage: profilePic.isNotEmpty ? AssetImage(profilePic) : null,
+                          child: profilePic.isEmpty
+                              ? Icon(Icons.person_outline, color: colorScheme.primary)
+                              : null,
                         ),
                       );
-                    },
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                      child: Icon(Icons.person_outline, color: colorScheme.primary),
-                    ),
+                    }
                   ),
                 ],
               ),
@@ -213,7 +228,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                       }).toList() ?? [];
 
                       if (users.isEmpty) {
-                        return Center(child: Text('No messages yet', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.4))));
+                        return Center(child: Text('No messages yet', style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4))));
                       }
 
                       return ListView.builder(
@@ -273,18 +288,23 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                       // Avatar with status
                                       Stack(
                                         children: [
-                                          CircleAvatar(
-                                            radius: 28,
-                                            backgroundColor: colorScheme.primaryContainer,
-                                            child: Text(
-                                              userName[0].toUpperCase(),
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18,
-                                                color: colorScheme.onPrimaryContainer,
-                                              ),
-                                            ),
-                                          ),
+                                           CircleAvatar(
+                                             radius: 28,
+                                             backgroundColor: colorScheme.primaryContainer,
+                                             backgroundImage: userData['profilepic'] != null && userData['profilepic'].toString().isNotEmpty
+                                                 ? AssetImage(userData['profilepic'])
+                                                 : null,
+                                             child: userData['profilepic'] == null || userData['profilepic'].toString().isEmpty
+                                                 ? Text(
+                                                     userName[0].toUpperCase(),
+                                                     style: TextStyle(
+                                                       fontWeight: FontWeight.bold,
+                                                       fontSize: 18,
+                                                       color: colorScheme.onPrimaryContainer,
+                                                     ),
+                                                   )
+                                                 : null,
+                                           ),
                                           if (isOnline)
                                             Positioned(
                                               bottom: 0,

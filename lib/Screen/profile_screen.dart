@@ -16,6 +16,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isLoading = false;
+  String _selectedProfilePic = '';
+
+  final List<String> _profilePictures = [
+    'assets/profile/BOY (1).jpg',
+    'assets/profile/BOY (2).jpg',
+    'assets/profile/BOY (3).jpg',
+    'assets/profile/BOY (4).jpg',
+    'assets/profile/Girl (1).jpg',
+    'assets/profile/Girl (2).jpg',
+  ];
 
   @override
   void initState() {
@@ -33,6 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         var data = snap.data() as Map<String, dynamic>;
         _nameController.text = data['name'] ?? '';
         _bioController.text = data['bio'] ?? '';
+        _selectedProfilePic = data['profilepic'] ?? '';
       }
     } catch (e) {
       print(e);
@@ -50,6 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
         'name': _nameController.text,
         'bio': _bioController.text,
+        'profilepic': _selectedProfilePic,
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
@@ -62,6 +74,112 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       isLoading = false;
     });
+  }
+
+  void _showProfilePicPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colorScheme.onSurface.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Choose Profile Picture',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Select an avatar for your profile.',
+                    style: TextStyle(
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: _profilePictures.length,
+                    itemBuilder: (context, index) {
+                      final path = _profilePictures[index];
+                      final isSelected = _selectedProfilePic == path;
+                      return GestureDetector(
+                        onTap: () {
+                          setSheetState(() {
+                            _selectedProfilePic = path;
+                          });
+                          setState(() {
+                            _selectedProfilePic = path;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected ? colorScheme.primary : Colors.transparent,
+                              width: 4,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 40,
+                            backgroundImage: AssetImage(path),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _updateProfile();
+                      },
+                      child: const Text('Save Selection', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+        );
+      },
+    );
   }
 
   Future<void> _deleteUserAccount() async {
@@ -137,39 +255,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                    const SizedBox(height: 10),
-                   Center(
-                     child: Stack(
-                       alignment: Alignment.center,
-                       children: [
-                         Container(
-                           padding: const EdgeInsets.all(4),
-                           decoration: BoxDecoration(
-                             color: colorScheme.primary.withValues(alpha: 0.1),
-                             shape: BoxShape.circle,
-                           ),
-                           child: CircleAvatar(
-                            radius: 60,
-                            backgroundColor: colorScheme.primaryContainer,
-                            child: Text(
-                              _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : '?',
-                              style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
-                            ),
-                           ),
-                         ),
-                         Positioned(
-                           bottom: 4,
-                           right: 4,
-                           child: Container(
+                   GestureDetector(
+                     onTap: _showProfilePicPicker,
+                     child: Center(
+                       child: Stack(
+                         alignment: Alignment.center,
+                         children: [
+                           Container(
                              padding: const EdgeInsets.all(4),
                              decoration: BoxDecoration(
-                               color: Colors.blue,
+                               color: colorScheme.primary.withValues(alpha: 0.1),
                                shape: BoxShape.circle,
-                               border: Border.all(color: colorScheme.surface, width: 3),
                              ),
-                             child: const Icon(Icons.verified, size: 16, color: Colors.white),
+                             child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: colorScheme.primaryContainer,
+                              backgroundImage: _selectedProfilePic.isNotEmpty ? AssetImage(_selectedProfilePic) : null,
+                              child: _selectedProfilePic.isEmpty ? Text(
+                                _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : '?',
+                                style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
+                              ) : null,
+                             ),
                            ),
-                         ),
-                       ],
+                           Positioned(
+                             bottom: 4,
+                             right: 4,
+                             child: Container(
+                               padding: const EdgeInsets.all(4),
+                               decoration: BoxDecoration(
+                                 color: Colors.blue,
+                                 shape: BoxShape.circle,
+                                 border: Border.all(color: colorScheme.surface, width: 3),
+                               ),
+                               child: const Icon(Icons.verified, size: 16, color: Colors.white),
+                             ),
+                           ),
+                           Positioned(
+                             top: 4,
+                             right: 4,
+                             child: Container(
+                               padding: const EdgeInsets.all(6),
+                               decoration: BoxDecoration(
+                                 color: colorScheme.primary,
+                                 shape: BoxShape.circle,
+                                 border: Border.all(color: colorScheme.surface, width: 2),
+                               ),
+                               child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                             ),
+                           ),
+                         ],
+                       ),
                      ),
                    ),
                    const SizedBox(height: 24),
@@ -297,34 +432,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showEditDialog() {
+    String dialogSelectedPic = _selectedProfilePic;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profile'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final colorScheme = Theme.of(context).colorScheme;
+          return AlertDialog(
+            title: const Text('Edit Profile'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _bioController,
+                    decoration: const InputDecoration(labelText: 'Bio'),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('Select Avatar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 60,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _profilePictures.length,
+                      itemBuilder: (context, index) {
+                        final path = _profilePictures[index];
+                        final isSelected = dialogSelectedPic == path;
+                        return GestureDetector(
+                          onTap: () {
+                            setDialogState(() {
+                              dialogSelectedPic = path;
+                            });
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 12),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? colorScheme.primary : Colors.transparent,
+                                width: 3,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 25,
+                              backgroundImage: AssetImage(path),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _bioController,
-              decoration: const InputDecoration(labelText: 'Bio'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _updateProfile();
-            },
-            child: const Text('Save'),
-          ),
-        ],
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedProfilePic = dialogSelectedPic;
+                  });
+                  Navigator.pop(context);
+                  _updateProfile();
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        }
       ),
     );
   }

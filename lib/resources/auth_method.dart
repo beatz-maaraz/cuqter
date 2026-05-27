@@ -26,7 +26,7 @@ class AuthMethod {
               email: email,
               password: password,
               uid: cred.user!.uid,
-              profilepic: '',
+              profilepic: 'assets/profile/BOY (1).jpg',
             );
 
             await _firestore.collection('users').doc(cred.user!.uid).set(
