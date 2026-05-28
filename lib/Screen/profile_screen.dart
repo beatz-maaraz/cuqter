@@ -25,6 +25,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     'assets/profile/BOY (4).jpg',
     'assets/profile/Girl (1).jpg',
     'assets/profile/Girl (2).jpg',
+    'assets/profile/NEW (1).jpg',
+    'assets/profile/NEW (2).jpg',
+    'assets/profile/NEW (3).jpg',
+    'assets/profile/NEW (4).jpg',
+    'assets/profile/NEW (5).jpg',
+    'assets/profile/NEW (6).jpg',
   ];
 
   @override
@@ -58,11 +64,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isLoading = true;
     });
     try {
-      await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).set({
         'name': _nameController.text,
         'bio': _bioController.text,
         'profilepic': _selectedProfilePic,
-      });
+      }, SetOptions(merge: true));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
       );
@@ -91,89 +97,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
               ),
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colorScheme.onSurface.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(2),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colorScheme.onSurface.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Choose Profile Picture',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Select an avatar for your profile.',
-                    style: TextStyle(
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                      fontSize: 14,
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Choose Profile Picture',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Select an avatar for your profile.',
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                        fontSize: 14,
+                      ),
                     ),
-                    itemCount: _profilePictures.length,
-                    itemBuilder: (context, index) {
-                      final path = _profilePictures[index];
-                      final isSelected = _selectedProfilePic == path;
-                      return GestureDetector(
-                        onTap: () {
-                          setSheetState(() {
-                            _selectedProfilePic = path;
-                          });
-                          setState(() {
-                            _selectedProfilePic = path;
-                          });
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? colorScheme.primary : Colors.transparent,
-                              width: 4,
+                    const SizedBox(height: 24),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemCount: _profilePictures.length,
+                      itemBuilder: (context, index) {
+                        final path = _profilePictures[index];
+                        final isSelected = _selectedProfilePic == path;
+                        return GestureDetector(
+                          onTap: () {
+                            setSheetState(() {
+                              _selectedProfilePic = path;
+                            });
+                            setState(() {
+                              _selectedProfilePic = path;
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? colorScheme.primary : Colors.transparent,
+                                width: 4,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundImage: AssetImage(path),
                             ),
                           ),
-                          child: CircleAvatar(
-                            radius: 40,
-                            backgroundImage: AssetImage(path),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(sheetContext);
-                        _updateProfile();
+                        );
                       },
-                      child: const Text('Save Selection', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          _updateProfile();
+                        },
+                        child: const Text('Save Selection', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
