@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -750,7 +751,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 color: _customWallpaperUrl == null ? (_wallpaperIndex == 0 ? colorScheme.surface : _wallpapers[_wallpaperIndex]) : null,
                 image: _customWallpaperUrl != null
                     ? DecorationImage(
-                        image: FileImage(File(_customWallpaperUrl!)),
+                        image: kIsWeb
+                            ? NetworkImage(_customWallpaperUrl!) as ImageProvider
+                            : FileImage(File(_customWallpaperUrl!)) as ImageProvider,
                         fit: BoxFit.cover,
                       )
                     : null,
