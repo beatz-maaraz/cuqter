@@ -1,4 +1,6 @@
 import 'package:cuqter/Screen/chatai.dart';
+import 'package:cuqter/services/update_service.dart';
+import 'package:cuqter/widgets/update_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/Screen/homepage.dart';
 import 'package:cuqter/Screen/settings_page.dart';
@@ -27,6 +29,15 @@ class _NavigationScreenState extends State<NavigationScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectedIndex);
+    // Check for updates after the first frame so context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
+  }
+
+  Future<void> _checkForUpdate() async {
+    final info = await UpdateService.checkForUpdate();
+    if (info != null && mounted) {
+      await UpdateDialog.show(context, info);
+    }
   }
 
   @override
