@@ -112,6 +112,18 @@ class MessageService {
     }
   }
 
+  /// Get stream of unread message count
+  Stream<int> getUnreadMessageCountStream(String chatId, String currentUserId) {
+    return _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('receiverId', isEqualTo: currentUserId)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
   /// Send message with read tracking
   Future<void> sendMessage({
     required String chatId,

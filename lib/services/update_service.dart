@@ -18,6 +18,10 @@ class UpdateService {
   /// then compares [latest_version] against the installed version.
   /// Returns [UpdateInfo] when an update is available, otherwise null.
   static Future<UpdateInfo?> checkForUpdate() async {
+    if (kIsWeb) {
+      debugPrint('[UpdateService] Skipping update check on web.');
+      return null;
+    }
     try {
       _rc ??= FirebaseRemoteConfig.instance;
 

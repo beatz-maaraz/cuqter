@@ -8,6 +8,7 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/animated_send_button.dart';
+import '../widgets/chat_message_text.dart';
 
 import '../services/message_service.dart';
 
@@ -37,6 +38,18 @@ class _ChatScreenState extends State<ChatScreen> {
   Stream<DocumentSnapshot>? _receiverStream;
   bool _showEmojiPicker = false;
   final FocusNode _focusNode = FocusNode();
+  bool _enterIsSend = false;
+  double _fontSize = 20.0;
+
+  Future<void> _loadChatPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _enterIsSend = prefs.getBool('chat_enter_is_send') ?? false;
+        _fontSize = prefs.getDouble('chat_font_size') ?? 20.0;
+      });
+    } catch (_) {}
+  }
 
   final List<Color> _wallpapers = [
     Colors.white,
@@ -228,10 +241,13 @@ class _ChatScreenState extends State<ChatScreen> {
       String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
       final prefs = await SharedPreferences.getInstance();
       
+      final localUrl = prefs.getString('wallpaper_${chatId}_url');
+      final localIndex = prefs.getInt('wallpaper_${chatId}_index');
+      
       if (mounted) {
         setState(() {
-          _customWallpaperUrl = prefs.getString('wallpaper_${chatId}_url');
-          _wallpaperIndex = prefs.getInt('wallpaper_${chatId}_index') ?? 0;
+          _customWallpaperUrl = localUrl ?? prefs.getString('global_wallpaper_url');
+          _wallpaperIndex = localIndex ?? prefs.getInt('global_wallpaper_index') ?? 0;
           _isLoadingWallpaper = false;
         });
       }
@@ -571,6 +587,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageService.markAllMessagesAsRead(chatId, _auth.currentUser!.uid);
     // Load saved wallpaper preference
     _loadWallpaperPreference();
+    _loadChatPreferences();
   }
 
   @override
@@ -779,16 +796,21 @@ class _ChatScreenState extends State<ChatScreen> {
 
                         var messages = snapshot.data!.docs;
 
-                        // Mark received messages as read
+                        // Mark received messages as read in a single batch if there are any unread ones
                         WidgetsBinding.instance.addPostFrameCallback((_) {
+                          bool hasUnread = false;
                           for (var messageDoc in messages) {
                             var message = messageDoc.data() as Map<String, dynamic>;
                             bool isReceived = message['senderId'] != _auth.currentUser!.uid;
                             bool isRead = message['isRead'] ?? false;
 
                             if (isReceived && !isRead) {
-                              _messageService.markMessageAsRead(chatId, messageDoc.id);
+                              hasUnread = true;
+                              break;
                             }
+                          }
+                          if (hasUnread) {
+                            _messageService.markAllMessagesAsRead(chatId, _auth.currentUser!.uid);
                           }
                         });
 
@@ -827,63 +849,68 @@ class _ChatScreenState extends State<ChatScreen> {
                                 onLongPressStart: isMe
                                     ? (details) => _showDropMenu(context, details.globalPosition, docId)
                                     : null,
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-                                  decoration: BoxDecoration(
-                                    color: isMe ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: const Radius.circular(16),
-                                      topRight: const Radius.circular(16),
-                                      bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
-                                      bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.05),
-                                        blurRadius: 2,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: MediaQuery.of(context).size.width * 0.75,
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        message['text'] ?? '',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
-                                        ),
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                                    decoration: BoxDecoration(
+                                      color: isMe ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: const Radius.circular(20),
+                                        topRight: const Radius.circular(20),
+                                        bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
+                                        bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
                                       ),
-                                      if (timeText.isNotEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 4.0),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              if (isMe)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(right: 4.0),
-                                                  child: Icon(
-                                                    isRead ? Icons.done_all : Icons.done,
-                                                    size: 14,
-                                                    color: isRead ? Colors.blue : colorScheme.onPrimaryContainer.withValues(alpha: 0.5),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.05),
+                                          blurRadius: 2,
+                                          offset: const Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ChatMessageText(
+                                      text: message['text'] ?? '',
+                                      baseStyle: TextStyle(
+                                        fontSize: _fontSize,
+                                        color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                                      ),
+                                      linkColor: isMe
+                                          ? (Theme.of(context).brightness == Brightness.dark
+                                              ? Colors.blue[300]!
+                                              : Colors.blue[800]!)
+                                          : (Theme.of(context).brightness == Brightness.dark
+                                              ? Colors.blue[300]!
+                                              : Colors.blue[800]!),
+                                      trailing: timeText.isNotEmpty
+                                          ? Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  timeText,
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: isMe
+                                                        ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
+                                                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                                                   ),
                                                 ),
-                                              Text(
-                                                timeText,
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: isMe
-                                                      ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                                                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                    ],
+                                                if (isMe)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(left: 4.0),
+                                                    child: Icon(
+                                                      isRead ? Icons.done_all : Icons.done,
+                                                      size: 14,
+                                                      color: isRead ? Colors.blue : colorScheme.onPrimaryContainer.withValues(alpha: 0.5),
+                                                    ),
+                                                  ),
+                                              ],
+                                            )
+                                          : null,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -949,6 +976,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     focusNode: _focusNode,
                     controller: _messageController,
                     style: TextStyle(color: colorScheme.onSurface),
+                    onSubmitted: (value) {
+                      if (_enterIsSend) {
+                        sendMessage();
+                      }
+                    },
                     decoration: InputDecoration(
                       prefixIcon: IconButton(
                         icon: Icon(
@@ -996,6 +1028,17 @@ class _ChatScreenState extends State<ChatScreen> {
               height: 250,
               child: EmojiPicker(
                 textEditingController: _messageController,
+                config: Config(
+                  height: 250,
+                  emojiViewConfig: EmojiViewConfig(
+                    columns: 7,
+                    emojiSizeMax: 36 * (kIsWeb ? 1.0 : (Platform.isIOS ? 1.20 : 1.0)),
+                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  ),
+                  categoryViewConfig: CategoryViewConfig(
+                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  ),
+                ),
               ),
             ),
           ),

@@ -12,7 +12,7 @@ class ChatProvider extends ChangeNotifier {
   // - useDirectApiKey = false: Talks to Your Computer (Online)
   // - isOfflineMode = true: Talks to Local AI (Offline via Ollama)
   static const bool useDirectApiKey = true;
-  static const bool isOfflineMode = true;
+  static const bool isOfflineMode = false;
 
   // Configuration for Your Python Server
   // Using physical IP of this Windows machine makes it accessible to Mobiles via Wi-Fi as well as Windows
@@ -25,7 +25,7 @@ class ChatProvider extends ChangeNotifier {
   
   GenerativeModel _getDirectModel() {
     return _directModel ??= GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-pro',
       apiKey: _geminiApiKey,
     );
   }
@@ -89,7 +89,12 @@ class ChatProvider extends ChangeNotifier {
   Future<void> _sendServerMessage(String text) async {
     final response = await http.post(
       Uri.parse('$_serverUrl/chat'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
       body: jsonEncode({'message': text}),
     );
 
@@ -104,7 +109,12 @@ class ChatProvider extends ChangeNotifier {
   Future<void> _sendOfflineServerMessage(String text) async {
     final response = await http.post(
       Uri.parse('$_serverUrl/offline-chat'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
       body: jsonEncode({'message': text}),
     );
 
