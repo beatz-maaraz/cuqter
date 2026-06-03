@@ -24,6 +24,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   Stream<DocumentSnapshot>? _currentUserStream;
   Stream<QuerySnapshot>? _usersStream;
   final Map<String, Stream<Message?>> _lastMessageStreams = {};
+  final Map<String, Stream<int>> _unreadCountStreams = {};
 
   @override
   void initState() {
@@ -41,6 +42,13 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     return _lastMessageStreams.putIfAbsent(
       chatId,
       () => _messageService.getLastMessage(chatId),
+    );
+  }
+
+  Stream<int> _getUnreadCountStream(String chatId, String currentUserId) {
+    return _unreadCountStreams.putIfAbsent(
+      chatId,
+      () => _messageService.getUnreadMessageCountStream(chatId, currentUserId),
     );
   }
 
@@ -352,8 +360,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                                     style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14),
                                                   ),
                                                 ),
-                                                FutureBuilder<int>(
-                                                  future: _messageService.getUnreadMessageCount(chatId, _auth.currentUser!.uid),
+                                                StreamBuilder<int>(
+                                                  stream: _getUnreadCountStream(chatId, _auth.currentUser!.uid),
                                                   builder: (context, unreadSnapshot) {
                                                     int count = unreadSnapshot.data ?? 0;
                                                     if (count > 0 || userName == "Luv 🌺💕") { // Demo match for screenshot

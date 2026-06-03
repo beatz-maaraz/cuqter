@@ -18,10 +18,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
   late PageController _pageController;
   bool _isProgrammaticChange = false;
 
-  final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const Homepage(),
     const AIChatScreen(),
-    const _CallsComingSoonPage(),
+    _CallsComingSoonPage(isActive: _selectedIndex == 2),
     const SettingsPage(),
   ];
 
@@ -288,7 +288,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
 // Calls Coming Soon Page
 // ─────────────────────────────────────────────────────────────────────────────
 class _CallsComingSoonPage extends StatefulWidget {
-  const _CallsComingSoonPage();
+  final bool isActive;
+  const _CallsComingSoonPage({required this.isActive});
 
   @override
   State<_CallsComingSoonPage> createState() => _CallsComingSoonPageState();
@@ -305,10 +306,25 @@ class _CallsComingSoonPageState extends State<_CallsComingSoonPage>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
+    );
     _pulseAnim = Tween<double>(begin: 0.92, end: 1.08).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    if (widget.isActive) {
+      _pulseController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_CallsComingSoonPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        _pulseController.repeat(reverse: true);
+      } else {
+        _pulseController.stop();
+      }
+    }
   }
 
   @override

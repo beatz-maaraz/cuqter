@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/providers/chat_provider.dart';
 import '../widgets/animated_send_button.dart';
+import '../widgets/chat_message_text.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -61,7 +63,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: huge.HugeIcon(
+              icon: huge.HugeIcons.strokeRoundedDelete02,
+              color: Theme.of(context).colorScheme.error,
+              size: 22,
+            ),
             onPressed: () => chatProvider.clearMessages(),
             tooltip: "Clear Chat",
           ),
@@ -111,7 +117,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            "எப்படி உங்களுக்கு உதவட்டும்?",
+            "How can I help you?",
             style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
         ],
@@ -151,15 +157,20 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ),
           ],
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isUser
-                ? colorScheme.onPrimary
-                : colorScheme.onSurface,
+        child: ChatMessageText(
+          text: text,
+          baseStyle: TextStyle(
+            color: isUser ? colorScheme.onPrimary : colorScheme.onSurface,
             fontSize: 16,
             height: 1.4,
           ),
+          linkColor: isUser
+              ? (Theme.of(context).brightness == Brightness.dark
+                  ? Colors.blue[300]!
+                  : Colors.blue[100]!)
+              : (Theme.of(context).brightness == Brightness.dark
+                  ? Colors.blue[300]!
+                  : Colors.blue[800]!),
         ),
       ),
     );
@@ -205,7 +216,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
               controller: _controller,
               style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
               decoration: InputDecoration(
-                hintText: "ஏதேனும் கேள்வியைக் கேளுங்கள்...",
+                hintText: "Ask any question...",
                 hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),

@@ -5,6 +5,7 @@ import 'package:cuqter/resources/auth_method.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
+import 'package:cuqter/Screen/chat_settings_page.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 
 class SettingsPage extends StatefulWidget {
@@ -100,13 +101,24 @@ class _SettingsPageState extends State<SettingsPage> {
                     trailing: _buildBadge(context, '3 Active'),
                     onTap: () {},
                   ),
-                  _buildSettingsTile(
-                    icon: huge.HugeIcons.strokeRoundedSecurityValidation,
-                    title: 'Security',
-                    subtitle: 'Authentication and privacy',
-                    onTap: () {},
-                  ),
-                  _buildAppearanceTile(themeProvider, colorScheme),
+                   _buildSettingsTile(
+                     icon: huge.HugeIcons.strokeRoundedSecurityValidation,
+                     title: 'Security',
+                     subtitle: 'Authentication and privacy',
+                     onTap: () {},
+                   ),
+                   _buildSettingsTile(
+                     icon: huge.HugeIcons.strokeRoundedBubbleChat,
+                     title: 'Chats',
+                     subtitle: 'Wallpaper, preferences and history',
+                     onTap: () {
+                       Navigator.push(
+                         context,
+                         MaterialPageRoute(builder: (context) => const ChatSettingsPage()),
+                       );
+                     },
+                   ),
+                   _buildAppearanceTile(themeProvider, colorScheme),
                 ]),
                 const SizedBox(height: 30),
                 _buildSectionLabel(context, 'SUPPORT'),
@@ -118,14 +130,33 @@ class _SettingsPageState extends State<SettingsPage> {
                     subtitle: 'Guided solutions',
                     onTap: () {},
                   ),
-                  _buildSettingsTile(
-                    icon: huge.HugeIcons.strokeRoundedDocumentCode,
-                    title: 'Terms',
-                    subtitle: 'Legal clarity',
-                    onTap: () {},
-                  ),
-                ]),
-                const SizedBox(height: 40),
+                   _buildSettingsTile(
+                     icon: huge.HugeIcons.strokeRoundedDocumentCode,
+                     title: 'Terms',
+                     subtitle: 'Legal clarity',
+                     onTap: () {},
+                   ),
+                 ]),
+                 const SizedBox(height: 30),
+                 _buildSectionLabel(context, 'DEVELOPMENT PREVIEW'),
+                 const SizedBox(height: 10),
+                 _buildGroupedSection(children: [
+                   _buildSettingsTile(
+                     icon: huge.HugeIcons.strokeRoundedAiBrain01,
+                     title: 'AI Image Generator',
+                     subtitle: 'Generate visual arts directly in chat',
+                     trailing: _buildBadge(context, 'Developing'),
+                     onTap: () {},
+                   ),
+                   _buildSettingsTile(
+                     icon: huge.HugeIcons.strokeRoundedBubbleChat,
+                     title: 'Channel Broadcasts',
+                     subtitle: 'Send updates to public channels',
+                     trailing: _buildBadge(context, 'Planned'),
+                     onTap: () {},
+                   ),
+                 ]),
+                 const SizedBox(height: 40),
                 _buildSignOutButton(context, colorScheme),
                 const SizedBox(height: 20),
                 Center(
