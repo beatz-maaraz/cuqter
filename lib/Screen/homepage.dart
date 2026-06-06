@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Screen/chat_screen.dart';
@@ -23,8 +24,9 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   String searchQuery = "";
   Stream<DocumentSnapshot>? _currentUserStream;
   Stream<QuerySnapshot>? _usersStream;
-  final Map<String, Stream<Message?>> _lastMessageStreams = {};
   final Map<String, Stream<int>> _unreadCountStreams = {};
+  final Map<String, Message?> _lastMessages = {};
+  final Map<String, StreamSubscription<Message?>> _lastMessageSubscriptions = {};
 
   @override
   void initState() {
@@ -38,12 +40,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     _usersStream = _firestore.collection('users').snapshots();
   }
 
-  Stream<Message?> _getLastMessageStream(String chatId) {
-    return _lastMessageStreams.putIfAbsent(
-      chatId,
-      () => _messageService.getLastMessage(chatId),
-    );
-  }
+
 
   Stream<int> _getUnreadCountStream(String chatId, String currentUserId) {
     return _unreadCountStreams.putIfAbsent(
@@ -56,6 +53,10 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _setUserStatus(false);
+    for (var sub in _lastMessageSubscriptions.values) {
+      sub.cancel();
+    }
+    _lastMessageSubscriptions.clear();
     super.dispose();
   }
 
@@ -235,6 +236,41 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                         return myContacts.contains(doc.id);
                       }).toList() ?? [];
 
+                      // Setup subscriptions for last messages if not already present
+                      if (_auth.currentUser != null) {
+                        for (var doc in users) {
+                          String userId = doc.id;
+                          String chatId = getChatId(_auth.currentUser!.uid, userId);
+                          if (!_lastMessageSubscriptions.containsKey(chatId)) {
+                            _lastMessageSubscriptions[chatId] = _messageService.getLastMessage(chatId).listen((message) {
+                              if (mounted) {
+                                setState(() {
+                                  _lastMessages[chatId] = message;
+                                });
+                              }
+                            });
+                          }
+                        }
+                      }
+
+                      // Sort users by latest interaction (LIFO / LIFI method)
+                      if (_auth.currentUser != null && users.isNotEmpty) {
+                        users.sort((a, b) {
+                          String chatIdA = getChatId(_auth.currentUser!.uid, a.id);
+                          String chatIdB = getChatId(_auth.currentUser!.uid, b.id);
+                          Message? msgA = _lastMessages[chatIdA];
+                          Message? msgB = _lastMessages[chatIdB];
+
+                          if (msgA == null && msgB == null) {
+                            return a.id.compareTo(b.id);
+                          }
+                          if (msgA == null) return 1;
+                          if (msgB == null) return -1;
+
+                          return msgB.timestamp.compareTo(msgA.timestamp);
+                        });
+                      }
+
                       if (users.isEmpty) {
                         return Center(child: Text('No messages yet', style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4))));
                       }
@@ -249,145 +285,154 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                           bool isOnline = userData['isOnline'] ?? false;
                           String chatId = getChatId(_auth.currentUser!.uid, userId);
 
-                          return StreamBuilder<Message?>(
-                            stream: _getLastMessageStream(chatId),
-                            builder: (context, lastMsgSnapshot) {
-                              final lastMsg = lastMsgSnapshot.data;
-                              final isLastMsgFromMe = lastMsg != null && lastMsg.senderId == _auth.currentUser!.uid;
-                              final subtitle = lastMsg != null 
-                                  ? (isLastMsgFromMe ? 'You: ${lastMsg.text}' : lastMsg.text)
-                                  : userBio;
-                              final timeText = lastMsg != null ? _formatDateTime(lastMsg.timestamp) : '';
+                          final lastMsg = _lastMessages[chatId];
+                          final isLastMsgFromMe = lastMsg != null && lastMsg.senderId == _auth.currentUser!.uid;
+                          final subtitle = lastMsg != null 
+                              ? lastMsg.text
+                              : userBio;
+                          final timeText = lastMsg != null ? _formatDateTime(lastMsg.timestamp) : '';
 
-                              return InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    PageRouteBuilder(
-                                      pageBuilder: (context, animation, secondaryAnimation) => ChatScreen(
-                                        receiverId: userId,
-                                        receiverName: userName,
-                                      ),
-                                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                        return SlideTransition(
-                                          position: Tween<Offset>(
-                                            begin: const Offset(1.0, 0.0),
-                                            end: Offset.zero,
-                                          ).animate(
-                                            CurvedAnimation(
-                                              parent: animation,
-                                              curve: Curves.easeOutCubic,
-                                            ),
-                                          ),
-                                          child: FadeTransition(
-                                            opacity: animation,
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                      transitionDuration: const Duration(milliseconds: 250),
-                                    ),
-                                  );
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                                  child: Row(
-                                    children: [
-                                      // Avatar with status
-                                      Stack(
-                                        children: [
-                                           CircleAvatar(
-                                             radius: 28,
-                                             backgroundColor: colorScheme.primaryContainer,
-                                             backgroundImage: userData['profilepic'] != null && userData['profilepic'].toString().isNotEmpty
-                                                 ? AssetImage(userData['profilepic'])
-                                                 : null,
-                                             child: userData['profilepic'] == null || userData['profilepic'].toString().isEmpty
-                                                 ? Text(
-                                                     userName[0].toUpperCase(),
-                                                     style: TextStyle(
-                                                       fontWeight: FontWeight.bold,
-                                                       fontSize: 18,
-                                                       color: colorScheme.onPrimaryContainer,
-                                                     ),
-                                                   )
-                                                 : null,
-                                           ),
-                                          if (isOnline)
-                                            Positioned(
-                                              bottom: 0,
-                                              right: 0,
-                                              child: Container(
-                                                width: 14,
-                                                height: 14,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.green,
-                                                  shape: BoxShape.circle,
-                                                  border: Border.all(color: colorScheme.surface, width: 2),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      const SizedBox(width: 16),
-                                      // Content
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Text(
-                                                  userName,
-                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                                ),
-                                                Text(
-                                                  timeText,
-                                                  style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5)),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    subtitle,
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14),
-                                                  ),
-                                                ),
-                                                StreamBuilder<int>(
-                                                  stream: _getUnreadCountStream(chatId, _auth.currentUser!.uid),
-                                                  builder: (context, unreadSnapshot) {
-                                                    int count = unreadSnapshot.data ?? 0;
-                                                    if (count > 0 || userName == "Luv 🌺💕") { // Demo match for screenshot
-                                                      return Container(
-                                                        margin: const EdgeInsets.only(left: 8),
-                                                        width: 10,
-                                                        height: 10,
-                                                        decoration: BoxDecoration(
-                                                          color: colorScheme.primary,
-                                                          shape: BoxShape.circle,
-                                                        ),
-                                                      );
-                                                    }
-                                                    return const SizedBox.shrink();
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                          return InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                PageRouteBuilder(
+                                  pageBuilder: (context, animation, secondaryAnimation) => ChatScreen(
+                                    receiverId: userId,
+                                    receiverName: userName,
+                                  ),
+                                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                    return SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(1.0, 0.0),
+                                        end: Offset.zero,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutCubic,
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                      child: FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  transitionDuration: const Duration(milliseconds: 250),
                                 ),
                               );
                             },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                              child: Row(
+                                children: [
+                                  // Avatar with status
+                                  Stack(
+                                    children: [
+                                       CircleAvatar(
+                                         radius: 28,
+                                         backgroundColor: colorScheme.primaryContainer,
+                                         backgroundImage: userData['profilepic'] != null && userData['profilepic'].toString().isNotEmpty
+                                             ? AssetImage(userData['profilepic'])
+                                             : null,
+                                         child: userData['profilepic'] == null || userData['profilepic'].toString().isEmpty
+                                             ? Text(
+                                                 userName[0].toUpperCase(),
+                                                 style: TextStyle(
+                                                   fontWeight: FontWeight.bold,
+                                                   fontSize: 18,
+                                                   color: colorScheme.onPrimaryContainer,
+                                                 ),
+                                               )
+                                             : null,
+                                       ),
+                                      if (isOnline)
+                                        Positioned(
+                                          bottom: 0,
+                                          right: 0,
+                                          child: Container(
+                                            width: 14,
+                                            height: 14,
+                                            decoration: BoxDecoration(
+                                              color: Colors.green,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: colorScheme.surface, width: 2),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // Content
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              userName,
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                            ),
+                                            Text(
+                                              timeText,
+                                              style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Row(
+                                                children: [
+                                                  if (isLastMsgFromMe) ...[
+                                                    Icon(
+                                                      lastMsg.isRead ? Icons.done_all : Icons.done,
+                                                      size: 16,
+                                                      color: lastMsg.isRead ? Colors.blue : colorScheme.onSurface.withValues(alpha: 0.4),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                  ],
+                                                  Expanded(
+                                                    child: Text(
+                                                      subtitle,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            StreamBuilder<int>(
+                                              stream: _getUnreadCountStream(chatId, _auth.currentUser!.uid),
+                                              builder: (context, unreadSnapshot) {
+                                                int count = unreadSnapshot.data ?? 0;
+                                                if (count > 0 || userName == "Luv 🌺💕") { // Demo match for screenshot
+                                                  return Container(
+                                                    margin: const EdgeInsets.only(left: 8),
+                                                    width: 10,
+                                                    height: 10,
+                                                    decoration: BoxDecoration(
+                                                      color: colorScheme.primary,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                  );
+                                                }
+                                                return const SizedBox.shrink();
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           );
                         },
                       );

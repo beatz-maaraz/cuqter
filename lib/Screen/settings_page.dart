@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
 import 'package:cuqter/Screen/chat_settings_page.dart';
+import 'package:cuqter/Screen/about_page.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 
 class SettingsPage extends StatefulWidget {
@@ -120,40 +121,20 @@ class _SettingsPageState extends State<SettingsPage> {
                    ),
                    _buildAppearanceTile(themeProvider, colorScheme),
                 ]),
-                const SizedBox(height: 30),
-                _buildSectionLabel(context, 'SUPPORT'),
-                const SizedBox(height: 10),
-                 _buildGroupedSection(children: [
-                  _buildSettingsTile(
-                    icon: huge.HugeIcons.strokeRoundedHelpCircle,
-                    title: 'Help Center',
-                    subtitle: 'Guided solutions',
-                    onTap: () {},
-                  ),
-                   _buildSettingsTile(
-                     icon: huge.HugeIcons.strokeRoundedDocumentCode,
-                     title: 'Terms',
-                     subtitle: 'Legal clarity',
-                     onTap: () {},
-                   ),
-                 ]),
                  const SizedBox(height: 30),
-                 _buildSectionLabel(context, 'DEVELOPMENT PREVIEW'),
+                 _buildSectionLabel(context, 'ABOUT'),
                  const SizedBox(height: 10),
                  _buildGroupedSection(children: [
                    _buildSettingsTile(
-                     icon: huge.HugeIcons.strokeRoundedAiBrain01,
-                     title: 'AI Image Generator',
-                     subtitle: 'Generate visual arts directly in chat',
-                     trailing: _buildBadge(context, 'Developing'),
-                     onTap: () {},
-                   ),
-                   _buildSettingsTile(
-                     icon: huge.HugeIcons.strokeRoundedBubbleChat,
-                     title: 'Channel Broadcasts',
-                     subtitle: 'Send updates to public channels',
-                     trailing: _buildBadge(context, 'Planned'),
-                     onTap: () {},
+                     icon: huge.HugeIcons.strokeRoundedHelpCircle,
+                     title: 'About Cuqter',
+                     subtitle: 'Team, version, and details',
+                     onTap: () {
+                       Navigator.push(
+                         context,
+                         MaterialPageRoute(builder: (context) => const AboutPage()),
+                       );
+                     },
                    ),
                  ]),
                  const SizedBox(height: 40),

@@ -75,6 +75,32 @@ class MainApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
+      builder: (context, child) {
+        const double scale = 0.90;
+        final mediaQuery = MediaQuery.of(context);
+        final scaledSize = mediaQuery.size / scale;
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            size: scaledSize,
+            padding: mediaQuery.padding / scale,
+            viewPadding: mediaQuery.viewPadding / scale,
+            viewInsets: mediaQuery.viewInsets / scale,
+            systemGestureInsets: mediaQuery.systemGestureInsets / scale,
+          ),
+          child: OverflowBox(
+            minWidth: scaledSize.width,
+            maxWidth: scaledSize.width,
+            minHeight: scaledSize.height,
+            maxHeight: scaledSize.height,
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.center,
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
+        );
+      },
       home: StreamBuilder(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
