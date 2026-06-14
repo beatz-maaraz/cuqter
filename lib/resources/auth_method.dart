@@ -12,27 +12,52 @@ class AuthMethod {
 
   Future<String> signUpUser({
     required String name,
+    required String username,
     required String email,
     required String password,
+    String profilepic = 'assets/profile/BOY (1).jpg',
+    String? cloudinaryPublicId,
   }) async {
     String res = "Some error occurred";
     try {
-      if (name.isNotEmpty && email.isNotEmpty && password.isNotEmpty) {
-      UserCredential cred = await _auth.createUserWithEmailAndPassword(
-            email: email, password: password);
+      if (name.isNotEmpty && username.isNotEmpty && email.isNotEmpty && password.isNotEmpty) {
+        // Check if username is already taken
+        final QuerySnapshot usernameResult = await _firestore
+            .collection('users')
+            .where('username', isEqualTo: username.trim().toLowerCase())
+            .get();
+        if (usernameResult.docs.isNotEmpty) {
+          return "Username is already taken.";
+        }
 
-            model.user _user = model.user(
-              name: name,
-              email: email,
-              password: password,
-              uid: cred.user!.uid,
-              profilepic: 'assets/profile/BOY (1).jpg',
-            );
+        // Check if email is already in use
+        final QuerySnapshot emailResult = await _firestore
+            .collection('users')
+            .where('email', isEqualTo: email.trim().toLowerCase())
+            .get();
+        if (emailResult.docs.isNotEmpty) {
+          return "Email is already in use.";
+        }
 
-            await _firestore.collection('users').doc(cred.user!.uid).set(
-              _user.toJson(),
-            );
-            res = "success";
+        UserCredential cred = await _auth.createUserWithEmailAndPassword(
+            email: email.trim(), password: password);
+
+        model.user _user = model.user(
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password: password,
+          uid: cred.user!.uid,
+          username: username.trim().toLowerCase(),
+          profilepic: profilepic,
+        );
+
+        Map<String, dynamic> userData = _user.toJson();
+        if (cloudinaryPublicId != null) {
+          userData['cloudinary_public_id'] = cloudinaryPublicId;
+        }
+
+        await _firestore.collection('users').doc(cred.user!.uid).set(userData);
+        res = "success";
       } else {
         res = "Please enter all the fields";
       }
@@ -58,12 +83,27 @@ class AuthMethod {
     return res;
   }
 
-  Future<String> loginuser({required String email,required String password,}) async {
+  Future<String> loginuser({required String emailOrUsername, required String password,}) async {
     String res = "Some error occurred";
     try {
-      if (email.isNotEmpty && password.isNotEmpty) {
+      if (emailOrUsername.isNotEmpty && password.isNotEmpty) {
+        String email = emailOrUsername.trim();
+        
+        // If it's a username (no '@'), retrieve associated email from Firestore
+        if (!email.contains('@')) {
+          final QuerySnapshot result = await _firestore
+              .collection('users')
+              .where('username', isEqualTo: email.toLowerCase())
+              .limit(1)
+              .get();
+          if (result.docs.isEmpty) {
+            return "Username not found.";
+          }
+          email = (result.docs.first.data() as Map<String, dynamic>)['email'] ?? '';
+        }
+
         await _auth.signInWithEmailAndPassword(
-            email: email, password: password);
+            email: email, password: password.trim());
         res = "success";
       } else {
         res = "Please enter all the fields";
