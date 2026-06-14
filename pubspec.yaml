@@ -27,6 +27,7 @@ dependencies:
   emoji_picker_flutter: ^4.4.0
   url_launcher: ^6.3.1
   firebase_remote_config: ^6.5.1
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

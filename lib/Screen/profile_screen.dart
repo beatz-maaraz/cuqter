@@ -2,6 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:cuqter/utils/picker.dart';
+import 'package:cuqter/services/cloudinary_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -57,6 +61,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       isLoading = false;
     });
+  }
+
+  Future<void> _uploadAndSetProfilePic(BuildContext context, Function setSheetState) async {
+    try {
+      final Uint8List? imageBytes = await pickImage(ImageSource.gallery);
+      if (imageBytes != null) {
+        setSheetState(() {
+          isLoading = true;
+        });
+        setState(() {
+          isLoading = true;
+        });
+        
+        final String? imageUrl = await CloudinaryService.uploadImage(imageBytes, folder: 'profile');
+        
+        setSheetState(() {
+          isLoading = false;
+        });
+        setState(() {
+          isLoading = false;
+        });
+
+        if (imageUrl != null) {
+          final String oldPic = _selectedProfilePic;
+          setSheetState(() {
+            _selectedProfilePic = imageUrl;
+          });
+          setState(() {
+            _selectedProfilePic = imageUrl;
+          });
+          Navigator.pop(context);
+          await _updateProfile();
+
+          // Delete the old profile picture from Cloudinary if it was a Cloudinary URL
+          if (oldPic.startsWith('http')) {
+            CloudinaryService.deleteImage(oldPic);
+          }
+        } else {
+          showSnackBar('Failed to upload image to Cloudinary.', context);
+        }
+      }
+    } catch (e) {
+      setSheetState(() {
+        isLoading = false;
+      });
+      setState(() {
+        isLoading = false;
+      });
+      showSnackBar('Error picking/uploading image: $e', context);
+    }
   }
 
   Future<void> _updateProfile() async {
@@ -126,6 +180,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    InkWell(
+                      onTap: () => _uploadAndSetProfilePic(context, setSheetState),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [colorScheme.primary, colorScheme.tertiary],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withValues(alpha: 0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            if (isLoading)
+                              const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                              )
+                            else
+                              const Icon(Icons.cloud_upload_rounded, color: Colors.white, size: 28),
+                            const SizedBox(width: 16),
+                            const Text(
+                              'Upload Custom Photo',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Or Choose an Avatar',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -195,16 +304,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isLoading = true;
     });
     try {
-      String userId = _auth.currentUser!.uid;
+      final user = _auth.currentUser;
+      if (user == null) return;
       
-      // Delete user data from Firestore
+      String userId = user.uid;
+
+      // 1. Fetch user data temporarily in case auth deletion fails and we need to restore it
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      final userData = userDoc.data();
+
+      // 2. Delete Firestore document (authenticated request)
       await _firestore.collection('users').doc(userId).delete();
       
-      // Delete user authentication account
-      await _auth.currentUser!.delete();
+      try {
+        // 3. Delete user authentication account
+        await user.delete();
+
+        // 4. Delete Cloudinary image on successful auth deletion
+        if (_selectedProfilePic.startsWith('http')) {
+          CloudinaryService.deleteImage(_selectedProfilePic);
+        }
+      } catch (authError) {
+        // Restore Firestore document if auth deletion fails (e.g. requires-recent-login)
+        if (userData != null) {
+          await _firestore.collection('users').doc(userId).set(userData);
+        }
+        rethrow;
+      }
       
       if (mounted) {
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account deleted successfully! Redirecting to login...'),
@@ -212,13 +340,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
         
-        // Wait for 2 seconds before navigation
         await Future.delayed(const Duration(seconds: 2));
         
-        // Pop back to root route
         Navigator.of(context).popUntil((route) => route.isFirst);
-        // Sign out explicitly
         await _auth.signOut();
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      if (e.code == 'requires-recent-login') {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Recent Login Required'),
+              content: const Text(
+                'For security reasons, this action requires recent authentication. '
+                'Please sign out, sign back in, and try deleting your account again.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete account: ${e.message}')),
+          );
+        }
       }
     } catch (e) {
       setState(() {
@@ -278,7 +433,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                              child: CircleAvatar(
                               radius: 60,
                               backgroundColor: colorScheme.primaryContainer,
-                              backgroundImage: _selectedProfilePic.isNotEmpty ? AssetImage(_selectedProfilePic) : null,
+                              backgroundImage: _selectedProfilePic.isNotEmpty
+                                  ? (_selectedProfilePic.startsWith('http')
+                                      ? NetworkImage(_selectedProfilePic) as ImageProvider
+                                      : AssetImage(_selectedProfilePic))
+                                  : null,
                               child: _selectedProfilePic.isEmpty ? Text(
                                 _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : '?',
                                 style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),

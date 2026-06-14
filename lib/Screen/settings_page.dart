@@ -190,7 +190,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: colorScheme.primaryContainer,
-                  backgroundImage: _profilepic.isNotEmpty ? AssetImage(_profilepic) : null,
+                  backgroundImage: _profilepic.isNotEmpty
+                      ? (_profilepic.startsWith('http')
+                          ? NetworkImage(_profilepic) as ImageProvider
+                          : AssetImage(_profilepic))
+                      : null,
                   child: _profilepic.isEmpty ? Text(
                     _name.isNotEmpty ? _name[0].toUpperCase() : '?',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
