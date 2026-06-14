@@ -11,7 +11,6 @@ import '../widgets/animated_send_button.dart';
 import '../widgets/chat_message_text.dart';
 
 import '../services/message_service.dart';
-import 'package:cuqter/services/cloudinary_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -336,33 +335,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   final ImagePicker picker = ImagePicker();
                   final XFile? image = await picker.pickImage(source: ImageSource.gallery);
                   if (image != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Uploading wallpaper to Cloudinary...'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                    try {
-                      final bytes = await image.readAsBytes();
-                      final url = await CloudinaryService.uploadImage(bytes, folder: 'media');
-                      if (url != null) {
-                        setState(() {
-                          _customWallpaperUrl = url;
-                        });
-                        _saveWallpaperPreference();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Wallpaper updated successfully!')),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Failed to upload wallpaper.')),
-                        );
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error uploading wallpaper: $e')),
-                      );
-                    }
+                    setState(() {
+                      _customWallpaperUrl = image.path;
+                    });
+                    _saveWallpaperPreference();
                   }
                 },
                 borderRadius: BorderRadius.circular(16),
@@ -646,7 +622,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       backgroundImage: data != null && data['profilepic'] != null && data['profilepic'].toString().isNotEmpty
                           ? (data['profilepic'].toString().startsWith('http')
                               ? NetworkImage(data['profilepic'].toString()) as ImageProvider
-                              : AssetImage(data['profilepic'].toString()))
+                              : AssetImage(data['profilepic'].toString()) as ImageProvider)
                           : null,
                       child: data == null || data['profilepic'] == null || data['profilepic'].toString().isEmpty
                           ? Text(
@@ -794,7 +770,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 color: _customWallpaperUrl == null ? (_wallpaperIndex == 0 ? colorScheme.surface : _wallpapers[_wallpaperIndex]) : null,
                 image: _customWallpaperUrl != null
                     ? DecorationImage(
-                        image: (_customWallpaperUrl!.startsWith('http') || kIsWeb)
+                        image: kIsWeb
                             ? NetworkImage(_customWallpaperUrl!) as ImageProvider
                             : FileImage(File(_customWallpaperUrl!)) as ImageProvider,
                         fit: BoxFit.cover,

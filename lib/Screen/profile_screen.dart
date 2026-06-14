@@ -1,11 +1,11 @@
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:image_picker/image_picker.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -21,6 +21,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isLoading = false;
   String _selectedProfilePic = '';
+  String? _currentCloudinaryPublicId;
 
   final List<String> _profilePictures = [
     'assets/profile/BOY (1).jpg',
@@ -40,76 +41,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _nameController.text = _auth.currentUser?.displayName ?? '';
     _loadUserData();
   }
 
   Future<void> _loadUserData() async {
-    setState(() {
-      isLoading = true;
-    });
     try {
       var snap = await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
       if (snap.exists && snap.data() != null) {
         var data = snap.data() as Map<String, dynamic>;
-        _nameController.text = data['name'] ?? '';
-        _bioController.text = data['bio'] ?? '';
-        _selectedProfilePic = data['profilepic'] ?? '';
-      }
-    } catch (e) {
-      print(e);
-    }
-    setState(() {
-      isLoading = false;
-    });
-  }
-
-  Future<void> _uploadAndSetProfilePic(BuildContext context, Function setSheetState) async {
-    try {
-      final Uint8List? imageBytes = await pickImage(ImageSource.gallery);
-      if (imageBytes != null) {
-        setSheetState(() {
-          isLoading = true;
-        });
-        setState(() {
-          isLoading = true;
-        });
-        
-        final String? imageUrl = await CloudinaryService.uploadImage(imageBytes, folder: 'profile');
-        
-        setSheetState(() {
-          isLoading = false;
-        });
-        setState(() {
-          isLoading = false;
-        });
-
-        if (imageUrl != null) {
-          final String oldPic = _selectedProfilePic;
-          setSheetState(() {
-            _selectedProfilePic = imageUrl;
-          });
+        if (mounted) {
           setState(() {
-            _selectedProfilePic = imageUrl;
+            _nameController.text = data['name'] ?? '';
+            _bioController.text = data['bio'] ?? '';
+            _selectedProfilePic = data['profilepic'] ?? '';
+            _currentCloudinaryPublicId = data['cloudinary_public_id'];
           });
-          Navigator.pop(context);
-          await _updateProfile();
-
-          // Delete the old profile picture from Cloudinary if it was a Cloudinary URL
-          if (oldPic.startsWith('http')) {
-            CloudinaryService.deleteImage(oldPic);
-          }
-        } else {
-          showSnackBar('Failed to upload image to Cloudinary.', context);
         }
       }
     } catch (e) {
-      setSheetState(() {
-        isLoading = false;
-      });
-      setState(() {
-        isLoading = false;
-      });
-      showSnackBar('Error picking/uploading image: $e', context);
+      print(e);
     }
   }
 
@@ -118,11 +69,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isLoading = true;
     });
     try {
-      await _firestore.collection('users').doc(_auth.currentUser!.uid).set({
+      var snap = await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
+      String? oldPublicId;
+      if (snap.exists && snap.data() != null) {
+        var data = snap.data() as Map<String, dynamic>;
+        oldPublicId = data['cloudinary_public_id'];
+      }
+
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
         'name': _nameController.text,
         'bio': _bioController.text,
         'profilepic': _selectedProfilePic,
-      }, SetOptions(merge: true));
+        'cloudinary_public_id': _currentCloudinaryPublicId,
+      });
+
+      if (oldPublicId != null && oldPublicId.isNotEmpty && oldPublicId != _currentCloudinaryPublicId) {
+        await CloudinaryService.deleteImage(oldPublicId);
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
       );
@@ -134,6 +98,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       isLoading = false;
     });
+  }
+
+  Future<void> _pickAndUploadCustomImage(ImageSource source) async {
+    try {
+      final Uint8List? imageBytes = await pickImage(source);
+      if (imageBytes == null) return;
+
+      setState(() {
+        isLoading = true;
+      });
+
+      final uploadResult = await CloudinaryService.uploadImage(imageBytes);
+      if (uploadResult != null) {
+        final String newUrl = uploadResult['url']!;
+        final String newPublicId = uploadResult['public_id']!;
+        String? oldPublicId = _currentCloudinaryPublicId;
+
+        setState(() {
+          _selectedProfilePic = newUrl;
+          _currentCloudinaryPublicId = newPublicId;
+        });
+
+        await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
+          'profilepic': newUrl,
+          'cloudinary_public_id': newPublicId,
+        });
+
+        if (oldPublicId != null && oldPublicId.isNotEmpty) {
+          await CloudinaryService.deleteImage(oldPublicId);
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated successfully!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to upload image to Cloudinary.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   void _showProfilePicPicker() {
@@ -179,62 +191,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         fontSize: 14,
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    InkWell(
-                      onTap: () => _uploadAndSetProfilePic(context, setSheetState),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [colorScheme.primary, colorScheme.tertiary],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colorScheme.primary.withValues(alpha: 0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            if (isLoading)
-                              const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                              )
-                            else
-                              const Icon(Icons.cloud_upload_rounded, color: Colors.white, size: 28),
-                            const SizedBox(width: 16),
-                            const Text(
-                              'Upload Custom Photo',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(sheetContext);
+                              _pickAndUploadCustomImage(ImageSource.camera);
+                            },
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Camera'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            const Spacer(),
-                            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 16),
-                          ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(sheetContext);
+                              _pickAndUploadCustomImage(ImageSource.gallery);
+                            },
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Gallery'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
-                    Text(
-                      'Or Choose an Avatar',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -251,9 +245,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () {
                             setSheetState(() {
                               _selectedProfilePic = path;
+                              _currentCloudinaryPublicId = null;
                             });
                             setState(() {
                               _selectedProfilePic = path;
+                              _currentCloudinaryPublicId = null;
                             });
                           },
                           child: Container(
@@ -304,35 +300,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isLoading = true;
     });
     try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+      String userId = _auth.currentUser!.uid;
       
-      String userId = user.uid;
-
-      // 1. Fetch user data temporarily in case auth deletion fails and we need to restore it
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-      final userData = userDoc.data();
-
-      // 2. Delete Firestore document (authenticated request)
+      // Delete user data from Firestore
       await _firestore.collection('users').doc(userId).delete();
       
-      try {
-        // 3. Delete user authentication account
-        await user.delete();
-
-        // 4. Delete Cloudinary image on successful auth deletion
-        if (_selectedProfilePic.startsWith('http')) {
-          CloudinaryService.deleteImage(_selectedProfilePic);
-        }
-      } catch (authError) {
-        // Restore Firestore document if auth deletion fails (e.g. requires-recent-login)
-        if (userData != null) {
-          await _firestore.collection('users').doc(userId).set(userData);
-        }
-        rethrow;
-      }
+      // Delete user authentication account
+      await _auth.currentUser!.delete();
       
       if (mounted) {
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account deleted successfully! Redirecting to login...'),
@@ -340,40 +317,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
         
+        // Wait for 2 seconds before navigation
         await Future.delayed(const Duration(seconds: 2));
         
+        // Pop back to root route
         Navigator.of(context).popUntil((route) => route.isFirst);
+        // Sign out explicitly
         await _auth.signOut();
-      }
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      if (e.code == 'requires-recent-login') {
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Recent Login Required'),
-              content: const Text(
-                'For security reasons, this action requires recent authentication. '
-                'Please sign out, sign back in, and try deleting your account again.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete account: ${e.message}')),
-          );
-        }
       }
     } catch (e) {
       setState(() {
@@ -436,7 +386,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               backgroundImage: _selectedProfilePic.isNotEmpty
                                   ? (_selectedProfilePic.startsWith('http')
                                       ? NetworkImage(_selectedProfilePic) as ImageProvider
-                                      : AssetImage(_selectedProfilePic))
+                                      : AssetImage(_selectedProfilePic) as ImageProvider)
                                   : null,
                               child: _selectedProfilePic.isEmpty ? Text(
                                 _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : '?',
@@ -665,6 +615,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: () {
                   setState(() {
                     _selectedProfilePic = dialogSelectedPic;
+                    if (_selectedProfilePic.startsWith('assets/')) {
+                      _currentCloudinaryPublicId = null;
+                    }
                   });
                   Navigator.pop(context);
                   _updateProfile();

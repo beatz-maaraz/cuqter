@@ -20,11 +20,16 @@ class _SettingsPageState extends State<SettingsPage> {
   String _name = 'User';
   String _email = '';
   String _profilepic = '';
-  bool _isLoading = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _name = user.displayName ?? 'User';
+      _email = user.email ?? '';
+    }
     _loadUserData();
   }
 
@@ -38,22 +43,13 @@ class _SettingsPageState extends State<SettingsPage> {
             if (doc.exists) {
               _name = doc.data()?['name'] ?? 'User';
               _profilepic = doc.data()?['profilepic'] ?? '';
-            } else {
-              _name = user.displayName ?? 'User';
             }
             _email = user.email ?? '';
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
           });
         }
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      // Handle error conceptually
     }
   }
 
@@ -193,7 +189,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   backgroundImage: _profilepic.isNotEmpty
                       ? (_profilepic.startsWith('http')
                           ? NetworkImage(_profilepic) as ImageProvider
-                          : AssetImage(_profilepic))
+                          : AssetImage(_profilepic) as ImageProvider)
                       : null,
                   child: _profilepic.isEmpty ? Text(
                     _name.isNotEmpty ? _name[0].toUpperCase() : '?',
