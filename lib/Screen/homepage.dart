@@ -234,8 +234,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                         
                         if (searchQuery.isNotEmpty) {
                           var data = doc.data() as Map<String, dynamic>?;
-                          String name = (data?['name'] ?? '').toString().toLowerCase();
-                          return name.contains(searchQuery);
+                          String username = (data?['username'] ?? '').toString().toLowerCase();
+                          return username.contains(searchQuery);
                         }
                         return myContacts.contains(doc.id);
                       }).toList() ?? [];
@@ -293,7 +293,9 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                           final isLastMsgFromMe = lastMsg != null && lastMsg.senderId == _auth.currentUser!.uid;
                           final subtitle = lastMsg != null 
                               ? lastMsg.text
-                              : userBio;
+                              : (userData['username'] != null && userData['username'].toString().isNotEmpty
+                                  ? '@${userData['username']}'
+                                  : userBio);
                           final timeText = lastMsg != null ? _formatDateTime(lastMsg.timestamp) : '';
 
                           return InkWell(

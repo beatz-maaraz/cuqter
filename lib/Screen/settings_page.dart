@@ -4,6 +4,7 @@ import 'package:cuqter/providers/theme_provider.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
 import 'package:cuqter/Screen/chat_settings_page.dart';
 import 'package:cuqter/Screen/about_page.dart';
@@ -30,7 +31,29 @@ class _SettingsPageState extends State<SettingsPage> {
       _name = user.displayName ?? 'User';
       _email = user.email ?? '';
     }
+    _loadCachedProfile();
     _loadUserData();
+  }
+
+  Future<void> _loadCachedProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? cachedName = prefs.getString('cached_profile_name');
+      final String? cachedPic = prefs.getString('cached_profile_pic');
+      
+      if (mounted) {
+        setState(() {
+          if (cachedName != null && cachedName.isNotEmpty) {
+            _name = cachedName;
+          }
+          if (cachedPic != null && cachedPic.isNotEmpty) {
+            _profilepic = cachedPic;
+          }
+        });
+      }
+    } catch (e) {
+      print('Error loading cached profile in settings: $e');
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -46,6 +69,24 @@ class _SettingsPageState extends State<SettingsPage> {
             }
             _email = user.email ?? '';
           });
+        }
+
+        // Cache the latest Firestore data
+        if (doc.exists) {
+          final String name = doc.data()?['name'] ?? 'User';
+          final String profilepic = doc.data()?['profilepic'] ?? '';
+          final String bio = doc.data()?['bio'] ?? '';
+          final String? cloudinaryPublicId = doc.data()?['cloudinary_public_id'];
+          
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('cached_profile_name', name);
+          await prefs.setString('cached_profile_bio', bio);
+          await prefs.setString('cached_profile_pic', profilepic);
+          if (cloudinaryPublicId != null) {
+            await prefs.setString('cached_cloudinary_public_id', cloudinaryPublicId);
+          } else {
+            await prefs.remove('cached_cloudinary_public_id');
+          }
         }
       }
     } catch (e) {

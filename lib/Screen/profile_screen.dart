@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 
@@ -16,12 +18,14 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isLoading = false;
   String _selectedProfilePic = '';
   String? _currentCloudinaryPublicId;
+  String _currentUsername = '';
 
   final List<String> _profilePictures = [
     'assets/profile/BOY (1).jpg',
@@ -42,7 +46,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _nameController.text = _auth.currentUser?.displayName ?? '';
+    _loadCachedProfile();
     _loadUserData();
+  }
+
+  Future<void> _loadCachedProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? cachedName = prefs.getString('cached_profile_name');
+      final String? cachedUsername = prefs.getString('cached_profile_username');
+      final String? cachedBio = prefs.getString('cached_profile_bio');
+      final String? cachedPic = prefs.getString('cached_profile_pic');
+      final String? cachedPublicId = prefs.getString('cached_cloudinary_public_id');
+
+      if (mounted) {
+        setState(() {
+          if (cachedName != null && cachedName.isNotEmpty) {
+            _nameController.text = cachedName;
+          }
+          if (cachedUsername != null && cachedUsername.isNotEmpty) {
+            _usernameController.text = cachedUsername;
+            _currentUsername = cachedUsername;
+          }
+          if (cachedBio != null) {
+            _bioController.text = cachedBio;
+          }
+          if (cachedPic != null && cachedPic.isNotEmpty) {
+            _selectedProfilePic = cachedPic;
+          }
+          if (cachedPublicId != null) {
+            _currentCloudinaryPublicId = cachedPublicId;
+          }
+        });
+      }
+    } catch (e) {
+      print('Error loading cached profile: $e');
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -50,13 +89,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
       var snap = await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
       if (snap.exists && snap.data() != null) {
         var data = snap.data() as Map<String, dynamic>;
+        final String name = data['name'] ?? '';
+        final String username = data['username'] ?? '';
+        final String bio = data['bio'] ?? '';
+        final String profilepic = data['profilepic'] ?? '';
+        final String? cloudinaryPublicId = data['cloudinary_public_id'];
+
         if (mounted) {
           setState(() {
-            _nameController.text = data['name'] ?? '';
-            _bioController.text = data['bio'] ?? '';
-            _selectedProfilePic = data['profilepic'] ?? '';
-            _currentCloudinaryPublicId = data['cloudinary_public_id'];
+            _nameController.text = name;
+            _usernameController.text = username;
+            _currentUsername = username;
+            _bioController.text = bio;
+            _selectedProfilePic = profilepic;
+            _currentCloudinaryPublicId = cloudinaryPublicId;
           });
+        }
+
+        // Cache details locally
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_profile_name', name);
+        await prefs.setString('cached_profile_username', username);
+        await prefs.setString('cached_profile_bio', bio);
+        await prefs.setString('cached_profile_pic', profilepic);
+        if (cloudinaryPublicId != null) {
+          await prefs.setString('cached_cloudinary_public_id', cloudinaryPublicId);
+        } else {
+          await prefs.remove('cached_cloudinary_public_id');
         }
       }
     } catch (e) {
@@ -69,6 +128,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isLoading = true;
     });
     try {
+      final String newUsername = _usernameController.text.trim().toLowerCase();
+      if (newUsername.isEmpty) {
+        throw 'Username cannot be empty';
+      }
+
+      // Check username uniqueness if they changed it
+      if (newUsername != _currentUsername.toLowerCase()) {
+        final QuerySnapshot result = await _firestore
+            .collection('users')
+            .where('username', isEqualTo: newUsername)
+            .get();
+        if (result.docs.isNotEmpty) {
+          throw 'Username is already taken';
+        }
+      }
+
       var snap = await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
       String? oldPublicId;
       if (snap.exists && snap.data() != null) {
@@ -78,10 +153,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
         'name': _nameController.text,
+        'username': newUsername,
         'bio': _bioController.text,
         'profilepic': _selectedProfilePic,
         'cloudinary_public_id': _currentCloudinaryPublicId,
       });
+
+      _currentUsername = newUsername;
+
+      // Update cache
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_profile_name', _nameController.text);
+      await prefs.setString('cached_profile_username', newUsername);
+      await prefs.setString('cached_profile_bio', _bioController.text);
+      await prefs.setString('cached_profile_pic', _selectedProfilePic);
+      if (_currentCloudinaryPublicId != null) {
+        await prefs.setString('cached_cloudinary_public_id', _currentCloudinaryPublicId!);
+      } else {
+        await prefs.remove('cached_cloudinary_public_id');
+      }
 
       if (oldPublicId != null && oldPublicId.isNotEmpty && oldPublicId != _currentCloudinaryPublicId) {
         await CloudinaryService.deleteImage(oldPublicId);
@@ -124,6 +214,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'profilepic': newUrl,
           'cloudinary_public_id': newPublicId,
         });
+
+        // Update cache
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_profile_pic', newUrl);
+        await prefs.setString('cached_cloudinary_public_id', newPublicId);
 
         if (oldPublicId != null && oldPublicId.isNotEmpty) {
           await CloudinaryService.deleteImage(oldPublicId);
@@ -429,6 +524,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                      _nameController.text,
                      style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                    ),
+                   if (_usernameController.text.isNotEmpty) ...[
+                     const SizedBox(height: 4),
+                     Text(
+                       '@${_usernameController.text}',
+                       style: TextStyle(
+                         fontSize: 15,
+                         fontWeight: FontWeight.w600,
+                         color: colorScheme.primary,
+                       ),
+                     ),
+                   ],
                    const SizedBox(height: 4),
                    Text(
                      _bioController.text.isNotEmpty ? _bioController.text : 'Cuqter Member',
@@ -550,11 +656,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showEditDialog() {
     String dialogSelectedPic = _selectedProfilePic;
+    bool isChecking = false;
+    bool? isAvailable;
+    String? usernameErrorText;
+    Timer? debounceTimer;
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           final colorScheme = Theme.of(context).colorScheme;
+
+          final bool isSaveDisabled = isChecking ||
+              usernameErrorText != null ||
+              _usernameController.text.trim().isEmpty ||
+              (isAvailable == false && _usernameController.text.trim().toLowerCase() != _currentUsername.toLowerCase());
+
           return AlertDialog(
             title: const Text('Edit Profile'),
             content: SingleChildScrollView(
@@ -565,6 +682,103 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   TextField(
                     controller: _nameController,
                     decoration: const InputDecoration(labelText: 'Name'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _usernameController,
+                    decoration: InputDecoration(
+                      labelText: 'Username',
+                      prefixText: '@',
+                      errorText: usernameErrorText,
+                      helperText: isAvailable == true && usernameErrorText == null
+                          ? 'Username is available'
+                          : null,
+                      helperStyle: const TextStyle(color: Colors.green),
+                      suffixIcon: isChecking
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Padding(
+                                padding: EdgeInsets.all(12.0),
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                          : (isAvailable == true
+                              ? const Icon(Icons.check_circle, color: Colors.green)
+                              : (isAvailable == false || usernameErrorText != null
+                                  ? const Icon(Icons.error, color: Colors.red)
+                                  : null)),
+                    ),
+                    onChanged: (val) {
+                      if (debounceTimer?.isActive ?? false) debounceTimer?.cancel();
+
+                      final trimmed = val.trim().toLowerCase();
+                      if (trimmed.isEmpty) {
+                        setDialogState(() {
+                          isAvailable = null;
+                          usernameErrorText = 'Username cannot be empty';
+                        });
+                        return;
+                      }
+
+                      final regExp = RegExp(r'^[a-zA-Z0-9_]+$');
+                      if (!regExp.hasMatch(trimmed)) {
+                        setDialogState(() {
+                          isAvailable = null;
+                          usernameErrorText = 'Only letters, numbers, and underscores';
+                        });
+                        return;
+                      }
+
+                      if (trimmed == _currentUsername.toLowerCase()) {
+                        setDialogState(() {
+                          isAvailable = true;
+                          usernameErrorText = null;
+                        });
+                        return;
+                      }
+
+                      setDialogState(() {
+                        isChecking = true;
+                        isAvailable = null;
+                        usernameErrorText = null;
+                      });
+
+                      debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+                        try {
+                          final query = await FirebaseFirestore.instance
+                              .collection('users')
+                              .where('username', isEqualTo: trimmed)
+                              .get();
+
+                          if (!context.mounted) return;
+
+                          if (_usernameController.text.trim().toLowerCase() != trimmed) {
+                            return;
+                          }
+
+                          setDialogState(() {
+                            isChecking = false;
+                            if (query.docs.isNotEmpty) {
+                              isAvailable = false;
+                              usernameErrorText = 'Username is already taken';
+                            } else {
+                              isAvailable = true;
+                              usernameErrorText = null;
+                            }
+                          });
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          if (_usernameController.text.trim().toLowerCase() != trimmed) {
+                            return;
+                          }
+                          setDialogState(() {
+                            isChecking = false;
+                            usernameErrorText = 'Error checking username';
+                          });
+                        }
+                      });
+                    },
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -610,18 +824,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-              ElevatedButton(
+              TextButton(
                 onPressed: () {
-                  setState(() {
-                    _selectedProfilePic = dialogSelectedPic;
-                    if (_selectedProfilePic.startsWith('assets/')) {
-                      _currentCloudinaryPublicId = null;
-                    }
-                  });
+                  if (debounceTimer?.isActive ?? false) debounceTimer?.cancel();
                   Navigator.pop(context);
-                  _updateProfile();
                 },
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: isSaveDisabled
+                    ? null
+                    : () {
+                        if (debounceTimer?.isActive ?? false) debounceTimer?.cancel();
+                        setState(() {
+                          _selectedProfilePic = dialogSelectedPic;
+                          if (_selectedProfilePic.startsWith('assets/')) {
+                            _currentCloudinaryPublicId = null;
+                          }
+                        });
+                        Navigator.pop(context);
+                        _updateProfile();
+                      },
                 child: const Text('Save'),
               ),
             ],
