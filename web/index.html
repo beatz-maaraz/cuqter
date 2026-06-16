@@ -119,6 +119,29 @@
       document.body.style.background = "transparent";
     }
   </script>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBOvtzNFHyoCeq8pZZ_JdaG0dmd4a1DPHs",
+      authDomain: "cuqter-2fa01.firebaseapp.com",
+      databaseURL: "https://cuqter-2fa01-default-rtdb.firebaseio.com",
+      projectId: "cuqter-2fa01",
+      storageBucket: "cuqter-2fa01.firebasestorage.app",
+      messagingSenderId: "921725231252",
+      appId: "1:921725231252:web:a2dbfa0c97694cbf299481",
+      measurementId: "G-5TKLZ0RS2M"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
+  </script>
 </head>
 <body>
   <picture id="splash-branding">
