@@ -5,6 +5,7 @@ class Message {
   final String text;
   final DateTime timestamp;
   final bool isRead;
+  final String type;
 
   Message({
     required this.id,
@@ -13,6 +14,7 @@ class Message {
     required this.text,
     required this.timestamp,
     this.isRead = false,
+    this.type = 'text',
   });
 
   // Convert Message to JSON for Firestore
@@ -22,6 +24,7 @@ class Message {
     'text': text,
     'timestamp': timestamp,
     'isRead': isRead,
+    'type': type,
   };
 
   // Create Message from Firestore document
@@ -35,6 +38,7 @@ class Message {
           ? (json['timestamp']).toDate() 
           : DateTime.now(),
       isRead: json['isRead'] ?? false,
+      type: json['type'] ?? 'text',
     );
   }
 
@@ -46,6 +50,7 @@ class Message {
     String? text,
     DateTime? timestamp,
     bool? isRead,
+    String? type,
   }) {
     return Message(
       id: id ?? this.id,
@@ -54,6 +59,7 @@ class Message {
       text: text ?? this.text,
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
+      type: type ?? this.type,
     );
   }
 }

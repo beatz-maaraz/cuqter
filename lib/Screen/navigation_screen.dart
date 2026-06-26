@@ -1,9 +1,12 @@
 import 'package:cuqter/Screen/chatai.dart';
 import 'package:cuqter/services/update_service.dart';
+import 'package:cuqter/services/notification_service.dart';
 import 'package:cuqter/widgets/update_dialog.dart';
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Screen/homepage.dart';
-import 'package:cuqter/Screen/settings_page.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 
 class NavigationScreen extends StatefulWidget {
@@ -17,20 +20,33 @@ class _NavigationScreenState extends State<NavigationScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
   bool _isProgrammaticChange = false;
+  late final AppLifecycleListener _lifecycleListener;
 
   List<Widget> get _screens => [
     const Homepage(),
     const AIChatScreen(),
     _CallsComingSoonPage(isActive: _selectedIndex == 2),
-    const SettingsPage(),
   ];
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectedIndex);
+    
+    // Initialize push notification service
+    NotificationService().initialize();
+    
     // Check for updates after the first frame so context is ready
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
+
+    _lifecycleListener = AppLifecycleListener(
+      onStateChange: _onStateChanged,
+      onExitRequested: () async {
+        await _setUserStatus(false);
+        return AppExitResponse.exit;
+      },
+    );
+    _setUserStatus(true);
   }
 
   Future<void> _checkForUpdate() async {
@@ -42,8 +58,35 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   void dispose() {
+    _lifecycleListener.dispose();
+    _setUserStatus(false);
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _onStateChanged(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _setUserStatus(true);
+    } else {
+      _setUserStatus(false);
+    }
+  }
+
+  Future<void> _setUserStatus(bool isOnline) async {
+    final auth = FirebaseAuth.instance;
+    final firestore = FirebaseFirestore.instance;
+    if (auth.currentUser != null) {
+      await firestore
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .update({
+            'isOnline': isOnline,
+            'lastSeen': FieldValue.serverTimestamp(),
+          })
+          .catchError((e) {
+            // Handle error conceptually
+          });
+    }
   }
 
   @override
@@ -242,38 +285,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     label: 'CALLS',
                   ),
 
-                  // SETTINGS
-                  BottomNavigationBarItem(
-                    icon: Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: AnimatedScale(
-                        scale: _selectedIndex == 3 ? 1.15 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutBack,
-                        child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedSettings01,
-                          color: _selectedIndex == 3
-                              ? colorScheme.primary
-                              : colorScheme.onSurface.withValues(alpha: 0.4),
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    activeIcon: Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: AnimatedScale(
-                        scale: _selectedIndex == 3 ? 1.15 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutBack,
-                        child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedSettings02,
-                          color: colorScheme.primary,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    label: 'SETTINGS',
-                  ),
                 ],
               ),
             ),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
@@ -52,6 +53,77 @@ class CloudinaryService {
       }
     } catch (e) {
       debugPrint('Cloudinary upload error: $e');
+      return null;
+    }
+  }
+
+
+  /// Upload any file to Cloudinary with custom folder and resource type
+  /// resourceType can be 'image', 'video', or 'raw'
+  static Future<Map<String, String>?> uploadFile({
+    required Uint8List fileBytes,
+    required String folderPath,
+    required String fileName,
+    required String resourceType,
+    void Function(double progress)? onProgress,
+  }) async {
+    try {
+      final String cloudName = CloudinaryConfig.cloudName;
+      final String uploadPreset = CloudinaryConfig.uploadPreset;
+
+      if (cloudName == 'YOUR_CLOUD_NAME' ||
+          cloudName.isEmpty ||
+          uploadPreset == 'YOUR_UPLOAD_PRESET' ||
+          uploadPreset.isEmpty) {
+        debugPrint('Cloudinary credentials/preset not set. Please update lib/utils/cloudinary_config.dart.');
+        return null;
+      }
+
+      var request = MultipartRequestWithProgress(
+        'POST',
+        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/$resourceType/upload'),
+        onProgress: (sent, total) {
+          if (onProgress != null && total > 0) {
+            onProgress(sent / total);
+          }
+        },
+      );
+
+      request.fields['upload_preset'] = uploadPreset;
+      request.fields['folder'] = folderPath;
+      
+      String publicId = fileName;
+      if (resourceType != 'raw') {
+        final int lastDot = fileName.lastIndexOf('.');
+        if (lastDot != -1) {
+          publicId = fileName.substring(0, lastDot);
+        }
+      }
+      request.fields['public_id'] = publicId;
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          fileBytes,
+          filename: fileName,
+        ),
+      );
+
+      var response = await request.send();
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        var responseData = await response.stream.bytesToString();
+        var json = jsonDecode(responseData);
+        return {
+          'url': json['secure_url'] as String,
+          'public_id': json['public_id'] as String,
+        };
+      } else {
+        var errorResponse = await response.stream.bytesToString();
+        debugPrint('Cloudinary file upload failed: $errorResponse');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Cloudinary file upload error: $e');
       return null;
     }
   }
@@ -119,5 +191,32 @@ class CloudinaryService {
     
     var bytes = utf8.encode(stringToSign);
     return sha1.convert(bytes).toString();
+  }
+}
+
+class MultipartRequestWithProgress extends http.MultipartRequest {
+  final void Function(int bytesSent, int totalBytes) onProgress;
+
+  MultipartRequestWithProgress(
+    String method,
+    Uri url, {
+    required this.onProgress,
+  }) : super(method, url);
+
+  @override
+  http.ByteStream finalize() {
+    final byteStream = super.finalize();
+    final totalBytes = contentLength;
+    int bytesSent = 0;
+
+    final transformer = StreamTransformer<List<int>, List<int>>.fromHandlers(
+      handleData: (data, sink) {
+        bytesSent += data.length;
+        onProgress(bytesSent, totalBytes);
+        sink.add(data);
+      },
+    );
+
+    return http.ByteStream(byteStream.transform(transformer));
   }
 }

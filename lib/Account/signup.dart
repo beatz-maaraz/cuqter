@@ -42,11 +42,23 @@ class _SighuppageState extends State<Sighuppage> {
   ];
 
   signUpUser() async {
+    final String usernameRaw = usernameController.text;
     if (nameController.text.trim().isEmpty ||
-        usernameController.text.trim().isEmpty ||
+        usernameRaw.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
       showSnackBar('Please enter all the fields', context);
+      return;
+    }
+
+    if (usernameRaw.contains(' ')) {
+      showSnackBar('Spaces are not allowed in username', context);
+      return;
+    }
+
+    final RegExp usernameRegex = RegExp(r'^[a-zA-Z0-9._]+$');
+    if (!usernameRegex.hasMatch(usernameRaw.trim())) {
+      showSnackBar('Username can only contain letters, numbers, underscores, and dots', context);
       return;
     }
 
@@ -69,7 +81,7 @@ class _SighuppageState extends State<Sighuppage> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('cached_profile_name', nameController.text.trim());
         await prefs.setString('cached_profile_username', usernameController.text.trim());
-        await prefs.setString('cached_profile_bio', 'Cuqter Member');
+        await prefs.setString('cached_profile_bio', '');
         await prefs.setString('cached_profile_pic', _selectedProfilePic);
         if (_cloudinaryPublicId != null) {
           await prefs.setString('cached_cloudinary_public_id', _cloudinaryPublicId!);
@@ -338,8 +350,7 @@ class _SighuppageState extends State<Sighuppage> {
                         controller: nameController,
                         decoration: InputDecoration(
                           prefixIcon: const Icon(Icons.person),
-                          hintText: 'Maaraz',
-                          labelText: "Enter your Name",
+                          labelText: "Name",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -350,8 +361,7 @@ class _SighuppageState extends State<Sighuppage> {
                         controller: usernameController,
                         decoration: InputDecoration(
                           prefixIcon: const Icon(Icons.alternate_email),
-                          hintText: 'maaraz',
-                          labelText: "Enter your Username",
+                          labelText: "Username",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -362,8 +372,7 @@ class _SighuppageState extends State<Sighuppage> {
                         controller: emailController,
                         decoration: InputDecoration(
                           prefixIcon: const Icon(Icons.email),
-                          hintText: 'cuqter@mail.com',
-                          labelText: "Enter your Email",
+                          labelText: "Email",
                           fillColor: const Color.fromARGB(255, 112, 111, 111),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -386,8 +395,7 @@ class _SighuppageState extends State<Sighuppage> {
                               });
                             },
                           ),
-                          hintText: '********',
-                          labelText: "Enter your password",
+                          labelText: "Password",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),

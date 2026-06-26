@@ -1,4 +1,5 @@
 import 'package:cuqter/Account/signup.dart';
+import 'package:cuqter/Account/forgot_password.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:flutter/material.dart';
@@ -72,8 +73,7 @@ class _LoginpageState extends State<Loginpage> {
                       controller: emailController,
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.person),
-                        hintText: 'cuqter@mail.com or username',
-                        label: Text("Enter your Email or Username"),
+                        label: Text("Email or Username"),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -97,14 +97,34 @@ class _LoginpageState extends State<Loginpage> {
                             });
                           },
                         ),
-                        hintText: '********',
-                        label: Text("Enter your password"),
+                        label: Text("Password"),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Forgot Password?",
+                          style: TextStyle(
+                            color: AppColors.blueDefault,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
 
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
