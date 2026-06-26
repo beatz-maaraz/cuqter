@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
+import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -463,60 +464,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                    const SizedBox(height: 10),
-                   GestureDetector(
-                     onTap: _showProfilePicPicker,
-                     child: Center(
-                       child: Stack(
-                         alignment: Alignment.center,
-                         children: [
-                           Container(
+                   Center(
+                     child: Stack(
+                       alignment: Alignment.center,
+                       children: [
+                         GestureDetector(
+                           onTap: () {
+                             if (_selectedProfilePic.isNotEmpty) {
+                               Navigator.push(
+                                 context,
+                                 MaterialPageRoute(
+                                   builder: (context) => FullScreenProfilePicPage(
+                                     imageUrl: _selectedProfilePic,
+                                     heroTag: 'profile_pic_hero_current_user',
+                                   ),
+                                 ),
+                               );
+                             } else {
+                               _showProfilePicPicker();
+                             }
+                           },
+                           child: Container(
                              padding: const EdgeInsets.all(4),
                              decoration: BoxDecoration(
                                color: colorScheme.primary.withValues(alpha: 0.1),
                                shape: BoxShape.circle,
                              ),
-                             child: CircleAvatar(
-                              radius: 60,
-                              backgroundColor: colorScheme.primaryContainer,
-                              backgroundImage: _selectedProfilePic.isNotEmpty
-                                  ? (_selectedProfilePic.startsWith('http')
-                                      ? NetworkImage(_selectedProfilePic) as ImageProvider
-                                      : AssetImage(_selectedProfilePic) as ImageProvider)
-                                  : null,
-                              child: _selectedProfilePic.isEmpty ? Text(
-                                _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : '?',
-                                style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
-                              ) : null,
-                             ),
-                           ),
-                           Positioned(
-                             bottom: 4,
-                             right: 4,
-                             child: Container(
-                               padding: const EdgeInsets.all(4),
-                               decoration: BoxDecoration(
-                                 color: Colors.blue,
-                                 shape: BoxShape.circle,
-                                 border: Border.all(color: colorScheme.surface, width: 3),
+                             child: Hero(
+                               tag: 'profile_pic_hero_current_user',
+                               child: CircleAvatar(
+                                 radius: 60,
+                                 backgroundColor: colorScheme.primaryContainer,
+                                 backgroundImage: _selectedProfilePic.isNotEmpty
+                                     ? (_selectedProfilePic.startsWith('http')
+                                         ? NetworkImage(_selectedProfilePic) as ImageProvider
+                                         : AssetImage(_selectedProfilePic) as ImageProvider)
+                                     : null,
+                                 child: _selectedProfilePic.isEmpty ? Text(
+                                   _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : '?',
+                                   style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
+                                 ) : null,
                                ),
-                               child: const Icon(Icons.verified, size: 16, color: Colors.white),
                              ),
                            ),
-                           Positioned(
-                             top: 4,
-                             right: 4,
+                         ),
+                         Positioned(
+                           bottom: 4,
+                           right: 4,
+                           child: GestureDetector(
+                             onTap: _showProfilePicPicker,
                              child: Container(
                                padding: const EdgeInsets.all(6),
                                decoration: BoxDecoration(
                                  color: colorScheme.primary,
                                  shape: BoxShape.circle,
-                                 border: Border.all(color: colorScheme.surface, width: 2),
+                                 border: Border.all(color: colorScheme.surface, width: 3),
                                ),
-                               child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                               child: const Icon(Icons.camera_alt, size: 19, color: Colors.white),
                              ),
                            ),
-                         ],
-                       ),
+                         ),
+                       ],
                      ),
                    ),
                    const SizedBox(height: 24),
@@ -535,11 +543,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                        ),
                      ),
                    ],
-                   const SizedBox(height: 4),
-                   Text(
-                     _bioController.text.isNotEmpty ? _bioController.text : 'Cuqter Member',
-                     style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withValues(alpha: 0.6)),
-                   ),
                    const SizedBox(height: 32),
                    Container(
                      padding: const EdgeInsets.all(24),
@@ -552,49 +555,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                        children: [
                          _buildInfoItem(context, 'EMAIL ADDRESS', user?.email ?? 'No email'),
                          const Divider(height: 32),
-                         _buildInfoItem(context, 'PHONE NUMBER', '+1 (555) 000-0000'), // Placeholder for design
+                         _buildInfoItem(context, 'BIO', _bioController.text.isNotEmpty ? _bioController.text : 'Cuqter Member'),
                          const Divider(height: 32),
-                         Row(
-                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                           children: [
-                             Column(
-                               crossAxisAlignment: CrossAxisAlignment.start,
-                               children: [
-                                 Text(
-                                   'SUBSCRIPTION STATUS',
-                                   style: TextStyle(
-                                     fontSize: 10,
-                                     fontWeight: FontWeight.bold,
-                                     color: colorScheme.onSurface.withValues(alpha: 0.5),
-                                   ),
-                                 ),
-                                 const SizedBox(height: 8),
-                                 Container(
-                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                   decoration: BoxDecoration(
-                                     color: Colors.blue.withValues(alpha: 0.1),
-                                     borderRadius: BorderRadius.circular(8),
-                                   ),
-                                   child: const Text(
-                                     'Premium Plan',
-                                     style: TextStyle(
-                                       fontSize: 10,
-                                       fontWeight: FontWeight.bold,
-                                       color: Colors.blue,
-                                     ),
-                                   ),
-                                 ),
-                               ],
-                             ),
-                             Text(
-                               'Renews Oct 2026',
-                               style: TextStyle(
-                                 fontSize: 10,
-                                 color: colorScheme.onSurface.withValues(alpha: 0.5),
-                               ),
-                             ),
-                           ],
-                         ),
+                         _buildColabFeatureItem(context),
                        ],
                      ),
                    ),
@@ -649,6 +612,105 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           value,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColabFeatureItem(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'NEW FEATURE',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.primary.withValues(alpha: 0.15),
+                colorScheme.primary.withValues(alpha: 0.03),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.favorite_rounded,
+                  color: colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Luv Colab',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Collab with other creators & matches',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  'Soon',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -712,6 +774,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onChanged: (val) {
                       if (debounceTimer?.isActive ?? false) debounceTimer?.cancel();
 
+                      if (val.contains(' ')) {
+                        setDialogState(() {
+                          isAvailable = null;
+                          usernameErrorText = 'Spaces are not allowed';
+                        });
+                        return;
+                      }
+
                       final trimmed = val.trim().toLowerCase();
                       if (trimmed.isEmpty) {
                         setDialogState(() {
@@ -721,11 +791,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return;
                       }
 
-                      final regExp = RegExp(r'^[a-zA-Z0-9_]+$');
+                      final regExp = RegExp(r'^[a-zA-Z0-9._]+$');
                       if (!regExp.hasMatch(trimmed)) {
                         setDialogState(() {
                           isAvailable = null;
-                          usernameErrorText = 'Only letters, numbers, and underscores';
+                          usernameErrorText = 'Only letters, numbers, underscores, and dots';
                         });
                         return;
                       }

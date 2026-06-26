@@ -68,5 +68,17 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>This app requires camera access to capture photos and videos to share with your contacts.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>This app requires photo library access to select and upload photos, videos, and files.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>This app requires permission to save photos and videos from the chat to your photo library.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>This app requires microphone access to record audio when capturing videos or voice notes.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>This app requires access to your location to share it with your contacts in chat.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>This app requires access to your location to share it with your contacts in chat.</string>
 	</dict>
 </plist>

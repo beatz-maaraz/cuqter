@@ -103,7 +103,6 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         title: Text(
           'Settings',
           style: TextStyle(
@@ -114,6 +113,7 @@ class _SettingsPageState extends State<SettingsPage> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -179,7 +179,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 20),
                 Center(
                   child: Text(
-                    'VERSION 1.3.7 • CUQTER UI',
+                    'VERSION 1.3.17 • CUQTER UI',
                     style: TextStyle(
                       fontSize: 10,
                       color: colorScheme.onSurface.withValues(alpha: 0.4),

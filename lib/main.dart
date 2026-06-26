@@ -4,10 +4,20 @@ import 'package:cuqter/providers/chat_provider.dart';
 import 'package:cuqter/providers/theme_provider.dart';
 import 'package:cuqter/utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cuqter/services/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  await showMessageNotification(message);
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +36,7 @@ Future<void> main() async {
     );
   } else {
     await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
   runApp(
     MultiProvider(
@@ -46,6 +57,7 @@ class MainApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Cuqter',
       themeMode: themeProvider.themeMode,
@@ -76,7 +88,7 @@ class MainApp extends StatelessWidget {
         useMaterial3: true,
       ),
       builder: (context, child) {
-        const double scale = 0.90;
+        const double scale = 0.80;
         final mediaQuery = MediaQuery.of(context);
         final scaledSize = mediaQuery.size / scale;
 

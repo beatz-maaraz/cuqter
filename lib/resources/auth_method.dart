@@ -130,6 +130,44 @@ class AuthMethod {
     return res;
   }
 
+  Future<String> resetPassword({required String email}) async {
+    String res = "Some error occurred";
+    try {
+      if (email.isNotEmpty) {
+        final QuerySnapshot emailResult = await _firestore
+            .collection('users')
+            .where('email', isEqualTo: email.trim().toLowerCase())
+            .get();
+
+        if (emailResult.docs.isEmpty) {
+          return "This email is not registered.";
+        }
+
+        await _auth.sendPasswordResetEmail(email: email.trim());
+        res = "success";
+      } else {
+        res = "Please enter your email.";
+      }
+    } on FirebaseAuthException catch (err) {
+      if (err.code == 'user-not-found') {
+        res = "No user found for that email.";
+      } else if (err.code == 'invalid-email') {
+        res = "The email is badly formatted.";
+      } else {
+        res = err.message ?? "An error occurred";
+      }
+      if (kDebugMode) {
+        print(err.toString());
+      }
+    } catch (err) {
+      res = err.toString();
+      if (kDebugMode) {
+        print(err.toString());
+      }
+    }
+    return res;
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
   }

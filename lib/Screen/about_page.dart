@@ -105,7 +105,7 @@ class AboutPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                'Version 1.3.10',
+                'Version 1.3.20',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,

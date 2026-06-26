@@ -130,6 +130,7 @@ class MessageService {
     required String senderId,
     required String receiverId,
     required String text,
+    String type = 'text',
   }) async {
     try {
       await _firestore
@@ -142,6 +143,7 @@ class MessageService {
         'text': text,
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
+        'type': type,
       });
     } catch (e) {
       print('Error sending message: $e');
