@@ -9,6 +9,10 @@ import 'package:cuqter/Screen/settings_page.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/services/message_service.dart';
 import 'package:cuqter/modules/message.dart';
+import 'package:cuqter/modules/status.dart';
+import 'package:cuqter/services/status_service.dart';
+import 'package:cuqter/Screen/create_status_screen.dart';
+import 'package:cuqter/Screen/status_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
@@ -33,6 +37,8 @@ class _HomepageState extends State<Homepage> {
   final Map<String, Message?> _lastMessages = {};
   final Map<String, StreamSubscription<Message?>> _lastMessageSubscriptions =
       {};
+  Stream<List<Status>>? _statusesStream;
+  final StatusService _statusService = StatusService();
 
   @override
   void initState() {
@@ -45,6 +51,7 @@ class _HomepageState extends State<Homepage> {
           .snapshots();
     }
     _usersStream = _firestore.collection('users').snapshots();
+    _statusesStream = _statusService.getActiveStatuses();
   }
 
   Stream<int> _getUnreadCountStream(String chatId, String currentUserId) {
@@ -378,6 +385,18 @@ class _HomepageState extends State<Homepage> {
             ),
 
             const SizedBox(height: 16),
+
+            // Status List
+            _buildStatusList(context),
+
+            Container(
+              height: 6,
+              margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
 
             // Chat List
             Expanded(
@@ -765,10 +784,198 @@ class _HomepageState extends State<Homepage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (context) {
+              return SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('Create', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                    ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                        child: Icon(Icons.chat_bubble_outline, color: colorScheme.primary),
+                      ),
+                      title: const Text('New Chat'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        // Future implementation for new chat
+                      },
+                    ),
+                    ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                        child: Icon(Icons.camera_alt_outlined, color: colorScheme.primary),
+                      ),
+                      title: const Text('New Status'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateStatusScreen()));
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            },
+          );
+        },
         backgroundColor: colorScheme.primary,
         shape: const CircleBorder(),
         child: Icon(Icons.add, color: colorScheme.onPrimary, size: 32),
+      ),
+    );
+  }
+
+  Widget _buildStatusList(BuildContext context) {
+    return StreamBuilder<List<Status>>(
+      stream: _statusesStream,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
+        }
+        
+        final statuses = snapshot.data!;
+        Map<String, List<Status>> groupedStatuses = {};
+        for (var s in statuses) {
+          groupedStatuses.putIfAbsent(s.uid, () => []).add(s);
+        }
+
+        String? currentUserId = _auth.currentUser?.uid;
+        List<Status> myStatuses = [];
+        if (currentUserId != null && groupedStatuses.containsKey(currentUserId)) {
+          myStatuses = groupedStatuses[currentUserId]!;
+          groupedStatuses.remove(currentUserId);
+        }
+
+        return Container(
+          height: 100,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: groupedStatuses.keys.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _buildMyStatusAvatar(context, myStatuses);
+              }
+              String uid = groupedStatuses.keys.elementAt(index - 1);
+              List<Status> userStatuses = groupedStatuses[uid]!;
+              return _buildUserStatusAvatar(context, userStatuses);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMyStatusAvatar(BuildContext context, List<Status> myStatuses) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _currentUserStream,
+      builder: (context, snapshot) {
+        String profilePic = '';
+        if (snapshot.hasData && snapshot.data!.exists) {
+          var data = snapshot.data!.data() as Map<String, dynamic>?;
+          if (data != null) {
+            profilePic = data['profilepic'] ?? '';
+          }
+        }
+        
+        return GestureDetector(
+          onTap: () {
+            if (myStatuses.isNotEmpty) {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => StatusViewScreen(statuses: myStatuses)));
+            } else {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateStatusScreen()));
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Column(
+              children: [
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: myStatuses.isNotEmpty ? colorScheme.primary : Colors.transparent, 
+                          width: 2
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                        backgroundImage: profilePic.isNotEmpty && profilePic.startsWith('http') 
+                            ? NetworkImage(profilePic) 
+                            : null,
+                        child: profilePic.isEmpty 
+                            ? Icon(Icons.person, color: colorScheme.onSurface)
+                            : null,
+                      ),
+                    ),
+                    if (myStatuses.isEmpty)
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: colorScheme.surface, width: 2),
+                          ),
+                          child: Icon(Icons.add, size: 16, color: colorScheme.onPrimary),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('My status', style: TextStyle(fontSize: 12, color: colorScheme.onSurface)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildUserStatusAvatar(BuildContext context, List<Status> statuses) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final firstStatus = statuses.first;
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => StatusViewScreen(statuses: statuses)));
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(right: 16.0),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: colorScheme.primary, width: 2),
+              ),
+              child: CircleAvatar(
+                radius: 28,
+                backgroundImage: firstStatus.profilePic.startsWith('http') ? NetworkImage(firstStatus.profilePic) : null,
+                child: firstStatus.profilePic.isEmpty ? Text(firstStatus.username.isNotEmpty ? firstStatus.username[0].toUpperCase() : '?') : null,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(firstStatus.username.length > 8 ? '${firstStatus.username.substring(0, 8)}...' : firstStatus.username, style: TextStyle(fontSize: 12, color: colorScheme.onSurface)),
+          ],
+        ),
       ),
     );
   }

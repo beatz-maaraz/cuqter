@@ -145,6 +145,14 @@ class MessageService {
         'isRead': false,
         'type': type,
       });
+
+      // Ensure both users are in each other's contacts so they appear on the homepage
+      await _firestore.collection('users').doc(senderId).set({
+        'contacts': FieldValue.arrayUnion([receiverId])
+      }, SetOptions(merge: true));
+      await _firestore.collection('users').doc(receiverId).set({
+        'contacts': FieldValue.arrayUnion([senderId])
+      }, SetOptions(merge: true));
     } catch (e) {
       print('Error sending message: $e');
     }
