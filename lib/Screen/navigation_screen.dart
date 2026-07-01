@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Screen/homepage.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:cuqter/services/web_lifecycle.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});
@@ -46,6 +47,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
         return AppExitResponse.exit;
       },
     );
+    
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      setupWebLifecycle(currentUser.uid);
+    }
+    
     _setUserStatus(true);
   }
 

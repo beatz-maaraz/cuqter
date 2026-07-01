@@ -160,6 +160,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'cloudinary_public_id': _currentCloudinaryPublicId,
       });
 
+      // Sync updated profile pic and username to active statuses
+      final batch = _firestore.batch();
+      final statusesSnapshot = await _firestore
+          .collection('statuses')
+          .where('uid', isEqualTo: _auth.currentUser!.uid)
+          .get();
+      for (var doc in statusesSnapshot.docs) {
+        batch.update(doc.reference, {
+          'profilePic': _selectedProfilePic,
+          'username': newUsername,
+        });
+      }
+      await batch.commit();
+
       _currentUsername = newUsername;
 
       // Update cache
@@ -175,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       if (oldPublicId != null && oldPublicId.isNotEmpty && oldPublicId != _currentCloudinaryPublicId) {
-        await CloudinaryService.deleteImage(oldPublicId);
+        await CloudinaryService.deleteMedia(oldPublicId);
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -216,13 +230,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'cloudinary_public_id': newPublicId,
         });
 
+        // Sync new profile pic to active statuses
+        final batch = _firestore.batch();
+        final statusesSnapshot = await _firestore
+            .collection('statuses')
+            .where('uid', isEqualTo: _auth.currentUser!.uid)
+            .get();
+        for (var doc in statusesSnapshot.docs) {
+          batch.update(doc.reference, {
+            'profilePic': newUrl,
+          });
+        }
+        await batch.commit();
+
         // Update cache
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('cached_profile_pic', newUrl);
         await prefs.setString('cached_cloudinary_public_id', newPublicId);
 
         if (oldPublicId != null && oldPublicId.isNotEmpty) {
-          await CloudinaryService.deleteImage(oldPublicId);
+          await CloudinaryService.deleteMedia(oldPublicId);
         }
 
         ScaffoldMessenger.of(context).showSnackBar(

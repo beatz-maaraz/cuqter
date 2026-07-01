@@ -15,6 +15,7 @@ import '../widgets/animated_send_button.dart';
 import '../widgets/chat_message_text.dart';
 import '../widgets/full_screen_profile_pic_page.dart';
 import 'full_screen_video_page.dart';
+import 'userprofile.dart';
 
 import '../services/message_service.dart';
 import '../services/cloudinary_service.dart';
@@ -632,16 +633,31 @@ class _ChatScreenState extends State<ChatScreen> {
                 }
               }
             }
-            return Row(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    final pic = data?['profilepic']?.toString() ?? '';
-                    if (pic.isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => FullScreenProfilePicPage(
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserProfilePage(
+                      name: widget.receiverName,
+                      username: data?['username']?.toString() ?? '',
+                      bio: data?['bio']?.toString() ?? '',
+                      profilepic: data?['profilepic']?.toString() ?? '',
+                    ),
+                  ),
+                );
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      final pic = data?['profilepic']?.toString() ?? '';
+                      if (pic.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FullScreenProfilePicPage(
                             imageUrl: pic,
                             heroTag: 'profile_pic_hero_${widget.receiverId}',
                           ),
@@ -705,7 +721,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
               ],
-            );
+            ));
           },
         ),
         backgroundColor: colorScheme.primary,
@@ -1423,7 +1439,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       Uint8List bytes = await image.readAsBytes();
-      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.name.replaceAll(' ', '_')}';
       
       setState(() {
         _isUploading = true;
@@ -1498,7 +1514,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       Uint8List bytes = await video.readAsBytes();
-      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${video.name}';
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${video.name.replaceAll(' ', '_')}';
 
       setState(() {
         _isUploading = true;
@@ -1592,7 +1608,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _uploadProgress = 0.0;
       });
 
-      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name.replaceAll(' ', '_')}';
       
       String? localPath;
       if (!kIsWeb) {
@@ -1677,7 +1693,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _uploadProgress = 0.0;
       });
 
-      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name.replaceAll(' ', '_')}';
 
       String? localPath;
       if (!kIsWeb) {
@@ -1688,7 +1704,7 @@ class _ChatScreenState extends State<ChatScreen> {
         fileBytes: fileBytes,
         folderPath: 'cuqter_media/Document',
         fileName: fileName,
-        resourceType: 'raw',
+        resourceType: 'auto',
         onProgress: (progress) {
           if (mounted) {
             setState(() {
