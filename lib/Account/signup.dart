@@ -125,7 +125,7 @@ class _SighuppageState extends State<Sighuppage> {
 
         // Delete old picture if it existed
         if (oldPublicId != null && oldPublicId.isNotEmpty) {
-          await CloudinaryService.deleteImage(oldPublicId);
+          await CloudinaryService.deleteMedia(oldPublicId);
         }
 
         showSnackBar('Profile picture uploaded successfully!', context);
@@ -244,7 +244,7 @@ class _SighuppageState extends State<Sighuppage> {
                               _selectedProfilePic = path;
                               // Clean up previous Cloudinary upload if user switches back to asset
                               if (_cloudinaryPublicId != null) {
-                                CloudinaryService.deleteImage(_cloudinaryPublicId!);
+                                CloudinaryService.deleteMedia(_cloudinaryPublicId!);
                                 _cloudinaryPublicId = null;
                               }
                             });

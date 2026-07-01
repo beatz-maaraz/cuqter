@@ -856,19 +856,20 @@ class _HomepageState extends State<Homepage> {
           groupedStatuses.remove(currentUserId);
         }
 
+        List<List<Status>> allOtherUserStatuses = groupedStatuses.values.toList();
+
         return Container(
           height: 100,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: groupedStatuses.keys.length + 1,
+            itemCount: allOtherUserStatuses.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
                 return _buildMyStatusAvatar(context, myStatuses);
               }
-              String uid = groupedStatuses.keys.elementAt(index - 1);
-              List<Status> userStatuses = groupedStatuses[uid]!;
-              return _buildUserStatusAvatar(context, userStatuses);
+              List<Status> userStatuses = allOtherUserStatuses[index - 1];
+              return _buildUserStatusAvatar(context, userStatuses, allOtherUserStatuses, index - 1);
             },
           ),
         );
@@ -883,10 +884,12 @@ class _HomepageState extends State<Homepage> {
       stream: _currentUserStream,
       builder: (context, snapshot) {
         String profilePic = '';
+        String name = '';
         if (snapshot.hasData && snapshot.data!.exists) {
           var data = snapshot.data!.data() as Map<String, dynamic>?;
           if (data != null) {
             profilePic = data['profilepic'] ?? '';
+            name = data['name'] ?? data['username'] ?? '';
           }
         }
         
@@ -916,11 +919,13 @@ class _HomepageState extends State<Homepage> {
                       child: CircleAvatar(
                         radius: 28,
                         backgroundColor: colorScheme.surfaceContainerHighest,
-                        backgroundImage: profilePic.isNotEmpty && profilePic.startsWith('http') 
-                            ? NetworkImage(profilePic) 
+                        backgroundImage: profilePic.isNotEmpty
+                            ? (profilePic.startsWith('http')
+                                ? NetworkImage(profilePic)
+                                : AssetImage(profilePic)) as ImageProvider
                             : null,
                         child: profilePic.isEmpty 
-                            ? Icon(Icons.person, color: colorScheme.onSurface)
+                            ? Icon(Icons.person, color: colorScheme.onSurface, size: 24)
                             : null,
                       ),
                     ),
@@ -949,12 +954,15 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
-  Widget _buildUserStatusAvatar(BuildContext context, List<Status> statuses) {
+  Widget _buildUserStatusAvatar(BuildContext context, List<Status> statuses, List<List<Status>> allUserStatuses, int userIndex) {
     final colorScheme = Theme.of(context).colorScheme;
-    final firstStatus = statuses.first;
+    final latestStatus = statuses.last; // Use the most recent status for profile pic
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => StatusViewScreen(statuses: statuses)));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => StatusViewScreen(
+          groupedStatusesList: allUserStatuses,
+          initialUserIndex: userIndex,
+        )));
       },
       child: Padding(
         padding: const EdgeInsets.only(right: 16.0),
@@ -968,12 +976,18 @@ class _HomepageState extends State<Homepage> {
               ),
               child: CircleAvatar(
                 radius: 28,
-                backgroundImage: firstStatus.profilePic.startsWith('http') ? NetworkImage(firstStatus.profilePic) : null,
-                child: firstStatus.profilePic.isEmpty ? Text(firstStatus.username.isNotEmpty ? firstStatus.username[0].toUpperCase() : '?') : null,
+                backgroundImage: latestStatus.profilePic.isNotEmpty
+                    ? (latestStatus.profilePic.startsWith('http')
+                        ? NetworkImage(latestStatus.profilePic)
+                        : AssetImage(latestStatus.profilePic)) as ImageProvider
+                    : null,
+                child: latestStatus.profilePic.isEmpty 
+                    ? Icon(Icons.person, color: colorScheme.onSurface, size: 24)
+                    : null,
               ),
             ),
             const SizedBox(height: 4),
-            Text(firstStatus.username.length > 8 ? '${firstStatus.username.substring(0, 8)}...' : firstStatus.username, style: TextStyle(fontSize: 12, color: colorScheme.onSurface)),
+            Text(latestStatus.username.length > 8 ? '${latestStatus.username.substring(0, 8)}...' : latestStatus.username, style: TextStyle(fontSize: 12, color: colorScheme.onSurface)),
           ],
         ),
       ),

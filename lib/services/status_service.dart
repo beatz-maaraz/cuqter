@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cuqter/modules/status.dart';
+import 'package:cuqter/services/cloudinary_service.dart';
 
 class StatusService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -34,10 +35,11 @@ class StatusService {
 
   /// Get active statuses
   Stream<List<Status>> getActiveStatuses() {
+    _cleanupExpiredStatuses(); // Run cleanup asynchronously
     return _firestore
         .collection('statuses')
         .where('expiresAt', isGreaterThan: Timestamp.now())
-        .orderBy('expiresAt', descending: true)
+        .orderBy('expiresAt', descending: false)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -46,12 +48,61 @@ class StatusService {
     });
   }
   /// Delete a status
-  Future<void> deleteStatus(String statusId) async {
+  Future<void> deleteStatus(Status status) async {
     try {
-      await _firestore.collection('statuses').doc(statusId).delete();
+      if (status.mediaUrl.isNotEmpty && status.mediaType != 'text') {
+        String? publicId = _extractPublicId(status.mediaUrl);
+        if (publicId != null) {
+          await CloudinaryService.deleteMedia(publicId, resourceType: status.mediaType);
+        }
+      }
+      await _firestore.collection('statuses').doc(status.statusId).delete();
     } catch (e) {
       print('Error deleting status: $e');
     }
+  }
+
+  Future<void> _cleanupExpiredStatuses() async {
+    try {
+      final now = Timestamp.now();
+      final snapshot = await _firestore
+          .collection('statuses')
+          .where('expiresAt', isLessThanOrEqualTo: now)
+          .get();
+          
+      for (var doc in snapshot.docs) {
+        final status = Status.fromMap(doc.data());
+        if (status.mediaUrl.isNotEmpty && status.mediaType != 'text') {
+          String? publicId = _extractPublicId(status.mediaUrl);
+          if (publicId != null) {
+            await CloudinaryService.deleteMedia(publicId, resourceType: status.mediaType);
+          }
+        }
+        await doc.reference.delete();
+      }
+    } catch (e) {
+      print('Error cleaning up statuses: $e');
+    }
+  }
+
+  String? _extractPublicId(String url) {
+    try {
+      final uploadIndex = url.indexOf('/upload/');
+      if (uploadIndex != -1) {
+        String sub = url.substring(uploadIndex + 8);
+        if (sub.startsWith('v') && sub.contains('/')) {
+          sub = sub.substring(sub.indexOf('/') + 1);
+        }
+        final lastDot = sub.lastIndexOf('.');
+        if (lastDot != -1) {
+          sub = sub.substring(0, lastDot);
+        }
+        return Uri.decodeFull(sub);
+      }
+    } catch (e) {
+      print('Error extracting public ID: $e');
+    }
+    return null;
   }
 
   /// Mark status as seen

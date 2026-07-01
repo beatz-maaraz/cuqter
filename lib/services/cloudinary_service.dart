@@ -61,12 +61,14 @@ class CloudinaryService {
   /// Upload any file to Cloudinary with custom folder and resource type
   /// resourceType can be 'image', 'video', or 'raw'
   static Future<Map<String, String>?> uploadFile({
-    required Uint8List fileBytes,
+    Uint8List? fileBytes,
+    String? filePath,
     required String folderPath,
     required String fileName,
     required String resourceType,
     void Function(double progress)? onProgress,
   }) async {
+    assert(fileBytes != null || filePath != null, 'Either fileBytes or filePath must be provided');
     try {
       final String cloudName = CloudinaryConfig.cloudName;
       final String uploadPreset = CloudinaryConfig.uploadPreset;
@@ -101,13 +103,23 @@ class CloudinaryService {
       }
       request.fields['public_id'] = publicId;
 
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          fileBytes,
-          filename: fileName,
-        ),
-      );
+      if (filePath != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'file',
+            filePath,
+            filename: fileName,
+          ),
+        );
+      } else if (fileBytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            fileBytes,
+            filename: fileName,
+          ),
+        );
+      }
 
       var response = await request.send();
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -128,8 +140,8 @@ class CloudinaryService {
     }
   }
 
-  /// Delete image from Cloudinary using the Admin/Upload destroy API with signature
-  static Future<bool> deleteImage(String publicId) async {
+  /// Delete media from Cloudinary using the Admin/Upload destroy API with signature
+  static Future<bool> deleteMedia(String publicId, {String resourceType = 'image'}) async {
     try {
       final String cloudName = CloudinaryConfig.cloudName;
       final String apiKey = CloudinaryConfig.apiKey;
@@ -152,7 +164,7 @@ class CloudinaryService {
       final String signature = _generateSignature(params, apiSecret);
 
       final response = await http.post(
-        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/destroy'),
+        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/$resourceType/destroy'),
         body: {
           'public_id': publicId,
           'timestamp': timestamp.toString(),
