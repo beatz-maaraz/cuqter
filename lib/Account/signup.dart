@@ -4,6 +4,8 @@ import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/utils/colors.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -325,7 +327,7 @@ class _SighuppageState extends State<Sighuppage> {
                                 radius: 55,
                                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                                 backgroundImage: _selectedProfilePic.startsWith('http')
-                                    ? NetworkImage(_selectedProfilePic) as ImageProvider
+                                    ? CachedNetworkImageProvider(_selectedProfilePic)
                                     : AssetImage(_selectedProfilePic) as ImageProvider,
                               ),
                             ),

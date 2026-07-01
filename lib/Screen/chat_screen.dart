@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -673,7 +674,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           backgroundColor: colorScheme.primaryContainer,
                           backgroundImage: data != null && data['profilepic'] != null && data['profilepic'].toString().isNotEmpty
                               ? (data['profilepic'].toString().startsWith('http')
-                                  ? NetworkImage(data['profilepic'].toString()) as ImageProvider
+                                  ? CachedNetworkImageProvider(data['profilepic'].toString())
                                   : AssetImage(data['profilepic'].toString()) as ImageProvider)
                               : null,
                           child: data == null || data['profilepic'] == null || data['profilepic'].toString().isEmpty
@@ -825,7 +826,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 image: _customWallpaperUrl != null
                     ? DecorationImage(
                         image: kIsWeb
-                            ? NetworkImage(_customWallpaperUrl!) as ImageProvider
+                            ? CachedNetworkImageProvider(_customWallpaperUrl!)
                             : FileImage(File(_customWallpaperUrl!)) as ImageProvider,
                         fit: BoxFit.cover,
                       )
@@ -2276,38 +2277,27 @@ class _ChatScreenState extends State<ChatScreen> {
               borderRadius: BorderRadius.circular(16),
               child: Hero(
                 tag: url,
-                child: Image.network(
-                  safeUrl,
+                child: CachedNetworkImage(
+                  imageUrl: safeUrl,
                   fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 150,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                          strokeWidth: 2,
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 100,
+                  placeholder: (context, url) => Container(
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
                       color: colorScheme.surfaceContainerHighest,
-                      child: const Center(
-                        child: Icon(Icons.broken_image_rounded, color: Colors.grey, size: 40),
-                      ),
-                    );
-                  },
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    height: 100,
+                    color: colorScheme.surfaceContainerHighest,
+                    child: const Center(
+                      child: Icon(Icons.broken_image_rounded, color: Colors.grey, size: 40),
+                    ),
+                  ),
                 ),
               ),
             ),

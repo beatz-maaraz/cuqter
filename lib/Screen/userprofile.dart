@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cuqter/Screen/settings_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import '../widgets/full_screen_profile_pic_page.dart';
 
@@ -172,7 +174,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   backgroundColor: colorScheme.surfaceContainerHighest,
                   backgroundImage: widget.profilepic.isNotEmpty
                       ? (widget.profilepic.startsWith('http')
-                          ? NetworkImage(widget.profilepic)
+                          ? CachedNetworkImageProvider(widget.profilepic)
                           : AssetImage(widget.profilepic)) as ImageProvider
                       : null,
                   child: widget.profilepic.isEmpty

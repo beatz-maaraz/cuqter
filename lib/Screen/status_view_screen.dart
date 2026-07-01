@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:cuqter/Screen/userprofile.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class StatusViewScreen extends StatefulWidget {
   final List<Status>? statuses;
@@ -65,9 +66,13 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
 
   void _setupCurrentStatus() {
     _animationController.reset();
-    if (_videoController != null) {
-      _videoController!.dispose();
+    final oldController = _videoController;
+    if (oldController != null) {
       _videoController = null;
+      // Delay disposal to prevent SurfaceView crashes when rapidly switching statuses
+      Future.delayed(const Duration(milliseconds: 500), () {
+        oldController.dispose();
+      });
     }
 
     if (_currentGroup.isEmpty) return;
@@ -194,7 +199,8 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
     
     _messageController.clear();
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reply sent')));
-    Navigator.pop(context);
+    // Resume the status after sending a reply
+    _resumeStatus();
   }
 
   String _formatTimeAgo(DateTime dateTime) {
@@ -335,7 +341,12 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
                           : const Center(child: CircularProgressIndicator(color: Colors.white)),
                     )
                   else if (status.mediaType == 'image')
-                    Image.network(status.mediaUrl, fit: BoxFit.contain)
+                    CachedNetworkImage(
+                      imageUrl: status.mediaUrl,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                      errorWidget: (context, url, error) => const Center(child: Icon(Icons.broken_image, color: Colors.white, size: 50)),
+                    )
                   else if (status.mediaType == 'text' || status.mediaUrl.isEmpty)
                     Container(
                       color: Colors.primaries[index % Colors.primaries.length],
@@ -433,7 +444,7 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
                         CircleAvatar(
                           backgroundImage: _currentGroup.last.profilePic.isNotEmpty
                               ? (_currentGroup.last.profilePic.startsWith('http')
-                                  ? NetworkImage(_currentGroup.last.profilePic)
+                                  ? CachedNetworkImageProvider(_currentGroup.last.profilePic)
                                   : AssetImage(_currentGroup.last.profilePic)) as ImageProvider
                               : null,
                           child: _currentGroup.last.profilePic.isEmpty
@@ -523,7 +534,7 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
                                             leading: CircleAvatar(
                                               backgroundImage: pic.isNotEmpty
                                                   ? (pic.startsWith('http')
-                                                      ? NetworkImage(pic)
+                                                      ? CachedNetworkImageProvider(pic)
                                                       : AssetImage(pic)) as ImageProvider
                                                   : null,
                                               child: pic.isEmpty 
@@ -603,6 +614,7 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
                               child: TextField(
                                 controller: _messageController,
                                 style: const TextStyle(color: Colors.white),
+                                onSubmitted: (_) => _sendReply(_currentGroup[_currentIndex]),
                                 decoration: InputDecoration(
                                   hintText: 'Reply to status...',
                                   hintStyle: const TextStyle(color: Colors.white70),
