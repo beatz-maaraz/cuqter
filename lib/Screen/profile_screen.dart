@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
@@ -524,7 +526,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                  backgroundColor: colorScheme.primaryContainer,
                                  backgroundImage: _selectedProfilePic.isNotEmpty
                                      ? (_selectedProfilePic.startsWith('http')
-                                         ? NetworkImage(_selectedProfilePic) as ImageProvider
+                                         ? CachedNetworkImageProvider(_selectedProfilePic)
                                          : AssetImage(_selectedProfilePic) as ImageProvider)
                                      : null,
                                  child: _selectedProfilePic.isEmpty ? Text(

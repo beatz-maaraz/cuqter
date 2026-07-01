@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Screen/chat_screen.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
@@ -262,8 +263,7 @@ class _HomepageState extends State<Homepage> {
                               ),
                               backgroundImage: profilePic.isNotEmpty
                                   ? (profilePic.startsWith('http')
-                                        ? NetworkImage(profilePic)
-                                              as ImageProvider
+                                        ? CachedNetworkImageProvider(profilePic)
                                         : AssetImage(profilePic)
                                               as ImageProvider)
                                   : null,
@@ -615,11 +615,10 @@ class _HomepageState extends State<Homepage> {
                                                 ? (userData['profilepic']
                                                           .toString()
                                                           .startsWith('http')
-                                                      ? NetworkImage(
+                                                      ? CachedNetworkImageProvider(
                                                               userData['profilepic']
                                                                   .toString(),
                                                             )
-                                                            as ImageProvider
                                                       : AssetImage(
                                                               userData['profilepic']
                                                                   .toString(),
@@ -921,7 +920,7 @@ class _HomepageState extends State<Homepage> {
                         backgroundColor: colorScheme.surfaceContainerHighest,
                         backgroundImage: profilePic.isNotEmpty
                             ? (profilePic.startsWith('http')
-                                ? NetworkImage(profilePic)
+                                ? CachedNetworkImageProvider(profilePic)
                                 : AssetImage(profilePic)) as ImageProvider
                             : null,
                         child: profilePic.isEmpty 
@@ -978,7 +977,7 @@ class _HomepageState extends State<Homepage> {
                 radius: 28,
                 backgroundImage: latestStatus.profilePic.isNotEmpty
                     ? (latestStatus.profilePic.startsWith('http')
-                        ? NetworkImage(latestStatus.profilePic)
+                        ? CachedNetworkImageProvider(latestStatus.profilePic)
                         : AssetImage(latestStatus.profilePic)) as ImageProvider
                     : null,
                 child: latestStatus.profilePic.isEmpty 

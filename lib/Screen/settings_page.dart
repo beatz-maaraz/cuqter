@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
 import 'package:cuqter/Screen/chat_settings_page.dart';
 import 'package:cuqter/Screen/about_page.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 
 class SettingsPage extends StatefulWidget {
@@ -229,7 +231,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   backgroundColor: colorScheme.primaryContainer,
                   backgroundImage: _profilepic.isNotEmpty
                       ? (_profilepic.startsWith('http')
-                          ? NetworkImage(_profilepic) as ImageProvider
+                          ? CachedNetworkImageProvider(_profilepic)
                           : AssetImage(_profilepic) as ImageProvider)
                       : null,
                   child: _profilepic.isEmpty ? Text(

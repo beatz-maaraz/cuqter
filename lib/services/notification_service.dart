@@ -28,7 +28,24 @@ void notificationTapBackground(NotificationResponse response) async {
       final receiverId = originalSenderId;
 
       WidgetsFlutterBinding.ensureInitialized();
-      await Firebase.initializeApp();
+      if (Firebase.apps.isEmpty) {
+        if (kIsWeb) {
+          await Firebase.initializeApp(
+            options: const FirebaseOptions(
+              apiKey: "AIzaSyBOvtzNFHyoCeq8pZZ_JdaG0dmd4a1DPHs",
+              authDomain: "cuqter-2fa01.firebaseapp.com",
+              databaseURL: "https://cuqter-2fa01-default-rtdb.firebaseio.com",
+              projectId: "cuqter-2fa01",
+              storageBucket: "cuqter-2fa01.firebasestorage.app",
+              messagingSenderId: "921725231252",
+              appId: "1:921725231252:web:a2dbfa0c97694cbf299481",
+              measurementId: "G-5TKLZ0RS2M",
+            ),
+          );
+        } else {
+          await Firebase.initializeApp();
+        }
+      }
 
       await FirebaseFirestore.instance
           .collection('chats')
@@ -40,7 +57,16 @@ void notificationTapBackground(NotificationResponse response) async {
         'text': text,
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
+        'type': 'text',
       });
+
+      // Ensure both users are in each other's contacts so they appear on the homepage
+      await FirebaseFirestore.instance.collection('users').doc(senderId).set({
+        'contacts': FieldValue.arrayUnion([receiverId])
+      }, SetOptions(merge: true));
+      await FirebaseFirestore.instance.collection('users').doc(receiverId).set({
+        'contacts': FieldValue.arrayUnion([senderId])
+      }, SetOptions(merge: true));
 
       if (kDebugMode) {
         print('Background inline reply sent successfully: $text');
