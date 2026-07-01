@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../widgets/animated_send_button.dart';
 import '../widgets/chat_message_text.dart';
 import '../widgets/full_screen_profile_pic_page.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'full_screen_video_page.dart';
 import 'userprofile.dart';
 
@@ -25,11 +26,15 @@ import '../services/local_storage_service.dart';
 class ChatScreen extends StatefulWidget {
   final String receiverId;
   final String receiverName;
+  final bool isDesktop;
+  final List<SharedMediaFile>? sharedMedia;
 
   const ChatScreen({
     Key? key,
     required this.receiverId,
     required this.receiverName,
+    this.isDesktop = false,
+    this.sharedMedia,
   }) : super(key: key);
 
   @override
@@ -609,6 +614,90 @@ class _ChatScreenState extends State<ChatScreen> {
     // Load saved wallpaper preference
     _loadWallpaperPreference();
     _loadChatPreferences();
+    if (widget.sharedMedia != null && widget.sharedMedia!.isNotEmpty) {
+      _processSharedMedia(widget.sharedMedia!);
+    }
+  }
+
+  Future<void> _processSharedMedia(List<SharedMediaFile> mediaFiles) async {
+    for (var media in mediaFiles) {
+      File file = File(media.path);
+      String type = 'document';
+      if (media.type == SharedMediaType.image) type = 'image';
+      else if (media.type == SharedMediaType.video) type = 'video';
+      else if (media.type == SharedMediaType.file) type = 'document';
+      
+      await _uploadFileAndSendMessage(file, type);
+    }
+  }
+
+  Future<void> _uploadFileAndSendMessage(File file, String type) async {
+    if (_isUploading) return;
+    
+    try {
+      final bytes = await file.readAsBytes();
+      final fileName = file.path.split('/').last;
+
+      setState(() {
+        _isUploading = true;
+        _uploadCancelled = false;
+        _uploadingFileName = fileName;
+        _uploadingFileSize = _formatFileSize(bytes.length);
+        _uploadingFileType = type;
+        _uploadProgress = 0.0;
+      });
+
+      String folderPath = 'cuqter_media/Document';
+      if (type == 'image') folderPath = 'cuqter_media/Photo';
+      else if (type == 'video') folderPath = 'cuqter_media/Video';
+      else if (type == 'audio') folderPath = 'cuqter_media/Audio';
+
+      final uploadResult = await CloudinaryService.uploadFile(
+        fileBytes: bytes,
+        fileName: fileName,
+        folderPath: folderPath,
+        resourceType: type,
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() {
+              _uploadProgress = progress;
+            });
+          }
+        },
+      );
+
+      if (_uploadCancelled) return;
+
+      if (uploadResult != null && uploadResult['url'] != null) {
+        String finalUrl = uploadResult['url']!;
+        if (type == 'image') {
+          finalUrl = finalUrl.replaceFirst('/upload/', '/upload/q_auto,f_auto/');
+        }
+
+        if (!_uploadCancelled) {
+          String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+          await _messageService.sendMessage(
+            chatId: chatId,
+            senderId: _auth.currentUser!.uid,
+            receiverId: widget.receiverId,
+            text: '$finalUrl|${_formatFileSize(bytes.length)}',
+            type: type,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) _showErrorSnackBar('Failed to send shared media');
+    } finally {
+      if (mounted && !_uploadCancelled) {
+        setState(() {
+          _isUploading = false;
+          _uploadingFileName = null;
+          _uploadingFileSize = null;
+          _uploadingFileType = null;
+          _uploadProgress = 0.0;
+        });
+      }
+    }
   }
 
   @override
@@ -619,6 +708,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.isDesktop,
         title: StreamBuilder<DocumentSnapshot>(
           stream: _receiverStream,
           builder: (context, snapshot) {
@@ -636,17 +726,39 @@ class _ChatScreenState extends State<ChatScreen> {
             }
             return GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UserProfilePage(
-                      name: widget.receiverName,
-                      username: data?['username']?.toString() ?? '',
-                      bio: data?['bio']?.toString() ?? '',
-                      profilepic: data?['profilepic']?.toString() ?? '',
+                if (widget.isDesktop) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: SizedBox(
+                        width: 400,
+                        height: 600,
+                        child: UserProfilePage(
+                          name: widget.receiverName,
+                          username: data?['username']?.toString() ?? '',
+                          bio: data?['bio']?.toString() ?? '',
+                          profilepic: data?['profilepic']?.toString() ?? '',
+                        ),
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserProfilePage(
+                        name: widget.receiverName,
+                        username: data?['username']?.toString() ?? '',
+                        bio: data?['bio']?.toString() ?? '',
+                        profilepic: data?['profilepic']?.toString() ?? '',
+                      ),
+                    ),
+                  );
+                }
               },
               behavior: HitTestBehavior.opaque,
               child: Row(
@@ -655,16 +767,36 @@ class _ChatScreenState extends State<ChatScreen> {
                     onTap: () {
                       final pic = data?['profilepic']?.toString() ?? '';
                       if (pic.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FullScreenProfilePicPage(
-                            imageUrl: pic,
-                            heroTag: 'profile_pic_hero_${widget.receiverId}',
-                          ),
-                        ),
-                      );
-                    }
+                        if (widget.isDesktop) {
+                          showDialog(
+                            context: context,
+                            builder: (context) => Dialog(
+                              clipBehavior: Clip.antiAlias,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: SizedBox(
+                                width: 400,
+                                height: 600,
+                                child: FullScreenProfilePicPage(
+                                  imageUrl: pic,
+                                  heroTag: 'profile_pic_hero_${widget.receiverId}',
+                                ),
+                              ),
+                            ),
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FullScreenProfilePicPage(
+                                imageUrl: pic,
+                                heroTag: 'profile_pic_hero_${widget.receiverId}',
+                              ),
+                            ),
+                          );
+                        }
+                      }
                   },
                   child: Stack(
                     children: [
@@ -871,7 +1003,10 @@ class _ChatScreenState extends State<ChatScreen> {
                           }
                         });
 
-                        return ListView.builder(
+                        return Scrollbar(
+                          child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          cacheExtent: 1500,
                           reverse: true,
                           itemCount: _isUploading ? messages.length + 1 : messages.length,
                           itemBuilder: (context, index) {
@@ -1078,7 +1213,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
                             return messageWidget;
                           },
-                        );
+                        ),
+                      );
                       },
                     ),
                   ),
@@ -1254,6 +1390,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 textEditingController: _messageController,
                 config: Config(
                   height: 250,
+                  checkPlatformCompatibility: true,
                   emojiViewConfig: EmojiViewConfig(
                     columns: 7,
                     emojiSizeMax: 36 * (kIsWeb ? 1.0 : (Platform.isIOS ? 1.20 : 1.0)),
