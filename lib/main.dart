@@ -1,5 +1,7 @@
 import 'package:cuqter/Account/login.dart';
 import 'package:cuqter/Screen/navigation_screen.dart';
+import 'package:cuqter/Screen/desktop_navigation_screen.dart';
+import 'package:cuqter/responsive/responsive_layout.dart';
 import 'package:cuqter/providers/chat_provider.dart';
 import 'package:cuqter/providers/theme_provider.dart';
 import 'package:cuqter/utils/colors.dart';
@@ -88,8 +90,9 @@ class MainApp extends StatelessWidget {
         useMaterial3: true,
       ),
       builder: (context, child) {
-        const double scale = 0.80;
         final mediaQuery = MediaQuery.of(context);
+        
+        const double scale = 0.90;
         final scaledSize = mediaQuery.size / scale;
 
         return MediaQuery(
@@ -118,7 +121,10 @@ class MainApp extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.active) {
             if (snapshot.hasData) {
-              return const NavigationScreen();
+              return const ResponsiveLayout(
+                mobileLayout: NavigationScreen(),
+                desktopLayout: DesktopNavigationScreen(),
+              );
             } else if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
             }

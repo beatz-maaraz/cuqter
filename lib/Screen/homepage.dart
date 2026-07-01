@@ -17,9 +17,19 @@ import 'package:cuqter/Screen/status_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 class Homepage extends StatefulWidget {
-  const Homepage({super.key});
+  final bool isDesktop;
+  final String? selectedUserId;
+  final Function(String userId, String userName)? onChatSelected;
+
+  const Homepage({
+    super.key,
+    this.isDesktop = false,
+    this.selectedUserId,
+    this.onChatSelected,
+  });
 
   @override
   State<Homepage> createState() => _HomepageState();
@@ -40,6 +50,8 @@ class _HomepageState extends State<Homepage> {
       {};
   Stream<List<Status>>? _statusesStream;
   final StatusService _statusService = StatusService();
+  StreamSubscription? _intentSub;
+  List<SharedMediaFile> _sharedFiles = [];
 
   @override
   void initState() {
@@ -53,6 +65,32 @@ class _HomepageState extends State<Homepage> {
     }
     _usersStream = _firestore.collection('users').snapshots();
     _statusesStream = _statusService.getActiveStatuses();
+
+    // Listen to media sharing incoming intents when app is in memory
+    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
+      if (value.isNotEmpty) _handleIncomingSharing(value);
+    }, onError: (err) {
+      print("getIntentDataStream error: $err");
+    });
+
+    // Get the media sharing incoming intent when app is closed
+    ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
+      if (value.isNotEmpty) _handleIncomingSharing(value);
+    });
+  }
+
+  void _handleIncomingSharing(List<SharedMediaFile> value) {
+    setState(() {
+      _sharedFiles = value;
+    });
+    ReceiveSharingIntent.instance.reset(); // Reset to avoid duplicate handling
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Received ${value.length} file(s). Select a chat to share.'),
+        duration: const Duration(seconds: 4),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
+    );
   }
 
   Stream<int> _getUnreadCountStream(String chatId, String currentUserId) {
@@ -64,6 +102,7 @@ class _HomepageState extends State<Homepage> {
 
   @override
   void dispose() {
+    _intentSub?.cancel();
     for (var sub in _lastMessageSubscriptions.values) {
       sub.cancel();
     }
@@ -95,12 +134,24 @@ class _HomepageState extends State<Homepage> {
 
   String _formatDateTime(DateTime? dateTime) {
     if (dateTime == null) return '';
-    final hour = dateTime.hour > 12
-        ? (dateTime.hour - 12).toString()
-        : (dateTime.hour == 0 ? '12' : dateTime.hour.toString());
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    final amPm = dateTime.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $amPm';
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+
+    if (messageDate == today) {
+      final hour = dateTime.hour > 12
+          ? (dateTime.hour - 12).toString()
+          : (dateTime.hour == 0 ? '12' : dateTime.hour.toString());
+      final minute = dateTime.minute.toString().padLeft(2, '0');
+      final amPm = dateTime.hour >= 12 ? 'PM' : 'AM';
+      return '$hour:$minute $amPm';
+    } else if (messageDate == yesterday) {
+      return 'Yesterday';
+    } else {
+      return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
+    }
   }
 
   String _getLastMessageDisplay(Message message) {
@@ -183,6 +234,8 @@ class _HomepageState extends State<Homepage> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: SafeArea(
+        top: !widget.isDesktop,
+        bottom: !widget.isDesktop,
         child: Column(
           children: [
             // Custom Header
@@ -207,7 +260,8 @@ class _HomepageState extends State<Homepage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Profile avatar
-                      StreamBuilder<DocumentSnapshot>(
+                      if (!widget.isDesktop)
+                        StreamBuilder<DocumentSnapshot>(
                         stream: _currentUserStream,
                         builder: (context, snapshot) {
                           String profilePic = '';
@@ -220,41 +274,61 @@ class _HomepageState extends State<Homepage> {
                           }
                           return GestureDetector(
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                PageRouteBuilder(
-                                  pageBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                      ) => const ProfileScreen(),
-                                  transitionsBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                        child,
-                                      ) {
-                                        return FadeTransition(
-                                          opacity: animation,
-                                          child: ScaleTransition(
-                                            scale:
-                                                Tween<double>(
-                                                  begin: 0.9,
-                                                  end: 1.0,
-                                                ).animate(
-                                                  CurvedAnimation(
-                                                    parent: animation,
-                                                    curve: Curves.easeOut,
+                              if (widget.isDesktop) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    clipBehavior: Clip.antiAlias,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    child: const SizedBox(
+                                      width: 400,
+                                      height: 600,
+                                      child: ProfileScreen(),
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  PageRouteBuilder(
+                                    pageBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                        ) => const ProfileScreen(),
+                                    transitionsBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                          child,
+                                        ) {
+                                          return FadeTransition(
+                                            opacity: animation,
+                                            child: ScaleTransition(
+                                              scale:
+                                                  Tween<double>(
+                                                    begin: 0.9,
+                                                    end: 1.0,
+                                                  ).animate(
+                                                    CurvedAnimation(
+                                                      parent: animation,
+                                                      curve: Curves.easeOut,
+                                                    ),
                                                   ),
-                                                ),
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                ),
-                              );
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                    transitionDuration: const Duration(
+                                      milliseconds: 250,
+                                    ),
+                                  ),
+                                );
+                              }
                             },
                             child: CircleAvatar(
                               radius: 20,
@@ -386,17 +460,19 @@ class _HomepageState extends State<Homepage> {
 
             const SizedBox(height: 16),
 
-            // Status List
-            _buildStatusList(context),
+            if (!widget.isDesktop) ...[
+              // Status List
+              _buildStatusList(context),
 
-            Container(
-              height: 6,
-              margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
+              Container(
+                height: 6,
+                margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-            ),
+            ],
 
             // Chat List
             Expanded(
@@ -495,9 +571,12 @@ class _HomepageState extends State<Homepage> {
                         );
                       }
 
-                      return ListView.builder(
-                        itemCount: users.length,
-                        itemBuilder: (context, index) {
+                      return Scrollbar(
+                        child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          cacheExtent: 1000,
+                          itemCount: users.length,
+                          itemBuilder: (context, index) {
                           var userData =
                               users[index].data() as Map<String, dynamic>;
                           String userName = userData['name'] ?? 'Unknown User';
@@ -528,52 +607,81 @@ class _HomepageState extends State<Homepage> {
 
                           return InkWell(
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                PageRouteBuilder(
-                                  pageBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                      ) => ChatScreen(
-                                        receiverId: userId,
-                                        receiverName: userName,
-                                      ),
-                                  transitionsBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                        child,
-                                      ) {
-                                        return SlideTransition(
-                                          position:
-                                              Tween<Offset>(
-                                                begin: const Offset(1.0, 0.0),
-                                                end: Offset.zero,
-                                              ).animate(
-                                                CurvedAnimation(
-                                                  parent: animation,
-                                                  curve: Curves.easeOutCubic,
+                              if (widget.isDesktop && widget.onChatSelected != null) {
+                                widget.onChatSelected!(userId, userName);
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  PageRouteBuilder(
+                                    pageBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                        ) {
+                                          final currentShared = List<SharedMediaFile>.from(_sharedFiles);
+                                          if (currentShared.isNotEmpty) {
+                                            Future.microtask(() {
+                                              if (mounted) {
+                                                setState(() {
+                                                  _sharedFiles.clear();
+                                                });
+                                              }
+                                            });
+                                          }
+                                          return ChatScreen(
+                                            receiverId: userId,
+                                            receiverName: userName,
+                                            sharedMedia: currentShared.isNotEmpty ? currentShared : null,
+                                          );
+                                        },
+                                    transitionsBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                          child,
+                                        ) {
+                                          return SlideTransition(
+                                            position:
+                                                Tween<Offset>(
+                                                  begin: const Offset(1.0, 0.0),
+                                                  end: Offset.zero,
+                                                ).animate(
+                                                  CurvedAnimation(
+                                                    parent: animation,
+                                                    curve: Curves.easeOutCubic,
+                                                  ),
                                                 ),
-                                              ),
-                                          child: FadeTransition(
-                                            opacity: animation,
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                  transitionDuration: const Duration(
-                                    milliseconds: 250,
+                                            child: FadeTransition(
+                                              opacity: animation,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                    transitionDuration: const Duration(
+                                      milliseconds: 250,
+                                    ),
                                   ),
-                                ),
-                              );
+                                );
+                              }
                             },
-                            child: Padding(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+                              decoration: BoxDecoration(
+                                color: widget.selectedUserId == userId 
+                                    ? colorScheme.primary.withValues(alpha: 0.1) 
+                                    : Colors.transparent,
+                                border: widget.selectedUserId == userId
+                                    ? Border.all(color: colorScheme.primary, width: 2)
+                                    : Border.all(color: Colors.transparent, width: 2),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24.0,
-                                vertical: 12.0,
+                                horizontal: 16.0,
+                                vertical: 10.0,
                               ),
                               child: Row(
                                 children: [
@@ -587,17 +695,37 @@ class _HomepageState extends State<Homepage> {
                                                   ?.toString() ??
                                               '';
                                           if (pic.isNotEmpty) {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    FullScreenProfilePicPage(
+                                            if (widget.isDesktop) {
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) => Dialog(
+                                                  clipBehavior: Clip.antiAlias,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(24),
+                                                  ),
+                                                  child: SizedBox(
+                                                    width: 400,
+                                                    height: 600,
+                                                    child: FullScreenProfilePicPage(
                                                       imageUrl: pic,
-                                                      heroTag:
-                                                          'profile_pic_hero_$userId',
+                                                      heroTag: 'profile_pic_hero_$userId',
                                                     ),
-                                              ),
-                                            );
+                                                  ),
+                                                ),
+                                              );
+                                            } else {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      FullScreenProfilePicPage(
+                                                        imageUrl: pic,
+                                                        heroTag:
+                                                            'profile_pic_hero_$userId',
+                                                      ),
+                                                ),
+                                              );
+                                            }
                                           }
                                         },
                                         child: Hero(
@@ -675,13 +803,18 @@ class _HomepageState extends State<Homepage> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Text(
-                                              userName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
+                                            Expanded(
+                                              child: Text(
+                                                userName,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
                                               ),
                                             ),
+                                            const SizedBox(width: 8),
                                             Text(
                                               timeText,
                                               style: TextStyle(
@@ -771,18 +904,19 @@ class _HomepageState extends State<Homepage> {
                                 ],
                               ),
                             ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
+                          ); // return InkWell
+                        }, // itemBuilder
+                      ), // ListView.builder
+                    ); // Scrollbar
+                  }, // StreamBuilder builder
+                );
+              },
+            ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: widget.isDesktop ? null : FloatingActionButton(
         onPressed: () {
           showModalBottomSheet(
             context: context,
@@ -938,7 +1072,10 @@ class _HomepageState extends State<Homepage> {
                             shape: BoxShape.circle,
                             border: Border.all(color: colorScheme.surface, width: 2),
                           ),
-                          child: Icon(Icons.add, size: 16, color: colorScheme.onPrimary),
+                          child: Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: Icon(Icons.add, size: 20, color: colorScheme.onPrimary),
+                          ),
                         ),
                       ),
                   ],

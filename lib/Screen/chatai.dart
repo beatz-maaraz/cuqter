@@ -6,7 +6,8 @@ import '../widgets/animated_send_button.dart';
 import '../widgets/chat_message_text.dart';
 
 class AIChatScreen extends StatefulWidget {
-  const AIChatScreen({super.key});
+  final bool isDesktop;
+  const AIChatScreen({super.key, this.isDesktop = false});
 
   @override
   State<AIChatScreen> createState() => _AIChatScreenState();
@@ -54,6 +55,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.isDesktop,
         title: const Text(
           "Cuqter AI Bot",
           style: TextStyle(fontWeight: FontWeight.bold),
