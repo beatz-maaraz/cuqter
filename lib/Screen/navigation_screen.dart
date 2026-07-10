@@ -2,12 +2,14 @@ import 'package:cuqter/Screen/chatai.dart';
 import 'package:cuqter/services/update_service.dart';
 import 'package:cuqter/services/notification_service.dart';
 import 'package:cuqter/widgets/update_dialog.dart';
-import 'package:cuqter/widgets/calls_coming_soon_page.dart';
+import 'package:cuqter/Screen/calls_history_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:cuqter/Screen/homepage.dart';
+import 'package:cuqter/Screen/incoming_call_screen.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/services/web_lifecycle.dart';
 
@@ -23,11 +25,15 @@ class _NavigationScreenState extends State<NavigationScreen> {
   late PageController _pageController;
   bool _isProgrammaticChange = false;
   late final AppLifecycleListener _lifecycleListener;
+  // ignore: cancel_subscriptions
+  var _incomingCallSubscription;
+  String? _currentRingingRoomId;
+  bool _isShowingIncomingCall = false;
 
   List<Widget> get _screens => [
     const Homepage(),
     const AIChatScreen(),
-    CallsComingSoonPage(isActive: _selectedIndex == 2),
+    CallsHistoryPage(isActive: _selectedIndex == 2),
   ];
 
   @override
@@ -52,9 +58,65 @@ class _NavigationScreenState extends State<NavigationScreen> {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       setupWebLifecycle(currentUser.uid);
+      _listenForIncomingCalls(currentUser.uid);
     }
     
     _setUserStatus(true);
+  }
+
+  void _listenForIncomingCalls(String uid) {
+    _incomingCallSubscription = FirebaseDatabase.instance
+        .ref('incoming_calls/$uid')
+        .onValue
+        .listen((event) {
+      if (event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        final roomId = data['roomId'] as String?;
+        final callerName = data['callerName'] as String? ?? 'Unknown';
+        final callerId = data['callerId'] as String? ?? '';
+        final isVideoCall = data['isVideo'] as bool? ?? false;
+
+        // Guard: skip if this room is already being shown or ringing
+        if (_isShowingIncomingCall && _currentRingingRoomId == roomId) return;
+
+        _currentRingingRoomId = roomId;
+        _isShowingIncomingCall = true;
+
+        NotificationService.showIncomingCallNotification(
+          callerName: callerName,
+          roomId: roomId ?? '',
+          callerId: callerId,
+          isVideoCall: isVideoCall,
+        );
+
+        // Push incoming call screen
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => IncomingCallScreen(
+                roomId: roomId ?? '',
+                callerName: callerName,
+                callerId: callerId,
+                isVideoCall: isVideoCall,
+              ),
+            ),
+          ).whenComplete(() {
+            // Reset flag once the incoming call screen is dismissed
+            _isShowingIncomingCall = false;
+            if (_currentRingingRoomId == roomId) {
+              _currentRingingRoomId = null;
+            }
+          });
+        }
+      } else {
+        _isShowingIncomingCall = false;
+        if (_currentRingingRoomId != null) {
+          NotificationService.cancelCallNotification(_currentRingingRoomId!);
+          _currentRingingRoomId = null;
+        }
+      }
+    });
   }
 
   Future<void> _checkForUpdate() async {
@@ -66,6 +128,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   void dispose() {
+    _incomingCallSubscription?.cancel();
     _lifecycleListener.dispose();
     _setUserStatus(false);
     _pageController.dispose();

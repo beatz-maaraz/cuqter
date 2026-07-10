@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
 import 'package:cuqter/Screen/chat_settings_page.dart';
 import 'package:cuqter/Screen/about_page.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 

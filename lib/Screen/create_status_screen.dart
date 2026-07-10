@@ -12,7 +12,10 @@ import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
 
 class CreateStatusScreen extends StatefulWidget {
-  const CreateStatusScreen({super.key});
+  final String? sharedMediaPath;
+  final bool? isSharedMediaVideo;
+
+  const CreateStatusScreen({super.key, this.sharedMediaPath, this.isSharedMediaVideo});
 
   @override
   State<CreateStatusScreen> createState() => _CreateStatusScreenState();
@@ -25,6 +28,46 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   bool _isVideo = false;
   VideoPlayerController? _videoController;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.sharedMediaPath != null) {
+      _loadSharedMedia(widget.sharedMediaPath!, widget.isSharedMediaVideo ?? false);
+    }
+  }
+
+  void _loadSharedMedia(String path, bool isVideoFile) async {
+    if (isVideoFile) {
+      if (kIsWeb) {
+        _videoController = VideoPlayerController.networkUrl(Uri.parse(path));
+      } else {
+        _videoController = VideoPlayerController.file(File(path));
+      }
+      _videoController!
+        ..initialize().then((_) {
+          if (mounted) setState(() {});
+          _videoController!.play();
+          _videoController!.setLooping(true);
+        });
+      if (mounted) {
+        setState(() {
+          _videoFile = XFile(path);
+          _file = null;
+          _isVideo = true;
+        });
+      }
+    } else {
+      Uint8List imgBytes = await File(path).readAsBytes();
+      if (mounted) {
+        setState(() {
+          _file = imgBytes;
+          _videoFile = null;
+          _isVideo = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {

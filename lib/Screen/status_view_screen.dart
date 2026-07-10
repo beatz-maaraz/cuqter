@@ -307,17 +307,16 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
 
                 if (shouldNavigate) {
                   if (isNext) {
-                    if (_currentIndex < _currentGroup.length - 1) {
-                      _nextStatus(); // Video stays paused while sliding
-                    } else {
+                    if (_currentIndex == _currentGroup.length - 1) {
                       _resumeStatus();
-                      _nextStatus(); // Pop screen
                     }
+                    _nextStatus();
                   } else {
-                    if (_currentIndex > 0) {
-                      _previousStatus(); // Video stays paused while sliding
-                    } else {
-                      _resumeStatus(); // Nothing to navigate to
+                    if (_currentIndex == 0) {
+                      _resumeStatus();
+                    }
+                    if (!(_currentIndex == 0 && _currentUserIndex == 0)) {
+                      _previousStatus();
                     }
                   }
                 } else {
@@ -573,9 +572,14 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
                       IconButton(
                         icon: const Icon(Icons.share, color: Colors.white),
                         onPressed: () {
-                          final shareText = _currentGroup[_currentIndex].mediaType == 'image' 
-                              ? 'Check out my status image: ${_currentGroup[_currentIndex].mediaUrl}' 
-                              : 'Check out my status: ${_currentGroup[_currentIndex].caption}';
+                          final status = _currentGroup[_currentIndex];
+                          String shareText = 'Check out my status on Cuqter!';
+                          if (status.caption.isNotEmpty) {
+                            shareText += '\n"${status.caption}"';
+                          }
+                          if (status.mediaUrl.isNotEmpty) {
+                            shareText += '\n${status.mediaUrl}';
+                          }
                           Share.share(shareText);
                         },
                       ),
@@ -623,7 +627,7 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
                                     borderSide: BorderSide.none,
                                   ),
                                   filled: true,
-                                  fillColor: Colors.black.withOpacity(0.3),
+                                  fillColor: Colors.black.withValues(alpha: 0.3),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                 ),
                               ),
@@ -641,7 +645,7 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
               ),
             // Navigation Arrows for Web/Windows
             if (kIsWeb || defaultTargetPlatform == TargetPlatform.windows) ...[
-              if (_currentIndex > 0)
+              if (!(_currentIndex == 0 && _currentUserIndex == 0))
                 Positioned(
                   left: 20,
                   top: 0,

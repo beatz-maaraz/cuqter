@@ -18,8 +18,8 @@ import '../widgets/full_screen_profile_pic_page.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'full_screen_video_page.dart';
 import 'userprofile.dart';
-
 import '../services/message_service.dart';
+import 'call_screen.dart';
 import '../services/cloudinary_service.dart';
 import '../services/local_storage_service.dart';
 
@@ -465,127 +465,45 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _showCallComingSoon(BuildContext context, {required bool isVideo}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 32,
-                offset: const Offset(0, -8),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(28, 16, 28, 48),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Icon with gradient glow
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: isVideo
-                        ? [colorScheme.primary, colorScheme.tertiary]
-                        : [colorScheme.secondary, colorScheme.primary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.35),
-                      blurRadius: 28,
-                      spreadRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  isVideo ? Icons.videocam_rounded : Icons.call_rounded,
-                  color: Colors.white,
-                  size: 42,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Coming Soon badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'COMING SOON',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: colorScheme.onPrimaryContainer,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                isVideo ? 'Video Calls' : 'Voice Calls',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                isVideo
-                    ? 'HD video calling is on its way.\nStay tuned for face-to-face conversations!'
-                    : 'Crystal-clear voice calling is coming.\nWe\'re working hard to bring it to you!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                  height: 1.6,
-                ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Got it!',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  void _startCall(BuildContext context, {required bool isVideo}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CallScreen(
+          isVideoCall: isVideo,
+          receiverName: widget.receiverName,
+          receiverId: widget.receiverId,
+          onRoomCreated: (roomId) async {
+            // Send a call message
+            String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+            await _messageService.sendMessage(
+              chatId: chatId,
+              senderId: _auth.currentUser!.uid,
+              receiverId: widget.receiverId,
+              text: roomId,
+              type: isVideo ? 'video_call' : 'voice_call',
+            );
+
+            // Log call for caller
+            await _messageService.logCall(
+              currentUserId: _auth.currentUser!.uid,
+              peerId: widget.receiverId,
+              type: isVideo ? 'video' : 'voice',
+              status: 'outgoing',
+              roomId: roomId,
+            );
+
+            // Log call for receiver
+            await _messageService.logCall(
+              currentUserId: widget.receiverId,
+              peerId: _auth.currentUser!.uid,
+              type: isVideo ? 'video' : 'voice',
+              status: 'incoming',
+              roomId: roomId,
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -867,7 +785,7 @@ class _ChatScreenState extends State<ChatScreen> {
               size: 22,
             ),
             tooltip: 'Voice Call',
-            onPressed: () => _showCallComingSoon(context, isVideo: false),
+            onPressed: () => _startCall(context, isVideo: false),
           ),
           IconButton(
             icon: huge.HugeIcon(
@@ -876,7 +794,7 @@ class _ChatScreenState extends State<ChatScreen> {
               size: 22,
             ),
             tooltip: 'Video Call',
-            onPressed: () => _showCallComingSoon(context, isVideo: true),
+            onPressed: () => _startCall(context, isVideo: true),
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -1003,10 +921,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           }
                         });
 
-                        return Scrollbar(
-                          child: ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          cacheExtent: 1500,
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            return Scrollbar(
+                              child: ListView.builder(
+                              cacheExtent: 1500.0, physics: const BouncingScrollPhysics(),
                           reverse: true,
                           itemCount: _isUploading ? messages.length + 1 : messages.length,
                           itemBuilder: (context, index) {
@@ -1148,7 +1067,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     : null,
                                 child: ConstrainedBox(
                                   constraints: BoxConstraints(
-                                    maxWidth: MediaQuery.of(context).size.width * 0.75,
+                                    maxWidth: constraints.maxWidth * 0.75,
                                   ),
                                   child: Container(
                                     margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
@@ -1215,6 +1134,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           },
                         ),
                       );
+                          },
+                        );
                       },
                     ),
                   ),
@@ -2943,6 +2864,62 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(height: 4),
             _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead, isOverMedia: false),
+          ],
+        );
+
+      case 'video_call':
+      case 'voice_call':
+        bool isVideo = type == 'video_call';
+        return Column(
+          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 220,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isMe
+                    ? colorScheme.primaryContainer
+                    : colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    isVideo ? Icons.videocam : Icons.call,
+                    size: 40,
+                    color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isVideo ? 'Video Call' : 'Voice Call',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (!isMe)
+                    FilledButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CallScreen(
+                              roomId: text, // text holds the room ID
+                              isVideoCall: isVideo,
+                              receiverName: widget.receiverName,
+                              receiverId: widget.receiverId,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Join Call'),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead),
           ],
         );
 

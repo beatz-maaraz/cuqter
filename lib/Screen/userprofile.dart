@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cuqter/Screen/settings_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import '../widgets/full_screen_profile_pic_page.dart';

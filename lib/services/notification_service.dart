@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cuqter/main.dart';
 import 'package:cuqter/Screen/chat_screen.dart';
+import 'package:cuqter/Screen/call_screen.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 /// Top-level background action handler for notification taps (must be a top-level or static function)
 @pragma('vm:entry-point')
@@ -126,6 +128,18 @@ Future<void> showMessageNotification(RemoteMessage message) async {
     final String title = message.notification?.title ?? data['title'] ?? 'New Message';
     String body = message.notification?.body ?? data['body'] ?? '';
     final String? messageType = data['type'];
+
+    if (messageType == 'video_call' || messageType == 'voice_call') {
+      final isVideo = messageType == 'video_call';
+      // body contains the roomId since it was sent as text
+      await NotificationService.showIncomingCallNotification(
+        callerName: title,
+        roomId: body,
+        callerId: data['senderId'] ?? '',
+        isVideoCall: isVideo,
+      );
+      return; // Skip showing chat notification
+    }
 
     // Client-side fallback: if body looks like a URL or is empty, show a friendly type label
     if (messageType != null && messageType != 'text') {
@@ -249,7 +263,7 @@ Future<void> showMessageNotification(RemoteMessage message) async {
           channelDescription: 'This channel is used for real-time chat message push notifications.',
           importance: Importance.max,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: '@mipmap/launcher_icon',
           largeIcon: tempFilePath != null ? FilePathAndroidBitmap(tempFilePath) : null,
           playSound: true,
           actions: androidActions,
@@ -310,6 +324,99 @@ class NotificationService {
     }
   }
 
+  static Future<void> _handleCallNotificationAction(NotificationResponse response) async {
+    try {
+      if (response.payload != null) {
+        final Map<String, dynamic> data = jsonDecode(response.payload!);
+        if (data['type'] == 'incoming_call') {
+          final roomId = data['roomId'];
+          final callerName = data['callerName'];
+          final callerId = data['callerId'];
+          final isVideoCall = data['isVideoCall'] ?? false;
+          
+          // Stop ringing by removing node
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null) {
+            await FirebaseDatabase.instance.ref('incoming_calls/${currentUser.uid}').remove();
+          }
+
+          if (response.actionId == 'decline_call') {
+            await FirebaseDatabase.instance.ref('calls/$roomId').remove();
+            return; // Just decline
+          }
+
+          // Otherwise accept or tapped notification
+          navigatorKey.currentState?.popUntil((route) => route.isFirst);
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => CallScreen(
+                roomId: roomId,
+                isVideoCall: isVideoCall,
+                receiverName: callerName,
+                receiverId: callerId,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error handling call action: $e');
+    }
+  }
+
+  static Future<void> showIncomingCallNotification({
+    required String callerName,
+    required String roomId,
+    required String callerId,
+    required bool isVideoCall,
+  }) async {
+    if (kIsWeb) return;
+    await initializeLocalNotifications();
+
+    final payloadData = {
+      'type': 'incoming_call',
+      'roomId': roomId,
+      'callerId': callerId,
+      'callerName': callerName,
+      'isVideoCall': isVideoCall,
+    };
+
+    final androidDetails = AndroidNotificationDetails(
+      'incoming_calls_channel',
+      'Incoming Calls',
+      channelDescription: 'Notifications for incoming audio and video calls',
+      importance: Importance.max,
+      priority: Priority.high,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.call,
+      playSound: true,
+      enableVibration: true,
+      actions: [
+        AndroidNotificationAction('decline_call', 'Decline', showsUserInterface: true, cancelNotification: true),
+        AndroidNotificationAction('accept_call', 'Answer', showsUserInterface: true, cancelNotification: true),
+      ],
+    );
+
+    final iosDetails = DarwinNotificationDetails(
+      categoryIdentifier: 'incoming_call_category',
+      presentSound: true,
+      presentAlert: true,
+    );
+
+    await localNotifications.show(
+      id: roomId.hashCode,
+      title: 'Incoming ${isVideoCall ? "Video" : "Voice"} Call',
+      body: callerName,
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      payload: jsonEncode(payloadData),
+    );
+  }
+
+  static Future<void> cancelCallNotification(String roomId) async {
+    if (kIsWeb) return;
+    await localNotifications.cancel(id: roomId.hashCode);
+  }
+
   static Future<void> initializeLocalNotifications() async {
     if (kIsWeb) return;
     if (_isLocalNotificationsInitialized) return;
@@ -329,7 +436,7 @@ class NotificationService {
     ];
 
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/launcher_icon');
 
     final DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       notificationCategories: darwinCategories,
@@ -345,6 +452,8 @@ class NotificationService {
       onDidReceiveNotificationResponse: (NotificationResponse response) async {
         if (response.actionId == 'reply_action' && response.input != null && response.input!.isNotEmpty) {
           notificationTapBackground(response);
+        } else if (response.actionId == 'accept_call' || response.actionId == 'decline_call' || (response.payload?.contains('"incoming_call"') ?? false)) {
+          _handleCallNotificationAction(response);
         } else {
           _handleLocalNotificationClick(response);
         }
@@ -366,6 +475,18 @@ class NotificationService {
       await localNotifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
+
+      const AndroidNotificationChannel callChannel = AndroidNotificationChannel(
+        'incoming_calls_channel',
+        'Incoming Calls',
+        description: 'Notifications for incoming audio and video calls',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
+      await localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(callChannel);
     }
 
     _isLocalNotificationsInitialized = true;
@@ -445,7 +566,11 @@ class NotificationService {
             notificationAppLaunchDetails.notificationResponse;
         if (response != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _handleLocalNotificationClick(response);
+            if (response.actionId == 'accept_call' || response.actionId == 'decline_call' || (response.payload?.contains('"incoming_call"') ?? false)) {
+              _handleCallNotificationAction(response);
+            } else {
+              _handleLocalNotificationClick(response);
+            }
           });
         }
       }

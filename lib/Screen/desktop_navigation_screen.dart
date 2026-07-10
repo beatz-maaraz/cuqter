@@ -5,13 +5,16 @@ import 'package:cuqter/Screen/create_status_screen.dart';
 import 'package:cuqter/Screen/homepage.dart';
 import 'package:cuqter/Screen/profile_screen.dart';
 import 'package:cuqter/Screen/status_view_screen.dart';
-import 'package:cuqter/widgets/calls_coming_soon_page.dart';
+import 'package:cuqter/Screen/calls_history_page.dart';
 import 'package:cuqter/modules/status.dart';
 import 'package:cuqter/services/status_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cuqter/Screen/incoming_call_screen.dart';
+import 'package:cuqter/widgets/resizable_sidebar.dart';
 
 class DesktopNavigationScreen extends StatefulWidget {
   const DesktopNavigationScreen({super.key});
@@ -27,6 +30,10 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
 
   final StatusService _statusService = StatusService();
   Stream<List<Status>>? _statusesStream;
+  // ignore: cancel_subscriptions
+  var _incomingCallSubscription;
+  String? _currentRingingRoomId;
+  bool _isShowingIncomingCall = false;
 
   late final Stream<DocumentSnapshot> _currentUserStream = FirebaseFirestore
       .instance
@@ -38,6 +45,59 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
   void initState() {
     super.initState();
     _statusesStream = _statusService.getActiveStatuses();
+    
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      _listenForIncomingCalls(currentUser.uid);
+    }
+  }
+
+  void _listenForIncomingCalls(String uid) {
+    _incomingCallSubscription = FirebaseDatabase.instance
+        .ref('incoming_calls/$uid')
+        .onValue
+        .listen((event) {
+      if (event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        final roomId = data['roomId'] as String? ?? '';
+        final callerName = data['callerName'] as String? ?? 'Unknown';
+        final callerId = data['callerId'] as String? ?? '';
+        final isVideoCall = data['isVideo'] as bool? ?? false;
+
+        // Guard: skip if this room is already being shown
+        if (_isShowingIncomingCall && _currentRingingRoomId == roomId) return;
+
+        _currentRingingRoomId = roomId;
+        _isShowingIncomingCall = true;
+
+        // Push incoming call screen
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => IncomingCallScreen(
+                roomId: roomId,
+                callerName: callerName,
+                callerId: callerId,
+                isVideoCall: isVideoCall,
+              ),
+            ),
+          ).whenComplete(() {
+            _isShowingIncomingCall = false;
+            if (_currentRingingRoomId == roomId) _currentRingingRoomId = null;
+          });
+        }
+      } else {
+        _isShowingIncomingCall = false;
+        _currentRingingRoomId = null;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _incomingCallSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -236,7 +296,7 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
     } else if (_selectedIndex == 2) {
       child = Container(
         key: const ValueKey('CallsPane'),
-        child: const CallsComingSoonPage(isActive: true),
+        child: const CallsHistoryPage(isActive: true),
       );
     } else {
       // Chats view: Pane 2 (Chat List) + Pane 3 (Active Chat) + Pane 4 (Statuses)
@@ -245,39 +305,39 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            // Pane 2: Chat List
-            Expanded(
-              flex: 3,
+            // Pane 2: Chat List (Resizable Sidebar)
+            ResizableSidebar(
+              initialWidth: 320.0,
+              minWidth: 260.0,
+              maxWidth: 480.0,
               child: RepaintBoundary(
                 child: Container(
                   decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.shadow.withValues(alpha: 0.05),
-                      blurRadius: 15,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Homepage(
-                  isDesktop: true,
-                  selectedUserId: _selectedUserId,
-                  onChatSelected: (userId, userName) {
-                    setState(() {
-                      _selectedUserId = userId;
-                      _selectedUserName = userName;
-                    });
-                  },
+                    color: colorScheme.surface,
+                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withValues(alpha: 0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Homepage(
+                    isDesktop: true,
+                    selectedUserId: _selectedUserId,
+                    onChatSelected: (userId, userName) {
+                      setState(() {
+                        _selectedUserId = userId;
+                        _selectedUserName = userName;
+                      });
+                    },
+                  ),
                 ),
               ),
             ),
-          ),
-            
-          const SizedBox(width: 16),
 
             // Pane 3: Active Chat
             Expanded(

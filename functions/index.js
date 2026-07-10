@@ -19,6 +19,8 @@ exports.sendChatNotification = functions.region('asia-south1').firestore
         // Produce a user-friendly notification body based on message type
         let notificationBody;
         switch (messageType) {
+            case 'video_call': notificationBody = rawText; break; // rawText IS the roomId
+            case 'voice_call': notificationBody = rawText; break; // rawText IS the roomId
             case 'image':    notificationBody = '📷 Photo'; break;
             case 'video':    notificationBody = '🎥 Video'; break;
             case 'audio':    notificationBody = '🎵 Audio'; break;

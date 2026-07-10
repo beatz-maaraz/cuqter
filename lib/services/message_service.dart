@@ -172,4 +172,29 @@ class MessageService {
       return Message.fromJson(snapshot.docs.first.id, snapshot.docs.first.data());
     });
   }
+
+  /// Log a call in user's call history
+  Future<void> logCall({
+    required String currentUserId,
+    required String peerId,
+    required String type, // 'video' or 'voice'
+    required String status, // 'incoming' or 'outgoing'
+    required String roomId,
+  }) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('call_history')
+          .add({
+        'peerId': peerId,
+        'type': type,
+        'status': status,
+        'roomId': roomId,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error logging call: $e');
+    }
+  }
 }

@@ -92,7 +92,7 @@ class ChatMessageText extends StatelessWidget {
     final emojiCount = _emojiOnlyCount(text);
     if (emojiCount != null) {
       final double size = _getEmojiFontSize(emojiCount);
-      return Text.rich(
+      return SelectableText.rich(
         TextSpan(
           text: text,
           style: baseStyle.copyWith(
@@ -186,7 +186,7 @@ class _LinkTextState extends State<_LinkText> {
 
     final matches = urlRegExp.allMatches(widget.text);
     if (matches.isEmpty) {
-      return Text.rich(
+      return SelectableText.rich(
         TextSpan(
           text: widget.text,
           style: widget.style,
@@ -251,8 +251,8 @@ class _LinkTextState extends State<_LinkText> {
       ));
     }
 
-    return RichText(
-      text: TextSpan(children: spans),
+    return SelectableText.rich(
+      TextSpan(children: spans),
     );
   }
 }

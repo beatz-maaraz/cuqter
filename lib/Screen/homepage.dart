@@ -1,6 +1,5 @@
-// ignore_for_file: dead_code
-
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -67,29 +66,89 @@ class _HomepageState extends State<Homepage> {
     _statusesStream = _statusService.getActiveStatuses();
 
     // Listen to media sharing incoming intents when app is in memory
-    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
-      if (value.isNotEmpty) _handleIncomingSharing(value);
-    }, onError: (err) {
-      print("getIntentDataStream error: $err");
-    });
+    if (!kIsWeb) {
+      _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
+        if (value.isNotEmpty) _handleIncomingSharing(value);
+      }, onError: (err) {
+        print("getIntentDataStream error: $err");
+      });
 
-    // Get the media sharing incoming intent when app is closed
-    ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
-      if (value.isNotEmpty) _handleIncomingSharing(value);
-    });
+      // Get the media sharing incoming intent when app is closed
+      ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
+        if (value.isNotEmpty) _handleIncomingSharing(value);
+      });
+    }
   }
 
   void _handleIncomingSharing(List<SharedMediaFile> value) {
-    setState(() {
-      _sharedFiles = value;
-    });
     ReceiveSharingIntent.instance.reset(); // Reset to avoid duplicate handling
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Received ${value.length} file(s). Select a chat to share.'),
-        duration: const Duration(seconds: 4),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+    _showShareBottomSheet(value);
+  }
+
+  void _showShareBottomSheet(List<SharedMediaFile> files) {
+    if (files.isEmpty) return;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('Share to...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  child: Icon(Icons.history_edu, color: Theme.of(context).colorScheme.primary),
+                ),
+                title: const Text('My Status'),
+                onTap: () {
+                  Navigator.pop(context);
+                  final media = files.first;
+                  final path = media.path;
+                  final isVideo = media.type == SharedMediaType.video;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreateStatusScreen(
+                        sharedMediaPath: path,
+                        isSharedMediaVideo: isVideo,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                  child: Icon(Icons.chat_bubble, color: Theme.of(context).colorScheme.secondary),
+                ),
+                title: const Text('A Chat'),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _sharedFiles = files;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Received ${files.length} file(s). Select a chat below to share.'),
+                      duration: const Duration(seconds: 4),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -573,8 +632,7 @@ class _HomepageState extends State<Homepage> {
 
                       return Scrollbar(
                         child: ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          cacheExtent: 1000,
+                          cacheExtent: 1000.0, physics: const BouncingScrollPhysics(),
                           itemCount: users.length,
                           itemBuilder: (context, index) {
                           var userData =
