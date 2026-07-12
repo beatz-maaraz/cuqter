@@ -6,6 +6,10 @@ class Message {
   final DateTime timestamp;
   final bool isRead;
   final String type;
+  final String? replyToId;
+  final String? replyToText;
+  final String? replyToSenderId;
+  final String? replyToType;
 
   Message({
     required this.id,
@@ -15,17 +19,28 @@ class Message {
     required this.timestamp,
     this.isRead = false,
     this.type = 'text',
+    this.replyToId,
+    this.replyToText,
+    this.replyToSenderId,
+    this.replyToType,
   });
 
   // Convert Message to JSON for Firestore
-  Map<String, dynamic> toJson() => {
-    'senderId': senderId,
-    'receiverId': receiverId,
-    'text': text,
-    'timestamp': timestamp,
-    'isRead': isRead,
-    'type': type,
-  };
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {
+      'senderId': senderId,
+      'receiverId': receiverId,
+      'text': text,
+      'timestamp': timestamp,
+      'isRead': isRead,
+      'type': type,
+    };
+    if (replyToId != null) data['replyToId'] = replyToId;
+    if (replyToText != null) data['replyToText'] = replyToText;
+    if (replyToSenderId != null) data['replyToSenderId'] = replyToSenderId;
+    if (replyToType != null) data['replyToType'] = replyToType;
+    return data;
+  }
 
   // Create Message from Firestore document
   factory Message.fromJson(String id, Map<String, dynamic> json) {
@@ -39,6 +54,10 @@ class Message {
           : DateTime.now(),
       isRead: json['isRead'] ?? false,
       type: json['type'] ?? 'text',
+      replyToId: json['replyToId'],
+      replyToText: json['replyToText'],
+      replyToSenderId: json['replyToSenderId'],
+      replyToType: json['replyToType'],
     );
   }
 
@@ -51,6 +70,10 @@ class Message {
     DateTime? timestamp,
     bool? isRead,
     String? type,
+    String? replyToId,
+    String? replyToText,
+    String? replyToSenderId,
+    String? replyToType,
   }) {
     return Message(
       id: id ?? this.id,
@@ -60,6 +83,10 @@ class Message {
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
       type: type ?? this.type,
+      replyToId: replyToId ?? this.replyToId,
+      replyToText: replyToText ?? this.replyToText,
+      replyToSenderId: replyToSenderId ?? this.replyToSenderId,
+      replyToType: replyToType ?? this.replyToType,
     );
   }
 }

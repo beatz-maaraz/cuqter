@@ -131,20 +131,31 @@ class MessageService {
     required String receiverId,
     required String text,
     String type = 'text',
+    String? replyToId,
+    String? replyToText,
+    String? replyToSenderId,
+    String? replyToType,
   }) async {
     try {
-      await _firestore
-          .collection('chats')
-          .doc(chatId)
-          .collection('messages')
-          .add({
+      final Map<String, dynamic> messageData = {
         'senderId': senderId,
         'receiverId': receiverId,
         'text': text,
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
         'type': type,
-      });
+      };
+
+      if (replyToId != null) messageData['replyToId'] = replyToId;
+      if (replyToText != null) messageData['replyToText'] = replyToText;
+      if (replyToSenderId != null) messageData['replyToSenderId'] = replyToSenderId;
+      if (replyToType != null) messageData['replyToType'] = replyToType;
+
+      await _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .add(messageData);
 
       // Ensure both users are in each other's contacts so they appear on the homepage
       await _firestore.collection('users').doc(senderId).set({

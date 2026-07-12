@@ -231,11 +231,13 @@ class _DialogCardState extends State<_DialogCard>
                 ),
 
                 // ── Body ────────────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                       // Description
                       Center(
                         child: Text(
@@ -380,6 +382,8 @@ class _DialogCardState extends State<_DialogCard>
                     ],
                   ),
                 ),
+              ),
+            ),
               ],
             ),
           ),

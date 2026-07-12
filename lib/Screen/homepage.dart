@@ -1205,48 +1205,7 @@ class _HomepageState extends State<Homepage> {
       ),
       floatingActionButton: widget.isDesktop ? null : FloatingActionButton(
         onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            builder: (context) {
-              return SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('Create', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                    ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                        child: Icon(Icons.chat_bubble_outline, color: colorScheme.primary),
-                      ),
-                      title: const Text('New Chat'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        // Future implementation for new chat
-                      },
-                    ),
-                    ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                        child: Icon(Icons.camera_alt_outlined, color: colorScheme.primary),
-                      ),
-                      title: const Text('New Status'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateStatusScreen()));
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              );
-            },
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateStatusScreen()));
         },
         backgroundColor: colorScheme.primary,
         shape: const CircleBorder(),

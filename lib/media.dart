@@ -172,11 +172,16 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
       );
     }
 
-    return ListView.separated(
+    return GridView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3, // 3 columns for grid
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.8, // Make it a bit taller to fit text
+      ),
       itemCount: folderList.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final entry = folderList[index];
         final folderPath = entry.key;
@@ -184,16 +189,17 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         final folderName = folderPath.split(Platform.pathSeparator).last;
         final newestAsset = assets.first;
         final isVideo = newestAsset.type == 'video';
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         
         final imageCount = assets.where((a) => a.type == 'image').length;
         final videoCount = assets.where((a) => a.type == 'video').length;
         String subtitle = '';
         if (imageCount > 0 && videoCount > 0) {
-          subtitle = '$imageCount photos, $videoCount videos';
+          subtitle = '${imageCount + videoCount} items';
         } else if (imageCount > 0) {
-          subtitle = '$imageCount photos';
+          subtitle = '$imageCount items';
         } else if (videoCount > 0) {
-          subtitle = '$videoCount videos';
+          subtitle = '$videoCount items';
         }
 
         return InkWell(
@@ -202,97 +208,67 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
               _selectedSubFolder = folderPath;
             });
           },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-              border: Border.all(
-                color: Colors.black.withValues(alpha: 0.03),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: Colors.grey.shade100,
+                    color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade100,
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Positioned.fill(
-                        child: newestAsset.imageUrl.startsWith('http')
-                            ? Image.network(
-                                newestAsset.imageUrl,
-                                cacheWidth: 150,
-                                fit: BoxFit.cover,
-                              )
-                            : Image.file(
-                                File(newestAsset.imageUrl),
-                                cacheWidth: 150,
-                                fit: BoxFit.cover,
-                              ),
-                      ),
+                      newestAsset.imageUrl.startsWith('http')
+                          ? Image.network(
+                              newestAsset.imageUrl,
+                              cacheWidth: 300,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              File(newestAsset.imageUrl),
+                              cacheWidth: 300,
+                              fit: BoxFit.cover,
+                            ),
                       if (isVideo)
-                        Positioned.fill(
-                          child: Container(
-                            color: Colors.black26,
-                            child: const Center(
-                              child: Icon(
-                                Icons.play_arrow_rounded,
-                                color: Colors.white,
-                                size: 24,
-                              ),
+                        Container(
+                          color: Colors.black26,
+                          child: const Center(
+                            child: Icon(
+                              Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 24,
                             ),
                           ),
                         ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        folderName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.black.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                folderName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Colors.black.withValues(alpha: 0.2),
-                  size: 16,
+              ),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.5),
                 ),
-                const SizedBox(width: 8),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -713,7 +689,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
 
     if (_selectedCategory == 'More') {
       return SizedBox(
-        key: const ValueKey('folder_view'),
+        key: ValueKey('folder_view_${_selectedSubFolder ?? ""}'),
         child: _selectedSubFolder == null
             ? _buildFolderListView(_getFoldersFromAssets(filtered))
             : _buildSelectedFolderView(_selectedSubFolder!, _getFoldersFromAssets(filtered)[_selectedSubFolder] ?? []),
@@ -722,14 +698,14 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     
     if (_isLoading) {
       return Center(
-        key: const ValueKey('loading'),
+        key: ValueKey('loading_${_selectedTab}_$_selectedCategory'),
         child: CircularProgressIndicator(color: colorScheme.primary),
       );
     }
     
     if (filtered.isEmpty) {
       return Center(
-        key: const ValueKey('empty'),
+        key: ValueKey('empty_${_selectedTab}_$_selectedCategory'),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -753,7 +729,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     }
 
     return Scrollbar(
-      key: const ValueKey('grid_view'),
+      key: ValueKey('grid_view_${_selectedTab}_$_selectedCategory'),
       child: ListView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -907,7 +883,8 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
           // Tabs Selector: All, Images, Videos (Frosted Glass style - Compact & Centered)
           Center(
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 220),
+              height: 42,
+              constraints: const BoxConstraints(maxWidth: 240),
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: isDark
@@ -916,37 +893,65 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                 borderRadius: BorderRadius.circular(30.0),
                 border: Border.all(color: borderColor, width: 1.0),
               ),
-              child: Row(
-                children: ['All', 'Images', 'Videos'].map((tab) {
-                  final isSelected = _selectedTab == tab;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedTab = tab;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(vertical: 7.0),
+              child: Stack(
+                children: [
+                  // Sliding indicator
+                  AnimatedAlign(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    alignment: _selectedTab == 'All'
+                        ? Alignment.centerLeft
+                        : (_selectedTab == 'Images'
+                            ? Alignment.center
+                            : Alignment.centerRight),
+                    child: FractionallySizedBox(
+                      widthFactor: 1 / 3,
+                      heightFactor: 1.0,
+                      child: Container(
                         decoration: BoxDecoration(
-                          color: isSelected ? colorScheme.primary : Colors.transparent,
+                          color: colorScheme.primary,
                           borderRadius: BorderRadius.circular(25.0),
-                        ),
-                        child: Center(
-                          child: Text(
-                            tab,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : (isDark ? colorScheme.onSurface.withValues(alpha: 0.6) : Colors.black54),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            )
+                          ],
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
+                  ),
+                  // Tab text layers
+                  Row(
+                    children: ['All', 'Images', 'Videos'].map((tab) {
+                      final isSelected = _selectedTab == tab;
+                      return Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            setState(() {
+                              _selectedTab = tab;
+                            });
+                          },
+                          child: Center(
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark ? colorScheme.onSurface.withValues(alpha: 0.6) : Colors.black54),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                              child: Text(tab),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
             ),
           ),
@@ -980,9 +985,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                   opacity: animation,
                   child: SlideTransition(
                     position: Tween<Offset>(
-                      begin: const Offset(0.0, 0.04),
+                      begin: const Offset(0.06, 0.0),
                       end: Offset.zero,
-                    ).animate(animation),
+                    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
                     child: child,
                   ),
                 );
@@ -1041,12 +1046,22 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                       icon: huge.HugeIcons.strokeRoundedFavourite,
                       label: 'Favorite',
                       onTap: () async {
+                        bool allFavorites = true;
+                        for (var asset in _assets) {
+                          if (_selectedAssetIds.contains(asset.id) && !asset.isFavorite) {
+                            allFavorites = false;
+                            break;
+                          }
+                        }
+                        
+                        final newState = !allFavorites;
+
                         for (var asset in _assets) {
                           if (_selectedAssetIds.contains(asset.id)) {
                             setState(() {
-                              asset.isFavorite = true;
+                              asset.isFavorite = newState;
                             });
-                            await _persistFavorite(asset.id, true);
+                            await _persistFavorite(asset.id, newState);
                           }
                         }
                         setState(() {
@@ -1054,7 +1069,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                           _selectedAssetIds.clear();
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Added to Favorites')),
+                          SnackBar(content: Text(newState ? 'Added to Favorites' : 'Removed from Favorites')),
                         );
                       },
                     ),
@@ -1328,6 +1343,25 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                     ),
                   ),
                 ),
+
+                // Favorite Indicator
+                if (asset.isFavorite)
+                  Positioned(
+                    bottom: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.favorite_rounded,
+                        color: Colors.redAccent,
+                        size: 14,
+                      ),
+                    ),
+                  ),
 
                 // Bouncing checkmark bubble
                 Positioned(
