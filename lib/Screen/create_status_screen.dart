@@ -10,6 +10,7 @@ import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/services/status_service.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
+import 'package:cuqter/media.dart';
 
 class CreateStatusScreen extends StatefulWidget {
   final String? sharedMediaPath;
@@ -28,6 +29,10 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   bool _isVideo = false;
   VideoPlayerController? _videoController;
   bool _isLoading = false;
+
+  // Track selection from custom media picker
+  String? _selectedLocalPath;
+  String? _selectedNetworkUrl;
 
   @override
   void initState() {
@@ -55,6 +60,8 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
           _videoFile = XFile(path);
           _file = null;
           _isVideo = true;
+          _selectedLocalPath = null;
+          _selectedNetworkUrl = null;
         });
       }
     } else {
@@ -64,6 +71,8 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
           _file = imgBytes;
           _videoFile = null;
           _isVideo = false;
+          _selectedLocalPath = null;
+          _selectedNetworkUrl = null;
         });
       }
     }
@@ -77,53 +86,67 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   }
 
   void _selectMedia() async {
-    final XFile? media = await pickMediaFile();
-    if (media != null) {
-      String path = media.path.toLowerCase();
-      String name = media.name.toLowerCase();
-      bool isVideoFile = false;
-      if (media.mimeType != null && media.mimeType!.startsWith('video/')) {
-        isVideoFile = true;
-      } else {
-        isVideoFile = name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.avi') || name.endsWith('.mkv') ||
-                      path.endsWith('.mp4') || path.endsWith('.mov') || path.endsWith('.avi') || path.endsWith('.mkv');
-      }
-      
+    final AppAsset? result = await showModalBottomSheet<AppAsset>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      builder: (context) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.85,
+        child: const AssetManagerScreen(isPicker: true, title: 'Add status'),
+      ),
+    );
+
+    if (result != null) {
       if (_videoController != null) {
         _videoController!.dispose();
         _videoController = null;
       }
-      
-      if (isVideoFile) {
-        if (kIsWeb) {
-          _videoController = VideoPlayerController.networkUrl(Uri.parse(media.path));
+
+      final isVideoFile = result.type == 'video';
+      final path = result.imageUrl;
+
+      setState(() {
+        _isVideo = isVideoFile;
+        _file = null;
+        _videoFile = null;
+        if (path.startsWith('http')) {
+          _selectedNetworkUrl = path;
+          _selectedLocalPath = null;
         } else {
-          _videoController = VideoPlayerController.file(File(media.path));
+          _selectedLocalPath = path;
+          _selectedNetworkUrl = null;
+        }
+      });
+
+      if (isVideoFile) {
+        if (path.startsWith('http')) {
+          _videoController = VideoPlayerController.networkUrl(Uri.parse(path));
+        } else {
+          if (kIsWeb) {
+            _videoController = VideoPlayerController.networkUrl(Uri.parse(path));
+          } else {
+            _videoController = VideoPlayerController.file(File(path));
+          }
         }
         _videoController!
           ..initialize().then((_) {
-            setState(() {});
+            if (mounted) setState(() {});
             _videoController!.play();
             _videoController!.setLooping(true);
           });
-        setState(() {
-          _videoFile = media;
-          _file = null;
-          _isVideo = true;
-        });
-      } else {
-        Uint8List imgBytes = await media.readAsBytes();
-        setState(() {
-          _file = imgBytes;
-          _videoFile = null;
-          _isVideo = false;
-        });
       }
     }
   }
 
   void _postStatus() async {
-    if (_captionController.text.isEmpty && _file == null && _videoFile == null) {
+    if (_captionController.text.isEmpty &&
+        _file == null &&
+        _videoFile == null &&
+        _selectedLocalPath == null &&
+        _selectedNetworkUrl == null) {
       showSnackBar('Please enter text, select an image, or a video', context);
       return;
     }
@@ -143,7 +166,45 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
       String mediaUrl = '';
       String mediaType = 'text';
 
-      if (_isVideo && _videoFile != null) {
+      if (_selectedNetworkUrl != null) {
+        mediaUrl = _selectedNetworkUrl!;
+        mediaType = _isVideo ? 'video' : 'image';
+      } else if (_selectedLocalPath != null) {
+        final ext = _selectedLocalPath!.split('.').last;
+        if (_isVideo) {
+          final res = await CloudinaryService.uploadFile(
+            filePath: _selectedLocalPath!,
+            folderPath: 'cuqter_media/status',
+            fileName: 'status_${DateTime.now().millisecondsSinceEpoch}.$ext',
+            resourceType: 'video',
+          );
+          if (res != null) {
+            mediaUrl = res['url']!;
+            mediaType = 'video';
+          } else {
+            showSnackBar('Failed to upload video', context);
+            setState(() => _isLoading = false);
+            return;
+          }
+        } else {
+          final file = File(_selectedLocalPath!);
+          final bytes = await file.readAsBytes();
+          final res = await CloudinaryService.uploadFile(
+            fileBytes: bytes,
+            folderPath: 'cuqter_media/status',
+            fileName: 'status_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            resourceType: 'image',
+          );
+          if (res != null) {
+            mediaUrl = res['url']!;
+            mediaType = 'image';
+          } else {
+            showSnackBar('Failed to upload image', context);
+            setState(() => _isLoading = false);
+            return;
+          }
+        }
+      } else if (_isVideo && _videoFile != null) {
         String ext = _videoFile!.name.split('.').last;
         if (ext.isEmpty || ext.length > 5) {
           ext = _videoFile!.path.split('.').last;
@@ -243,7 +304,31 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                     maxLines: null,
                   ),
                   const SizedBox(height: 20),
-                  if (_file != null && !_isVideo)
+                  if (_selectedNetworkUrl != null && !_isVideo)
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: NetworkImage(_selectedNetworkUrl!),
+                            fit: BoxFit.cover,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    )
+                  else if (_selectedLocalPath != null && !_isVideo)
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: FileImage(File(_selectedLocalPath!)),
+                            fit: BoxFit.cover,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    )
+                  else if (_file != null && !_isVideo)
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(

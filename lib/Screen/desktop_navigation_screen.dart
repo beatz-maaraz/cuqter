@@ -236,6 +236,9 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
   }) {
     final isSelected = _selectedIndex == index;
     return InkWell(
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
       onTap: () {
         setState(() {
           _selectedIndex = index;

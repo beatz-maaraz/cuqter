@@ -1,0 +1,46 @@
+plugins {
+    id "com.android.application"
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
+}
+
+dependencies {
+    implementation platform("com.google.firebase:firebase-bom:34.10.0")
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"
+}
+
+android {
+    namespace "com.example.cuqter"
+    compileSdk 37
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        applicationId "com.example.cuqter"
+        minSdk flutter.minSdkVersion
+        targetSdk 37
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source "../.."
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}

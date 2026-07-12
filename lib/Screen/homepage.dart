@@ -48,6 +48,9 @@ class _HomepageState extends State<Homepage> {
   final Map<String, StreamSubscription<Message?>> _lastMessageSubscriptions =
       {};
   Stream<List<Status>>? _statusesStream;
+  bool _isSelectionMode = false;
+  final Set<String> _selectedUserIds = {};
+  bool _isLoading = false;
   final StatusService _statusService = StatusService();
   StreamSubscription? _intentSub;
   List<SharedMediaFile> _sharedFiles = [];
@@ -286,6 +289,109 @@ class _HomepageState extends State<Homepage> {
     return text;
   }
 
+  Future<void> _pinChat(String otherUserId) async {
+    final String currentUserId = _auth.currentUser!.uid;
+    final userDoc = await _firestore.collection('users').doc(currentUserId).get();
+    
+    List<dynamic> pinnedChats = [];
+    if (userDoc.exists) {
+      final data = userDoc.data();
+      if (data != null && data.containsKey('pinnedChats')) {
+        pinnedChats = List.from(data['pinnedChats'] as List<dynamic>);
+      }
+    }
+
+    // Toggle Pin: if already pinned, unpin it
+    if (pinnedChats.contains(otherUserId)) {
+      pinnedChats.remove(otherUserId);
+    } else {
+      // Pin it: insert at the beginning (LIFO / top)
+      pinnedChats.insert(0, otherUserId);
+      // Keep only up to 3 pins
+      if (pinnedChats.length > 3) {
+        pinnedChats = pinnedChats.sublist(0, 3);
+      }
+    }
+
+    await _firestore.collection('users').doc(currentUserId).update({
+      'pinnedChats': pinnedChats,
+    });
+  }
+
+  Future<void> _deleteChat(String otherUserId) async {
+    final String currentUserId = _auth.currentUser!.uid;
+    final String chatId = getChatId(currentUserId, otherUserId);
+
+    // 1. Remove from contacts list on Firestore
+    await _firestore.collection('users').doc(currentUserId).update({
+      'contacts': FieldValue.arrayRemove([otherUserId])
+    });
+
+    // 2. Delete messages subcollection
+    final messagesSnapshot = await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .get();
+    
+    final batch = _firestore.batch();
+    for (var doc in messagesSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    
+    // Also delete the main chat document
+    batch.delete(_firestore.collection('chats').doc(chatId));
+    await batch.commit();
+  }
+
+  void _showDeleteConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete conversations?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to delete the selected ${_selectedUserIds.length} chat(s) and all their messages? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              Navigator.pop(context);
+              setState(() {
+                _isLoading = true;
+              });
+              try {
+                for (var userId in _selectedUserIds) {
+                  await _deleteChat(userId);
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Selected chats deleted successfully')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to delete chats: $e'), backgroundColor: Colors.redAccent),
+                );
+              } finally {
+                setState(() {
+                  _isLoading = false;
+                  _isSelectionMode = false;
+                  _selectedUserIds.clear();
+                });
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -297,200 +403,285 @@ class _HomepageState extends State<Homepage> {
         bottom: !widget.isDesktop,
         child: Column(
           children: [
+            if (_isLoading)
+              const LinearProgressIndicator(),
             // Custom Header
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 24.0,
                 vertical: 16.0,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Cuqter',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Profile avatar
-                      if (!widget.isDesktop)
-                        StreamBuilder<DocumentSnapshot>(
-                        stream: _currentUserStream,
-                        builder: (context, snapshot) {
-                          String profilePic = '';
-                          if (snapshot.hasData && snapshot.data!.exists) {
-                            var data =
-                                snapshot.data!.data() as Map<String, dynamic>?;
-                            if (data != null) {
-                              profilePic = data['profilepic'] ?? '';
-                            }
-                          }
-                          return GestureDetector(
-                            onTap: () {
-                              if (widget.isDesktop) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => Dialog(
-                                    clipBehavior: Clip.antiAlias,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    child: const SizedBox(
-                                      width: 400,
-                                      height: 600,
-                                      child: ProfileScreen(),
-                                    ),
-                                  ),
-                                );
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  PageRouteBuilder(
-                                    pageBuilder:
-                                        (
-                                          context,
-                                          animation,
-                                          secondaryAnimation,
-                                        ) => const ProfileScreen(),
-                                    transitionsBuilder:
-                                        (
-                                          context,
-                                          animation,
-                                          secondaryAnimation,
-                                          child,
-                                        ) {
-                                          return FadeTransition(
-                                            opacity: animation,
-                                            child: ScaleTransition(
-                                              scale:
-                                                  Tween<double>(
-                                                    begin: 0.9,
-                                                    end: 1.0,
-                                                  ).animate(
-                                                    CurvedAnimation(
-                                                      parent: animation,
-                                                      curve: Curves.easeOut,
-                                                    ),
-                                                  ),
-                                              child: child,
-                                            ),
-                                          );
-                                        },
-                                    transitionDuration: const Duration(
-                                      milliseconds: 250,
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                            child: CircleAvatar(
-                              radius: 20,
-                              backgroundColor: colorScheme.primary.withValues(
-                                alpha: 0.1,
+              child: _isSelectionMode
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: huge.HugeIcon(
+                                icon: huge.HugeIcons.strokeRoundedCancel01,
+                                color: colorScheme.onSurface,
+                                size: 24,
                               ),
-                              backgroundImage: profilePic.isNotEmpty
-                                  ? (profilePic.startsWith('http')
-                                        ? CachedNetworkImageProvider(profilePic)
-                                        : AssetImage(profilePic)
-                                              as ImageProvider)
-                                  : null,
-                              child: profilePic.isEmpty
-                                  ? Icon(
-                                      Icons.person_outline,
-                                      color: colorScheme.primary,
-                                    )
-                                  : null,
+                              onPressed: () {
+                                setState(() {
+                                  _isSelectionMode = false;
+                                  _selectedUserIds.clear();
+                                });
+                              },
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 10),
-                      // More vert popup menu
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'settings') {
-                            Navigator.push(
-                              context,
-                              PageRouteBuilder(
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        const SettingsPage(),
-                                transitionsBuilder:
-                                    (
-                                      context,
-                                      animation,
-                                      secondaryAnimation,
-                                      child,
-                                    ) {
-                                      return FadeTransition(
-                                        opacity: animation,
-                                        child: child,
-                                      );
-                                    },
+                            const SizedBox(width: 8),
+                            Text(
+                              '${_selectedUserIds.length} Selected',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
                               ),
-                            );
-                          }
-                        },
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                            ),
+                          ],
                         ),
-                        color: colorScheme.surfaceContainerHighest,
-                        elevation: 8,
-                        shadowColor: Colors.black.withValues(alpha: 0.2),
-                        offset: const Offset(0, 44),
-                        icon: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedMoreVertical,
-                          color: colorScheme.onSurface.withValues(alpha: 0.7),
-                          size: 24,
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: huge.HugeIcon(
+                                icon: huge.HugeIcons.strokeRoundedPin02,
+                                color: colorScheme.onSurface,
+                                size: 24,
+                              ),
+                              onPressed: () async {
+                                for (var userId in _selectedUserIds) {
+                                  await _pinChat(userId);
+                                }
+                                setState(() {
+                                  _isSelectionMode = false;
+                                  _selectedUserIds.clear();
+                                });
+                              },
+                            ),
+                            IconButton(
+                              icon: huge.HugeIcon(
+                                icon: huge.HugeIcons.strokeRoundedDelete01,
+                                color: colorScheme.error,
+                                size: 24,
+                              ),
+                              onPressed: () {
+                                _showDeleteConfirmDialog();
+                              },
+                            ),
+                          ],
                         ),
-                        itemBuilder: (context) => [
-                          PopupMenuItem<String>(
-                            value: 'settings',
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.secondary.withValues(
-                                      alpha: 0.12,
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Cuqter',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                            letterSpacing: -1,
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Profile avatar
+                            if (!widget.isDesktop)
+                              StreamBuilder<DocumentSnapshot>(
+                              stream: _currentUserStream,
+                              builder: (context, snapshot) {
+                                String profilePic = '';
+                                if (snapshot.hasData && snapshot.data!.exists) {
+                                  var data =
+                                      snapshot.data!.data() as Map<String, dynamic>?;
+                                  if (data != null) {
+                                    profilePic = data['profilepic'] ?? '';
+                                  }
+                                }
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (widget.isDesktop) {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => Dialog(
+                                          clipBehavior: Clip.antiAlias,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(24),
+                                          ),
+                                          child: const SizedBox(
+                                            width: 400,
+                                            height: 600,
+                                            child: ProfileScreen(),
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      Navigator.push(
+                                        context,
+                                        PageRouteBuilder(
+                                          pageBuilder:
+                                              (
+                                                context,
+                                                animation,
+                                                secondaryAnimation,
+                                              ) => const ProfileScreen(),
+                                          transitionsBuilder:
+                                              (
+                                                context,
+                                                animation,
+                                                secondaryAnimation,
+                                                child,
+                                              ) {
+                                                return FadeTransition(
+                                                  opacity: animation,
+                                                  child: ScaleTransition(
+                                                    scale:
+                                                        Tween<double>(
+                                                          begin: 0.9,
+                                                          end: 1.0,
+                                                        ).animate(
+                                                          CurvedAnimation(
+                                                            parent: animation,
+                                                            curve: Curves.easeOut,
+                                                          ),
+                                                        ),
+                                                    child: child,
+                                                  ),
+                                                );
+                                              },
+                                          transitionDuration: const Duration(
+                                            milliseconds: 250,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: colorScheme.primary.withValues(
+                                      alpha: 0.1,
                                     ),
-                                    shape: BoxShape.circle,
+                                    backgroundImage: profilePic.isNotEmpty
+                                        ? (profilePic.startsWith('http')
+                                              ? CachedNetworkImageProvider(profilePic)
+                                              : AssetImage(profilePic)
+                                                    as ImageProvider)
+                                        : null,
+                                    child: profilePic.isEmpty
+                                        ? Icon(
+                                            Icons.person_outline,
+                                            color: colorScheme.primary,
+                                          )
+                                        : null,
                                   ),
-                                  child: huge.HugeIcon(
-                                    icon:
-                                        huge.HugeIcons.strokeRoundedSettings01,
-                                    color: colorScheme.secondary,
-                                    size: 22,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Text(
-                                  'Settings',
-                                  style: TextStyle(
-                                    color: colorScheme.onSurface,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 10),
+                            // More vert popup menu
+                            PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'settings') {
+                                  if (widget.isDesktop) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => Dialog(
+                                        clipBehavior: Clip.antiAlias,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(24),
+                                        ),
+                                        child: SizedBox(
+                                          width: 500,
+                                          height: 650,
+                                          child: Navigator(
+                                            onGenerateRoute: (settings) => MaterialPageRoute(
+                                              builder: (context) => const SettingsPage(isDialog: true),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      PageRouteBuilder(
+                                        pageBuilder:
+                                            (context, animation, secondaryAnimation) =>
+                                                const SettingsPage(),
+                                        transitionsBuilder:
+                                            (
+                                              context,
+                                              animation,
+                                              secondaryAnimation,
+                                              child,
+                                            ) {
+                                              return FadeTransition(
+                                                opacity: animation,
+                                                child: child,
+                                              );
+                                            },
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              color: colorScheme.surfaceContainerHighest,
+                              elevation: 8,
+                              shadowColor: Colors.black.withValues(alpha: 0.2),
+                              offset: const Offset(0, 44),
+                              icon: huge.HugeIcon(
+                                icon: huge.HugeIcons.strokeRoundedMoreVertical,
+                                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                                size: 24,
+                              ),
+                              itemBuilder: (context) => [
+                                PopupMenuItem<String>(
+                                  value: 'settings',
+                                  height: 56,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.secondary.withValues(
+                                            alpha: 0.12,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: huge.HugeIcon(
+                                          icon:
+                                              huge.HugeIcons.strokeRoundedSettings01,
+                                          color: colorScheme.secondary,
+                                          size: 22,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Text(
+                                        'Settings',
+                                        style: TextStyle(
+                                          color: colorScheme.onSurface,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                          ],
+                        ),
+                      ],
+                    ),
             ),
 
             // Search Bar
@@ -539,12 +730,14 @@ class _HomepageState extends State<Homepage> {
                 stream: _currentUserStream ?? const Stream.empty(),
                 builder: (context, userSnapshot) {
                   List<dynamic> myContacts = [];
+                  List<dynamic> pinnedChats = [];
                   if (userSnapshot.hasData &&
                       userSnapshot.data?.exists == true) {
                     var myData =
                         userSnapshot.data!.data() as Map<String, dynamic>?;
                     if (myData != null) {
                       myContacts = myData['contacts'] as List<dynamic>? ?? [];
+                      pinnedChats = myData['pinnedChats'] as List<dynamic>? ?? [];
                     }
                   }
 
@@ -581,29 +774,32 @@ class _HomepageState extends State<Homepage> {
                           );
                           if (!_lastMessageSubscriptions.containsKey(chatId)) {
                             _lastMessageSubscriptions[chatId] = _messageService
-                                .getLastMessage(chatId)
-                                .listen((message) {
-                                  if (mounted) {
-                                    setState(() {
-                                      _lastMessages[chatId] = message;
-                                    });
-                                  }
-                                });
+                                  .getLastMessage(chatId)
+                                  .listen((message) {
+                                    if (mounted) {
+                                      setState(() {
+                                        _lastMessages[chatId] = message;
+                                      });
+                                    }
+                                  });
                           }
                         }
                       }
 
-                      // Sort users by latest interaction (LIFO / LIFI method)
+                      // Sort users: pinned chats at top (LIFO order), then others by message date
                       if (_auth.currentUser != null && users.isNotEmpty) {
                         users.sort((a, b) {
-                          String chatIdA = getChatId(
-                            _auth.currentUser!.uid,
-                            a.id,
-                          );
-                          String chatIdB = getChatId(
-                            _auth.currentUser!.uid,
-                            b.id,
-                          );
+                          bool isPinnedA = pinnedChats.contains(a.id);
+                          bool isPinnedB = pinnedChats.contains(b.id);
+
+                          if (isPinnedA && isPinnedB) {
+                            return pinnedChats.indexOf(a.id).compareTo(pinnedChats.indexOf(b.id));
+                          }
+                          if (isPinnedA) return -1;
+                          if (isPinnedB) return 1;
+
+                          String chatIdA = getChatId(_auth.currentUser!.uid, a.id);
+                          String chatIdB = getChatId(_auth.currentUser!.uid, b.id);
                           Message? msgA = _lastMessages[chatIdA];
                           Message? msgB = _lastMessages[chatIdB];
 
@@ -663,76 +859,96 @@ class _HomepageState extends State<Homepage> {
                               ? _formatDateTime(lastMsg.timestamp)
                               : '';
 
+                          final isSelected = _selectedUserIds.contains(userId);
                           return InkWell(
                             onTap: () {
-                              if (widget.isDesktop && widget.onChatSelected != null) {
-                                widget.onChatSelected!(userId, userName);
+                              if (_isSelectionMode) {
+                                setState(() {
+                                  if (isSelected) {
+                                    _selectedUserIds.remove(userId);
+                                    if (_selectedUserIds.isEmpty) {
+                                      _isSelectionMode = false;
+                                    }
+                                  } else {
+                                    _selectedUserIds.add(userId);
+                                  }
+                                });
                               } else {
-                                Navigator.push(
-                                  context,
-                                  PageRouteBuilder(
-                                    pageBuilder:
-                                        (
-                                          context,
-                                          animation,
-                                          secondaryAnimation,
-                                        ) {
-                                          final currentShared = List<SharedMediaFile>.from(_sharedFiles);
-                                          if (currentShared.isNotEmpty) {
-                                            Future.microtask(() {
-                                              if (mounted) {
-                                                setState(() {
-                                                  _sharedFiles.clear();
-                                                });
-                                              }
-                                            });
-                                          }
-                                          return ChatScreen(
-                                            receiverId: userId,
-                                            receiverName: userName,
-                                            sharedMedia: currentShared.isNotEmpty ? currentShared : null,
-                                          );
-                                        },
-                                    transitionsBuilder:
-                                        (
-                                          context,
-                                          animation,
-                                          secondaryAnimation,
-                                          child,
-                                        ) {
-                                          return SlideTransition(
-                                            position:
-                                                Tween<Offset>(
-                                                  begin: const Offset(1.0, 0.0),
-                                                  end: Offset.zero,
-                                                ).animate(
-                                                  CurvedAnimation(
-                                                    parent: animation,
-                                                    curve: Curves.easeOutCubic,
+                                if (widget.isDesktop && widget.onChatSelected != null) {
+                                  widget.onChatSelected!(userId, userName);
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    PageRouteBuilder(
+                                      pageBuilder:
+                                          (
+                                            context,
+                                            animation,
+                                            secondaryAnimation,
+                                          ) {
+                                            final currentShared = List<SharedMediaFile>.from(_sharedFiles);
+                                            if (currentShared.isNotEmpty) {
+                                              Future.microtask(() {
+                                                if (mounted) {
+                                                  setState(() {
+                                                    _sharedFiles.clear();
+                                                  });
+                                                }
+                                              });
+                                            }
+                                            return ChatScreen(
+                                              receiverId: userId,
+                                              receiverName: userName,
+                                              sharedMedia: currentShared.isNotEmpty ? currentShared : null,
+                                            );
+                                          },
+                                      transitionsBuilder:
+                                          (
+                                            context,
+                                            animation,
+                                            secondaryAnimation,
+                                            child,
+                                          ) {
+                                            return SlideTransition(
+                                              position:
+                                                  Tween<Offset>(
+                                                    begin: const Offset(1.0, 0.0),
+                                                    end: Offset.zero,
+                                                  ).animate(
+                                                    CurvedAnimation(
+                                                      parent: animation,
+                                                      curve: Curves.easeOutCubic,
+                                                    ),
                                                   ),
-                                                ),
-                                            child: FadeTransition(
-                                              opacity: animation,
-                                              child: child,
-                                            ),
-                                          );
-                                        },
-                                    transitionDuration: const Duration(
-                                      milliseconds: 250,
+                                              child: FadeTransition(
+                                                opacity: animation,
+                                                child: child,
+                                              ),
+                                            );
+                                          },
+                                      transitionDuration: const Duration(
+                                        milliseconds: 250,
+                                      ),
                                     ),
-                                  ),
-                                );
+                                  );
+                                }
                               }
+                            },
+                            onLongPress: () {
+                              setState(() {
+                                _isSelectionMode = true;
+                                _selectedUserIds.add(userId);
+                              });
                             },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               curve: Curves.easeInOut,
                               margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
                               decoration: BoxDecoration(
-                                color: widget.selectedUserId == userId 
+                                color: (widget.selectedUserId == userId || isSelected)
                                     ? colorScheme.primary.withValues(alpha: 0.1) 
                                     : Colors.transparent,
-                                border: widget.selectedUserId == userId
+                                border: (widget.selectedUserId == userId || isSelected)
                                     ? Border.all(color: colorScheme.primary, width: 2)
                                     : Border.all(color: Colors.transparent, width: 2),
                                 borderRadius: BorderRadius.circular(16),
@@ -873,13 +1089,26 @@ class _HomepageState extends State<Homepage> {
                                               ),
                                             ),
                                             const SizedBox(width: 8),
-                                            Text(
-                                              timeText,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: colorScheme.onSurface
-                                                    .withValues(alpha: 0.5),
-                                              ),
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (pinnedChats.contains(userId)) ...[
+                                                  huge.HugeIcon(
+                                                    icon: huge.HugeIcons.strokeRoundedPin02,
+                                                    color: colorScheme.primary,
+                                                    size: 14,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                ],
+                                                Text(
+                                                  timeText,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: colorScheme.onSurface
+                                                        .withValues(alpha: 0.5),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ),

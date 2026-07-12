@@ -12,7 +12,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  final bool isDialog;
+  const SettingsPage({super.key, this.isDialog = false});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -114,6 +115,12 @@ class _SettingsPageState extends State<SettingsPage> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: widget.isDialog
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+              )
+            : null,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       body: _isLoading

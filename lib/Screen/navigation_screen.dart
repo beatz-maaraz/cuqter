@@ -184,7 +184,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 25),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
           child: Container(
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
@@ -224,23 +224,32 @@ class _NavigationScreenState extends State<NavigationScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(30),
-              child: BottomNavigationBar(
-                currentIndex: _selectedIndex,
-                onTap: (index) {
-                  if (_selectedIndex == index) return;
-                  setState(() {
-                    _selectedIndex = index;
-                    _isProgrammaticChange = true;
-                  });
-                  _pageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                type: BottomNavigationBarType.fixed,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  navigationBarTheme: const NavigationBarThemeData(
+                    indicatorColor: Colors.transparent,
+                  ),
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _selectedIndex,
+                  onTap: (index) {
+                    if (_selectedIndex == index) return;
+                    setState(() {
+                      _selectedIndex = index;
+                      _isProgrammaticChange = true;
+                    });
+                    _pageController.animateToPage(
+                      index,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  type: BottomNavigationBarType.fixed,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
                 selectedItemColor: colorScheme.primary,
                 unselectedItemColor:
                     colorScheme.onSurface.withValues(alpha: 0.4),
@@ -362,6 +371,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

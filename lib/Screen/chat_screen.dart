@@ -22,6 +22,7 @@ import '../services/message_service.dart';
 import 'call_screen.dart';
 import '../services/cloudinary_service.dart';
 import '../services/local_storage_service.dart';
+import '../media.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -1179,13 +1180,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   icon: Icons.image_rounded,
                   label: 'Image',
                   color: Colors.purple,
-                  onTap: _sendPhoto,
+                  onTap: _openBottomMediaPicker,
                 ),
                 _buildAttachmentItem(
                   icon: Icons.videocam_rounded,
                   label: 'Video',
                   color: Colors.red,
-                  onTap: _sendVideo,
+                  onTap: _openBottomMediaPicker,
                 ),
                 _buildAttachmentItem(
                   icon: Icons.audiotrack_rounded,
@@ -1484,6 +1485,106 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openBottomMediaPicker() async {
+    setState(() {
+      _isAttachmentMenuOpen = false;
+      _showEmojiPicker = false;
+      _focusNode.unfocus();
+    });
+
+    final AppAsset? selectedAsset = await showModalBottomSheet<AppAsset>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      builder: (context) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.75,
+        child: const AssetManagerScreen(
+          isPicker: true,
+          title: 'Send Media',
+        ),
+      ),
+    );
+
+    if (selectedAsset != null) {
+      _sendAsset(selectedAsset);
+    }
+  }
+
+  Future<void> _sendAsset(AppAsset asset) async {
+    if (_isUploading) return;
+    final isVideo = asset.type == 'video';
+    
+    try {
+      final file = File(asset.id);
+      if (!await file.exists()) return;
+      
+      final bytes = await file.readAsBytes();
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${asset.title.replaceAll(' ', '_')}';
+      
+      setState(() {
+        _isUploading = true;
+        _uploadCancelled = false;
+        _uploadingFileName = asset.title;
+        _uploadingFileSize = _formatFileSize(bytes.length);
+        _uploadingFileType = asset.type;
+        _uploadProgress = 0.0;
+      });
+
+      String? localPath;
+      if (!kIsWeb) {
+        localPath = await LocalStorageService.saveFileLocally(fileName, bytes, asset.type);
+      }
+
+      final uploadResult = await CloudinaryService.uploadFile(
+        fileBytes: bytes,
+        folderPath: isVideo ? 'cuqter_media/Video' : 'cuqter_media/Photo',
+        fileName: fileName,
+        resourceType: isVideo ? 'video' : 'image',
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() {
+              _uploadProgress = progress;
+            });
+          }
+        },
+      );
+
+      if (_uploadCancelled) return;
+
+      if (uploadResult != null && uploadResult['url'] != null) {
+        final String fileUrl = uploadResult['url']!;
+        if (localPath != null) {
+          _localFilePaths[fileUrl] = localPath;
+        }
+        String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+        await _messageService.sendMessage(
+          chatId: chatId,
+          senderId: _auth.currentUser!.uid,
+          receiverId: widget.receiverId,
+          text: '$fileUrl|${_formatFileSize(bytes.length)}',
+          type: asset.type,
+        );
+      } else {
+        if (!_uploadCancelled) {
+          _showErrorSnackBar('Failed to upload ${asset.type} to Cloudinary');
+        }
+      }
+    } catch (e) {
+      if (!_uploadCancelled) {
+        _showErrorSnackBar('Error sending ${asset.type}: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
   }
 
   Future<void> _sendPhoto() async {
