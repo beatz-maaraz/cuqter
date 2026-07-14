@@ -109,7 +109,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void sendMessage() async {
-    if (_messageController.text.isNotEmpty) {
+    final text = _messageController.text.trim();
+    if (text.isNotEmpty) {
+      _messageController.clear(); // Clear immediately for better UX
+      
       String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
       final replyParams = _getReplyParams();
       _clearReply();
@@ -119,7 +122,7 @@ class _ChatScreenState extends State<ChatScreen> {
         chatId: chatId,
         senderId: _auth.currentUser!.uid,
         receiverId: widget.receiverId,
-        text: _messageController.text,
+        text: text,
         replyToId: replyParams['replyToId'],
         replyToText: replyParams['replyToText'],
         replyToSenderId: replyParams['replyToSenderId'],
@@ -134,8 +137,6 @@ class _ChatScreenState extends State<ChatScreen> {
       await _firestore.collection('users').doc(widget.receiverId).set({
         'contacts': FieldValue.arrayUnion([_auth.currentUser!.uid])
       }, SetOptions(merge: true));
-
-      _messageController.clear();
     }
   }
 
