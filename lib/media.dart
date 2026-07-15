@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/services/local_storage_service.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:cuqter/Screen/camera_screen.dart';
 
 // Model for assets matching Figma prototype
 class AppAsset {
@@ -65,6 +66,7 @@ class AssetManagerScreen extends StatefulWidget {
   final String initialTab; // 'All', 'Images', 'Videos'
   final String initialCategory; // 'Favorites', 'Camera', 'Download', 'Screenshot', 'More'
   final bool isPicker;
+  final bool onlyImages;
   final ValueChanged<AppAsset?>? onAssetSelected;
   final String? title;
 
@@ -73,6 +75,7 @@ class AssetManagerScreen extends StatefulWidget {
     this.initialTab = 'All',
     this.initialCategory = 'All',
     this.isPicker = false,
+    this.onlyImages = false,
     this.onAssetSelected,
     this.title,
   });
@@ -579,7 +582,15 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
 
   // Real capture and add asset flow
   void _pickAndAddAsset() async {
-    final XFile? media = await pickMediaFile();
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
+    );
+
+    if (result == null || result['file'] == null) return;
+    final XFile media = result['file'] as XFile;
+    final String type = result['type'] as String;
+
     if (media != null) {
       String name = media.name;
       bool isVideoFile = false;
@@ -881,9 +892,10 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
           const SizedBox(height: 16),
 
           // Tabs Selector: All, Images, Videos (Frosted Glass style - Compact & Centered)
-          Center(
-            child: Container(
-              height: 42,
+          if (!widget.onlyImages)
+            Center(
+              child: Container(
+                height: 42,
               constraints: const BoxConstraints(maxWidth: 240),
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(

@@ -1,5 +1,6 @@
 import 'package:cuqter/Account/signup.dart';
 import 'package:cuqter/Account/forgot_password.dart';
+import 'package:cuqter/Account/phone_login.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:flutter/material.dart';
@@ -137,6 +138,26 @@ class _LoginpageState extends State<Loginpage> {
                       ),
                       onPressed: loginuser,
                       child: const Text('Login', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+
+                    SizedBox(height: 15),
+
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const PhoneLoginPage()),
+                        );
+                      },
+                      icon: const Icon(Icons.phone),
+                      label: const Text('Login with Phone', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
 
                     SizedBox(height: 20),

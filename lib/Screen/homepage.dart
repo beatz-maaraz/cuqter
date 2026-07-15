@@ -1236,6 +1236,17 @@ class _HomepageState extends State<Homepage> {
         }
 
         List<List<Status>> allOtherUserStatuses = groupedStatuses.values.toList();
+        
+        if (currentUserId != null) {
+          allOtherUserStatuses.sort((a, b) {
+            bool aAllViewed = a.every((s) => s.viewers.any((v) => v.uid == currentUserId));
+            bool bAllViewed = b.every((s) => s.viewers.any((v) => v.uid == currentUserId));
+            if (aAllViewed == bAllViewed) {
+              return b.last.createdAt.compareTo(a.last.createdAt);
+            }
+            return aAllViewed ? 1 : -1;
+          });
+        }
 
         return Container(
           height: 100,
@@ -1339,6 +1350,11 @@ class _HomepageState extends State<Homepage> {
   Widget _buildUserStatusAvatar(BuildContext context, List<Status> statuses, List<List<Status>> allUserStatuses, int userIndex) {
     final colorScheme = Theme.of(context).colorScheme;
     final latestStatus = statuses.last; // Use the most recent status for profile pic
+    
+    final currentUserId = _auth.currentUser?.uid;
+    bool allViewed = currentUserId != null && statuses.every((s) => s.viewers.any((v) => v.uid == currentUserId));
+    Color ringColor = allViewed ? colorScheme.onSurface.withValues(alpha: 0.2) : colorScheme.primary;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(context, MaterialPageRoute(builder: (context) => StatusViewScreen(
@@ -1354,7 +1370,7 @@ class _HomepageState extends State<Homepage> {
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: colorScheme.primary, width: 2),
+                border: Border.all(color: ringColor, width: 2),
               ),
               child: CircleAvatar(
                 radius: 28,

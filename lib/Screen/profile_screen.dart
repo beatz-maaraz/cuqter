@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
+import 'package:cuqter/Screen/camera_screen.dart';
+import 'package:cuqter/media.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -208,7 +211,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickAndUploadCustomImage(ImageSource source) async {
     try {
-      final Uint8List? imageBytes = await pickImage(source);
+      Uint8List? imageBytes;
+      if (source == ImageSource.camera) {
+        final result = await Navigator.push<Map<String, dynamic>>(
+          context,
+          MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
+        );
+        if (result != null && result['file'] != null) {
+          final XFile file = result['file'] as XFile;
+          imageBytes = await file.readAsBytes();
+        }
+      } else {
+        final result = await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => const AssetManagerScreen(
+            isPicker: true,
+            onlyImages: true,
+            initialTab: 'Images',
+          ),
+        );
+        if (result != null && result is AppAsset) {
+          imageBytes = await File(result.imageUrl).readAsBytes();
+        }
+      }
+      
       if (imageBytes == null) return;
 
       setState(() {

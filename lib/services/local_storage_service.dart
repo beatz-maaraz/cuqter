@@ -85,19 +85,19 @@ class LocalStorageService {
   }
 
   /// Get the local absolute file path inside the corresponding subfolder
-  static Future<String?> getLocalFilePath(String url, String fileType) async {
+  static Future<String?> getLocalFilePath(String url, String fileType, {String? originalFileName}) async {
     if (kIsWeb) return null;
     final folderPath = await getLocalFolderPath(fileType);
     if (folderPath == null) return null;
-    final fileName = _getFileNameFromUrl(url);
+    final fileName = originalFileName ?? _getFileNameFromUrl(url);
     return '$folderPath/$fileName';
   }
 
   /// Check if file is already saved locally on device
-  static Future<String?> checkFileExists(String url, String fileType) async {
+  static Future<String?> checkFileExists(String url, String fileType, {String? originalFileName}) async {
     if (kIsWeb) return null;
     try {
-      final path = await getLocalFilePath(url, fileType);
+      final path = await getLocalFilePath(url, fileType, originalFileName: originalFileName);
       if (path != null && await File(path).exists()) {
         return path;
       }
@@ -139,10 +139,11 @@ class LocalStorageService {
     String url,
     String fileType,
     void Function(double progress) onProgress,
+    {String? originalFileName}
   ) async {
     if (kIsWeb) return null;
     try {
-      final localPath = await getLocalFilePath(url, fileType);
+      final localPath = await getLocalFilePath(url, fileType, originalFileName: originalFileName);
       if (localPath == null) return null;
 
       final cleanUrl = url.split('|')[0];

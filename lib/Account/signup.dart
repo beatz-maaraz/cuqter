@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
@@ -6,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:cuqter/utils/colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cuqter/Screen/camera_screen.dart';
+import 'package:cuqter/media.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Sighuppage extends StatefulWidget {
@@ -106,7 +109,32 @@ class _SighuppageState extends State<Sighuppage> {
 
   Future<void> _pickAndUploadCustomImage(ImageSource source) async {
     try {
-      final Uint8List? imageBytes = await pickImage(source);
+      Uint8List? imageBytes;
+      if (source == ImageSource.camera) {
+        final result = await Navigator.push<Map<String, dynamic>>(
+          context,
+          MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
+        );
+        if (result != null && result['file'] != null) {
+          final XFile file = result['file'] as XFile;
+          imageBytes = await file.readAsBytes();
+        }
+      } else {
+        final result = await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => const AssetManagerScreen(
+            isPicker: true,
+            onlyImages: true,
+            initialTab: 'Images',
+          ),
+        );
+        if (result != null && result is AppAsset) {
+          imageBytes = await File(result.imageUrl).readAsBytes();
+        }
+      }
+      
       if (imageBytes == null) return;
 
       setState(() {

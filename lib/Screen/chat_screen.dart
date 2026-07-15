@@ -12,7 +12,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'camera_screen.dart';
 import '../widgets/animated_send_button.dart';
 import '../widgets/chat_message_text.dart';
 import '../widgets/full_screen_profile_pic_page.dart';
@@ -590,7 +592,8 @@ class _ChatScreenState extends State<ChatScreen> {
       else if (type == 'audio') folderPath = 'cuqter_media/Audio';
 
       final uploadResult = await CloudinaryService.uploadFile(
-        fileBytes: bytes,
+        fileBytes: kIsWeb ? bytes : null,
+        filePath: kIsWeb ? null : file.path,
         fileName: fileName,
         folderPath: folderPath,
         resourceType: type,
@@ -1700,7 +1703,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Future<void> _startDownload(String url, String fileType) async {
+  Future<void> _startDownload(String url, String fileType, {String? originalFileName}) async {
     if (kIsWeb) return;
     setState(() {
       _downloadProgress[url] = 0.0;
@@ -1716,6 +1719,7 @@ class _ChatScreenState extends State<ChatScreen> {
           });
         }
       },
+      originalFileName: originalFileName,
     );
 
     if (mounted) {
@@ -1831,65 +1835,15 @@ class _ChatScreenState extends State<ChatScreen> {
       _focusNode.unfocus();
     });
 
-    final colorScheme = Theme.of(context).colorScheme;
-    final String? choice = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 16),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.camera_alt_rounded, color: colorScheme.primary),
-                ),
-                title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.w500)),
-                onTap: () => Navigator.pop(context, 'photo'),
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.videocam_rounded, color: colorScheme.primary),
-                ),
-                title: const Text('Record Video', style: TextStyle(fontWeight: FontWeight.w500)),
-                onTap: () => Navigator.pop(context, 'video'),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
     );
 
-    if (choice == null) return;
+    if (result == null || result['file'] == null) return;
 
-    final ImagePicker picker = ImagePicker();
-    final XFile? file = choice == 'photo'
-        ? await picker.pickImage(source: ImageSource.camera)
-        : await picker.pickVideo(source: ImageSource.camera);
+    final XFile file = result['file'] as XFile;
+    final String type = result['type'] as String;
 
     if (file != null) {
       final fileStat = await File(file.path).stat();
@@ -1898,7 +1852,7 @@ class _ChatScreenState extends State<ChatScreen> {
         imageUrl: file.path,
         title: file.name,
         category: 'Camera',
-        type: choice == 'photo' ? 'image' : 'video',
+        type: type == 'photo' ? 'image' : 'video',
         date: DateTime.now(),
         size: _formatFileSize(fileStat.size),
         duration: '',
@@ -1933,7 +1887,8 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       final uploadResult = await CloudinaryService.uploadFile(
-        fileBytes: bytes,
+        fileBytes: localPath == null ? bytes : null,
+        filePath: localPath,
         folderPath: isVideo ? 'cuqter_media/Video' : 'cuqter_media/Photo',
         fileName: fileName,
         resourceType: isVideo ? 'video' : 'image',
@@ -2026,7 +1981,8 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       final uploadResult = await CloudinaryService.uploadFile(
-        fileBytes: fileBytes,
+        fileBytes: localPath == null ? fileBytes : null,
+        filePath: localPath,
         folderPath: 'cuqter_media/Audio',
         fileName: fileName,
         resourceType: 'video',
@@ -2087,15 +2043,18 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.any,
+        withData: true,
       );
       if (result == null) return;
 
       PlatformFile file = result.files.first;
       final Uint8List bytes;
-      if (file.path != null) {
+      if (file.bytes != null) {
+        bytes = file.bytes!;
+      } else if (file.path != null) {
         bytes = await File(file.path!).readAsBytes();
       } else {
-        bytes = await file.readAsBytes();
+        throw Exception('Cannot read file data');
       }
 
       final fileBytes = bytes;
@@ -2117,7 +2076,8 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       final uploadResult = await CloudinaryService.uploadFile(
-        fileBytes: fileBytes,
+        fileBytes: localPath == null ? fileBytes : null,
+        filePath: localPath,
         folderPath: 'cuqter_media/Document',
         fileName: fileName,
         resourceType: 'auto',
@@ -2144,7 +2104,7 @@ class _ChatScreenState extends State<ChatScreen> {
           chatId: chatId,
           senderId: _auth.currentUser!.uid,
           receiverId: widget.receiverId,
-          text: '$fileUrl|${_formatFileSize(fileBytes.length)}',
+          text: '$fileUrl|${_formatFileSize(fileBytes.length)}|${file.name}',
           type: 'document',
           replyToId: replyParams['replyToId'],
           replyToText: replyParams['replyToText'],
@@ -2258,6 +2218,7 @@ class _ChatScreenState extends State<ChatScreen> {
     required String fileName,
     required String fileSize,
     required bool isMe,
+    String? originalFileName,
   }) {
     final bool isDownloading = _downloadProgress.containsKey(url);
     final double progress = _downloadProgress[url] ?? 0.0;
@@ -2367,7 +2328,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Icons.download_rounded, 
                 color: isMe ? colorScheme.onPrimaryContainer : colorScheme.primary
               ),
-              onPressed: () => _startDownload(url, fileType),
+              onPressed: () => _startDownload(url, fileType, originalFileName: originalFileName),
             ),
         ],
       ),
@@ -2376,10 +2337,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _openLocalFile(String localPath) async {
     try {
-      final Uri fileUri = Uri.file(localPath);
-      if (await canLaunchUrl(fileUri)) {
-        await launchUrl(fileUri, mode: LaunchMode.externalApplication);
-      } else {
+      final result = await OpenFilex.open(localPath);
+      if (result.type != ResultType.done) {
         _showErrorSnackBar('No application found to open this file. Path: $localPath');
       }
     } catch (e) {
@@ -2395,6 +2354,7 @@ class _ChatScreenState extends State<ChatScreen> {
     bool isMe,
     String timeText,
     bool isRead,
+    {String? originalFileName}
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2403,9 +2363,10 @@ class _ChatScreenState extends State<ChatScreen> {
           colorScheme: colorScheme,
           url: url,
           fileType: fileType,
-          fileName: _getFileNameFromUrl(url),
+          fileName: originalFileName?.isNotEmpty == true ? originalFileName! : _getFileNameFromUrl(url),
           fileSize: fileSize,
           isMe: isMe,
+          originalFileName: originalFileName,
         ),
         const SizedBox(height: 4),
         _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead, isOverMedia: false),
@@ -3008,10 +2969,10 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _triggerFileCheck(String text, String type) {
+  void _triggerFileCheck(String text, String type, {String? originalFileName}) {
     if (!_checkingFiles.contains(text)) {
       _checkingFiles.add(text);
-      LocalStorageService.checkFileExists(text, type).then((path) {
+      LocalStorageService.checkFileExists(text, type, originalFileName: originalFileName).then((path) {
         if (mounted) {
           setState(() {
             _localFilePaths[text] = path;
@@ -3197,6 +3158,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final List<String> parts = rawText.split('|');
     final String text = parts[0];
     final String fileSize = parts.length > 1 ? parts[1] : '';
+    final String originalFileName = parts.length > 2 ? parts[2] : '';
 
     switch (type) {
       case 'image':
@@ -3259,24 +3221,24 @@ class _ChatScreenState extends State<ChatScreen> {
         return _buildDownloadPlaceholderCard(text, 'audio', fileSize, colorScheme, isMe, timeText, isRead);
 
       case 'document':
-        String fileName = _getFileNameFromUrl(text);
+        String fileName = originalFileName.isNotEmpty ? originalFileName : _getFileNameFromUrl(text);
         if (kIsWeb) {
           return _buildWebDocumentBubble(text, fileName, fileSize, colorScheme, timeText, isMe, isRead);
         }
         final bool isDownloadingDocument = _downloadProgress.containsKey(text);
         if (isDownloadingDocument) {
-          return _buildDownloadPlaceholderCard(text, 'document', fileSize, colorScheme, isMe, timeText, isRead);
+          return _buildDownloadPlaceholderCard(text, 'document', fileSize, colorScheme, isMe, timeText, isRead, originalFileName: fileName);
         }
         if (_localFilePaths.containsKey(text)) {
           final String? localPath = _localFilePaths[text];
           if (localPath != null) {
             return _buildLocalDocumentBubble(localPath, colorScheme, timeText, isMe, isRead, fileName, fileSize);
           } else {
-            return _buildDownloadPlaceholderCard(text, 'document', fileSize, colorScheme, isMe, timeText, isRead);
+            return _buildDownloadPlaceholderCard(text, 'document', fileSize, colorScheme, isMe, timeText, isRead, originalFileName: fileName);
           }
         }
-        _triggerFileCheck(text, 'document');
-        return _buildDownloadPlaceholderCard(text, 'document', fileSize, colorScheme, isMe, timeText, isRead);
+        _triggerFileCheck(text, 'document', originalFileName: fileName);
+        return _buildDownloadPlaceholderCard(text, 'document', fileSize, colorScheme, isMe, timeText, isRead, originalFileName: fileName);
 
       case 'location':
         List<String> latLng = text.split(',');
