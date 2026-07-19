@@ -566,11 +566,11 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
                           );
                           if (mounted) _resumeStatus();
                         },
-                        icon: const Icon(Icons.remove_red_eye, color: Colors.white),
-                        label: Text('${_currentGroup[_currentIndex].viewers.map((v) => v.uid).toSet().length}', style: const TextStyle(color: Colors.white)),
+                        icon: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedView, color: Colors.white, size: 24),
+                        label: Text('${_currentGroup[_currentIndex].viewers.map((v) => v.uid).toSet().length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.share, color: Colors.white),
+                        icon: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedShare01, color: Colors.white, size: 24),
                         onPressed: () {
                           final status = _currentGroup[_currentIndex];
                           String shareText = 'Check out my status on Cuqter!';
@@ -584,7 +584,7 @@ class _StatusViewScreenState extends State<StatusViewScreen> with SingleTickerPr
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.redAccent),
+                        icon: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedDelete02, color: Colors.redAccent, size: 24),
                         onPressed: () async {
                           await _statusService.deleteStatus(_currentGroup[_currentIndex]);
                           if (mounted) {
