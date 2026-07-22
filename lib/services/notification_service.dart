@@ -85,6 +85,74 @@ void notificationTapBackground(NotificationResponse response) async {
         print('Error handling background inline reply: $e');
       }
     }
+  } else if (response.actionId == 'accept_call' || response.actionId == 'decline_call' || (response.payload?.contains('"incoming_call"') ?? false)) {
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+      if (Firebase.apps.isEmpty) {
+        if (kIsWeb) {
+          await Firebase.initializeApp(
+            options: const FirebaseOptions(
+              apiKey: "AIzaSyBOvtzNFHyoCeq8pZZ_JdaG0dmd4a1DPHs",
+              authDomain: "cuqter-2fa01.firebaseapp.com",
+              databaseURL: "https://cuqter-2fa01-default-rtdb.firebaseio.com",
+              projectId: "cuqter-2fa01",
+              storageBucket: "cuqter-2fa01.firebasestorage.app",
+              messagingSenderId: "921725231252",
+              appId: "1:921725231252:web:a2dbfa0c97694cbf299481",
+              measurementId: "G-5TKLZ0RS2M",
+            ),
+          );
+        } else {
+          await Firebase.initializeApp();
+        }
+      }
+
+      if (response.payload != null) {
+        final Map<String, dynamic> data = jsonDecode(response.payload!);
+        if (data['type'] == 'incoming_call') {
+          final roomId = data['roomId'];
+          final callerName = data['callerName'] ?? 'Unknown';
+          final callerId = data['callerId'] ?? '';
+          final isVideoCall = data['isVideoCall'] ?? false;
+
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null) {
+            await FirebaseDatabase.instance.ref('incoming_calls/${currentUser.uid}').remove();
+          }
+
+          if (roomId != null) {
+            await FlutterCallkitIncoming.endCall(roomId);
+            await NotificationService.localNotifications.cancel(id: roomId.hashCode);
+          }
+
+          if (response.actionId == 'decline_call') {
+            if (roomId != null) {
+              await FirebaseDatabase.instance.ref('calls/$roomId').remove();
+            }
+            return;
+          }
+
+          // Otherwise accept call
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            navigatorKey.currentState?.popUntil((route) => route.isFirst);
+            navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => CallScreen(
+                  roomId: roomId,
+                  isVideoCall: isVideoCall,
+                  receiverName: callerName,
+                  receiverId: callerId,
+                ),
+              ),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error handling background call action: $e');
+      }
+    }
   }
 }
 
@@ -378,8 +446,15 @@ class NotificationService {
             await FirebaseDatabase.instance.ref('incoming_calls/${currentUser.uid}').remove();
           }
 
+          if (roomId != null) {
+            await FlutterCallkitIncoming.endCall(roomId);
+            await localNotifications.cancel(id: roomId.hashCode);
+          }
+
           if (response.actionId == 'decline_call') {
-            await FirebaseDatabase.instance.ref('calls/$roomId').remove();
+            if (roomId != null) {
+              await FirebaseDatabase.instance.ref('calls/$roomId').remove();
+            }
             return; // Just decline
           }
 
@@ -457,11 +532,69 @@ class NotificationService {
       ),
     );
     await FlutterCallkitIncoming.showCallkitIncoming(params);
+
+    // Show heads-up local notification with Accept and Decline actions
+    await initializeLocalNotifications();
+
+    final List<AndroidNotificationAction> callActions = [
+      const AndroidNotificationAction(
+        'accept_call',
+        'Accept',
+        showsUserInterface: true,
+        cancelNotification: true,
+      ),
+      const AndroidNotificationAction(
+        'decline_call',
+        'Decline',
+        showsUserInterface: false,
+        cancelNotification: true,
+      ),
+    ];
+
+    final payloadData = {
+      'type': 'incoming_call',
+      'roomId': roomId,
+      'callerId': callerId,
+      'callerName': callerName,
+      'isVideoCall': isVideoCall,
+    };
+
+    final androidDetails = AndroidNotificationDetails(
+      'incoming_calls_channel',
+      'Incoming Calls',
+      channelDescription: 'Notifications for incoming audio and video calls',
+      importance: Importance.max,
+      priority: Priority.max,
+      category: AndroidNotificationCategory.call,
+      fullScreenIntent: true,
+      playSound: true,
+      ongoing: true,
+      autoCancel: false,
+      actions: callActions,
+      icon: '@mipmap/launcher_icon',
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      categoryIdentifier: 'incoming_call_category',
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+
+    await localNotifications.show(
+      id: roomId.hashCode,
+      title: callerName,
+      body: 'Incoming ${isVideoCall ? "Video" : "Voice"} Call',
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      payload: jsonEncode(payloadData),
+    );
   }
 
   static Future<void> cancelCallNotification(String roomId) async {
     if (kIsWeb) return;
     await FlutterCallkitIncoming.endCall(roomId);
+    await localNotifications.cancel(id: roomId.hashCode);
   }
 
   static Future<void> initializeLocalNotifications() async {
@@ -477,6 +610,21 @@ class NotificationService {
             'Reply',
             buttonTitle: 'Send',
             placeholder: 'Type your reply...',
+          ),
+        ],
+      ),
+      DarwinNotificationCategory(
+        'incoming_call_category',
+        actions: [
+          DarwinNotificationAction.plain(
+            'accept_call',
+            'Accept',
+            options: {DarwinNotificationActionOption.foreground},
+          ),
+          DarwinNotificationAction.plain(
+            'decline_call',
+            'Decline',
+            options: {DarwinNotificationActionOption.destructive},
           ),
         ],
       ),
@@ -567,9 +715,14 @@ class NotificationService {
               .remove();
         }
 
+        if (roomId.isNotEmpty) {
+          localNotifications.cancel(id: roomId.hashCode);
+        }
+
         // Ensure CallScreen can push properly
         if (navigatorKey.currentState != null) {
-          navigatorKey.currentState!.pushReplacement(
+          navigatorKey.currentState!.popUntil((route) => route.isFirst);
+          navigatorKey.currentState!.push(
             MaterialPageRoute(
               builder: (context) => CallScreen(
                 roomId: roomId,
@@ -580,12 +733,18 @@ class NotificationService {
             ),
           );
         }
-      } else if (event is CallEventActionCallDecline) {
+      } else if (event is CallEventActionCallDecline || event is CallEventActionCallEnded || event is CallEventActionCallTimeout) {
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser != null) {
           FirebaseDatabase.instance
               .ref('incoming_calls/${currentUser.uid}')
               .remove();
+        }
+        final dynamic params = (event as dynamic).callKitParams;
+        final String roomId = params?.id ?? '';
+        if (roomId.isNotEmpty) {
+          FirebaseDatabase.instance.ref('calls/$roomId').remove();
+          localNotifications.cancel(id: roomId.hashCode);
         }
       }
     });

@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hugeicons/hugeicons.dart' as huge;
 import '../services/signaling_service.dart';
 
 class CallScreen extends StatefulWidget {
@@ -36,6 +37,7 @@ class _CallScreenState extends State<CallScreen> {
   
   bool _isMicMuted = false;
   bool _isVideoDisabled = false;
+  bool _isSpeakerOn = true;
   String? _roomId;
   
   Timer? _ringTimer;
@@ -295,6 +297,17 @@ class _CallScreenState extends State<CallScreen> {
     }
   }
 
+  void _toggleSpeaker() {
+    setState(() {
+      _isSpeakerOn = !_isSpeakerOn;
+    });
+    try {
+      Helper.setSpeakerphoneOn(_isSpeakerOn);
+    } catch (e) {
+      debugPrint('Error toggling speaker: $e');
+    }
+  }
+
   void _toggleCamera() {
     if (signaling.localStream != null && widget.isVideoCall) {
       bool enabled = signaling.localStream!.getVideoTracks()[0].enabled;
@@ -347,187 +360,286 @@ class _CallScreenState extends State<CallScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Remote Video
-            if (_remoteRenderer.srcObject != null && widget.isVideoCall)
-              Positioned.fill(
-                child: RTCVideoView(
-                  _remoteRenderer,
-                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                ),
-              )
-            else
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (widget.receiverId != null)
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance.collection('users').doc(widget.receiverId).snapshots(),
-                        builder: (context, snapshot) {
-                          String? profilePic;
-                          if (snapshot.hasData && snapshot.data!.exists) {
-                            var data = snapshot.data!.data() as Map<String, dynamic>?;
-                            profilePic = data?['profilepic'];
-                          }
-                          return RippleAnimation(
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundImage: profilePic != null && profilePic.isNotEmpty
-                                  ? NetworkImage(profilePic)
-                                  : null,
-                              child: profilePic == null || profilePic.isEmpty
-                                  ? const Icon(Icons.person, size: 50, color: Colors.white)
-                                  : null,
-                            ),
-                          );
-                        },
-                      )
-                    else
-                      RippleAnimation(
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.grey.shade800,
-                          child: const Icon(Icons.person, size: 50, color: Colors.white),
+      backgroundColor: const Color(0xFF0F172A),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Remote Video
+              if (_remoteRenderer.srcObject != null && widget.isVideoCall)
+                Positioned.fill(
+                  child: RTCVideoView(
+                    _remoteRenderer,
+                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                  ),
+                )
+              else
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (widget.receiverId != null)
+                        StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance.collection('users').doc(widget.receiverId).snapshots(),
+                          builder: (context, snapshot) {
+                            String? profilePic;
+                            if (snapshot.hasData && snapshot.data!.exists) {
+                              var data = snapshot.data!.data() as Map<String, dynamic>?;
+                              profilePic = data?['profilepic'];
+                            }
+                            return RippleAnimation(
+                              child: CircleAvatar(
+                                radius: 64,
+                                backgroundColor: Colors.white.withValues(alpha: 0.1),
+                                backgroundImage: profilePic != null && profilePic.isNotEmpty
+                                    ? NetworkImage(profilePic)
+                                    : null,
+                                child: profilePic == null || profilePic.isEmpty
+                                    ? const Icon(Icons.person, size: 64, color: Colors.white)
+                                    : null,
+                              ),
+                            );
+                          },
+                        )
+                      else
+                        RippleAnimation(
+                          child: CircleAvatar(
+                            radius: 64,
+                            backgroundColor: Colors.white.withValues(alpha: 0.1),
+                            child: const Icon(Icons.person, size: 64, color: Colors.white),
+                          ),
                         ),
-                      ),
-
-                  ],
-                ),
-              ),
-              
-            // Local Video (Picture-in-Picture)
-            if (_localRenderer.srcObject != null && widget.isVideoCall)
-              Positioned(
-                top: 20,
-                right: 20,
-                child: Container(
-                  width: 100,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white30, width: 2),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: RTCVideoView(
-                      _localRenderer,
-                      mirror: true,
-                      objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                    ),
+                    ],
                   ),
                 ),
-              ),
-
-            // Controls
-            Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildControlButton(
-                    icon: _isMicMuted ? Icons.mic_off : Icons.mic,
-                    color: _isMicMuted ? Colors.red : Colors.white24,
-                    onTap: _toggleMic,
-                  ),
-                  if (widget.isVideoCall) ...[
-                    _buildControlButton(
-                      icon: _isVideoDisabled ? Icons.videocam_off : Icons.videocam,
-                      color: _isVideoDisabled ? Colors.red : Colors.white24,
-                      onTap: _toggleCamera,
-                    ),
-                    _buildControlButton(
-                      icon: Icons.switch_camera,
-                      color: Colors.white24,
-                      onTap: _switchCamera,
-                    ),
-                  ],
-                  _buildControlButton(
-                    icon: Icons.call_end,
-                    color: Colors.red,
-                    onTap: () => _hangUp(),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Back Button
-            Positioned(
-              top: 10,
-              left: 10,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => _hangUp(),
-              ),
-            ),
-            
-            // Name at top
-            Positioned(
-              top: 25,
-              left: 60,
-              right: 60,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.receiverName,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(1, 1)),
+                
+              // Local Video (Picture-in-Picture)
+              if (_localRenderer.srcObject != null && widget.isVideoCall)
+                Positioned(
+                  top: 70,
+                  right: 20,
+                  child: Container(
+                    width: 110,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white30, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
                       ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      _remoteRenderer.srcObject == null
-                          ? (widget.roomId == null ? 'Calling...' : 'Connecting...')
-                          : _formatDuration(_callDurationInSeconds),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        shadows: [
-                          Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(1, 1)),
-                        ],
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: RTCVideoView(
+                        _localRenderer,
+                        mirror: true,
+                        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                       ),
                     ),
                   ),
-                ],
+                ),
+
+              // Header Bar (sketch: Left 'v' down arrow, Center Name & Timer, Right '+' Add user)
+              Positioned(
+                top: 12,
+                left: 16,
+                right: 16,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 'v' icon (Chevron down / Minimize / Back button)
+                    IconButton(
+                      icon: const huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedArrowDown01,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      onPressed: () => _hangUp(),
+                    ),
+                    
+                    // Center Name and Duration
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.receiverName,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _remoteRenderer.srcObject == null
+                              ? (widget.roomId == null ? 'Calling...' : 'Connecting...')
+                              : _formatDuration(_callDurationInSeconds),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // '+' Add Participant icon
+                    IconButton(
+                      icon: const huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedUserAdd01,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Add participant feature coming soon!')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              // Bottom Controls Pill Container Bar (sketch: Rounded pill shape containing Speaker, Mute, End Call)
+              Positioned(
+                bottom: 36,
+                left: 20,
+                right: 20,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(50),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          blurRadius: 25,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Speaker Button
+                        _buildPillControlButton(
+                          icon: _isSpeakerOn ? huge.HugeIcons.strokeRoundedVolumeHigh : huge.HugeIcons.strokeRoundedVolumeOff,
+                          color: _isSpeakerOn ? Colors.white.withValues(alpha: 0.25) : Colors.white12,
+                          iconColor: Colors.white,
+                          onTap: _toggleSpeaker,
+                        ),
+                        const SizedBox(width: 16),
+                        
+                        // Mute Mic Button
+                        _buildPillControlButton(
+                          icon: _isMicMuted ? huge.HugeIcons.strokeRoundedMicOff01 : huge.HugeIcons.strokeRoundedMic01,
+                          color: _isMicMuted ? Colors.red.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.25),
+                          iconColor: Colors.white,
+                          onTap: _toggleMic,
+                        ),
+                        
+                        if (widget.isVideoCall) ...[
+                          const SizedBox(width: 16),
+                          _buildPillControlButton(
+                            icon: _isVideoDisabled ? huge.HugeIcons.strokeRoundedVideo01 : huge.HugeIcons.strokeRoundedVideo01,
+                            color: _isVideoDisabled ? Colors.red.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.25),
+                            iconColor: Colors.white,
+                            onTap: _toggleCamera,
+                          ),
+                          const SizedBox(width: 16),
+                          _buildPillControlButton(
+                            icon: huge.HugeIcons.strokeRoundedCameraRotated01,
+                            color: Colors.white.withValues(alpha: 0.25),
+                            iconColor: Colors.white,
+                            onTap: _switchCamera,
+                          ),
+                        ],
+                        
+                        const SizedBox(width: 16),
+                        
+                        // End Call Button (Red circle)
+                        _buildPillControlButton(
+                          icon: huge.HugeIcons.strokeRoundedCall,
+                          isRotatedCallEnd: true,
+                          color: Colors.red,
+                          iconColor: Colors.white,
+                          size: 54,
+                          iconSize: 26,
+                          onTap: () => _hangUp(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildControlButton({
-    required IconData icon,
+  Widget _buildPillControlButton({
+    required dynamic icon,
     required Color color,
+    required Color iconColor,
     required VoidCallback onTap,
+    bool isRotatedCallEnd = false,
+    double size = 48,
+    double iconSize = 22,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 60,
-        height: 60,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: Colors.white, size: 30),
+        child: Center(
+          child: isRotatedCallEnd
+              ? Transform.rotate(
+                  angle: 2.356, // 135 deg hang up rotation
+                  child: huge.HugeIcon(
+                    icon: icon,
+                    color: iconColor,
+                    size: iconSize,
+                  ),
+                )
+              : (icon is IconData
+                  ? Icon(icon, color: iconColor, size: iconSize)
+                  : huge.HugeIcon(
+                      icon: icon,
+                      color: iconColor,
+                      size: iconSize,
+                    )),
+        ),
       ),
     );
   }
@@ -568,19 +680,19 @@ class _RippleAnimationState extends State<RippleAnimation> with SingleTickerProv
           alignment: Alignment.center,
           children: [
             Container(
-              width: 100 + (_controller.value * 50),
-              height: 100 + (_controller.value * 50),
+              width: 120 + (_controller.value * 50),
+              height: 120 + (_controller.value * 50),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: (1 - _controller.value) * 0.5),
+                color: Colors.white.withValues(alpha: (1 - _controller.value) * 0.3),
               ),
             ),
             Container(
-              width: 120 + (_controller.value * 80),
-              height: 120 + (_controller.value * 80),
+              width: 140 + (_controller.value * 80),
+              height: 140 + (_controller.value * 80),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: (1 - _controller.value) * 0.2),
+                color: Colors.white.withValues(alpha: (1 - _controller.value) * 0.15),
               ),
             ),
             widget.child,

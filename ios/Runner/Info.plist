@@ -80,5 +80,11 @@
 		<string>This app requires access to your location to share it with your contacts in chat.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>This app requires access to your location to share it with your contacts in chat.</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>voip</string>
+			<string>fetch</string>
+			<string>remote-notification</string>
+		</array>
 	</dict>
 </plist>
