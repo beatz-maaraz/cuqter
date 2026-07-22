@@ -11,7 +11,14 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cuqter/main.dart';
 import 'package:cuqter/Screen/chat_screen.dart';
 import 'package:cuqter/Screen/call_screen.dart';
+import 'package:cuqter/Screen/notification_screen.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
+import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
+import 'package:flutter_callkit_incoming/entities/call_event.dart';
+import 'package:flutter_callkit_incoming/entities/android_params.dart';
+import 'package:flutter_callkit_incoming/entities/ios_params.dart';
+import 'package:flutter_callkit_incoming/entities/notification_params.dart';
 
 /// Top-level background action handler for notification taps (must be a top-level or static function)
 @pragma('vm:entry-point')
@@ -139,6 +146,27 @@ Future<void> showMessageNotification(RemoteMessage message) async {
         isVideoCall: isVideo,
       );
       return; // Skip showing chat notification
+    }
+
+    if (messageType == 'friend_request') {
+      final androidDetails = const AndroidNotificationDetails(
+        'friend_requests_channel',
+        'Friend Requests',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+      );
+      final iosDetails = const DarwinNotificationDetails(
+        categoryIdentifier: 'friend_requests_category',
+      );
+      await NotificationService.localNotifications.show(
+        id: data['senderId'].hashCode,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+        payload: jsonEncode({'type': 'friend_request'}),
+      );
+      return;
     }
 
     // Client-side fallback: if body looks like a URL or is empty, show a friendly type label
@@ -302,6 +330,16 @@ class NotificationService {
     if (response.payload != null) {
       try {
         final Map<String, dynamic> data = jsonDecode(response.payload!);
+        
+        if (data['type'] == 'friend_request') {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => const NotificationScreen(),
+            ),
+          );
+          return;
+        }
+
         final chatId = data['chatId'];
         final senderId = data['senderId'];
         final senderName = data['title'] ?? 'Chat';
@@ -371,50 +409,59 @@ class NotificationService {
     required bool isVideoCall,
   }) async {
     if (kIsWeb) return;
-    await initializeLocalNotifications();
-
-    final payloadData = {
-      'type': 'incoming_call',
-      'roomId': roomId,
-      'callerId': callerId,
-      'callerName': callerName,
-      'isVideoCall': isVideoCall,
-    };
-
-    final androidDetails = AndroidNotificationDetails(
-      'incoming_calls_channel',
-      'Incoming Calls',
-      channelDescription: 'Notifications for incoming audio and video calls',
-      importance: Importance.max,
-      priority: Priority.high,
-      fullScreenIntent: true,
-      category: AndroidNotificationCategory.call,
-      playSound: true,
-      enableVibration: true,
-      actions: [
-        AndroidNotificationAction('decline_call', 'Decline', showsUserInterface: true, cancelNotification: true),
-        AndroidNotificationAction('accept_call', 'Answer', showsUserInterface: true, cancelNotification: true),
-      ],
+    
+    final params = CallKitParams(
+      id: roomId,
+      nameCaller: callerName,
+      appName: 'Cuqter',
+      avatar: 'https://i.pravatar.cc/100', // optional
+      handle: isVideoCall ? 'Video Call' : 'Voice Call',
+      type: isVideoCall ? 1 : 0,
+      duration: 30000,
+      missedCallNotification: const NotificationParams(
+        showNotification: true,
+        isShowCallback: true,
+        subtitle: 'Missed call',
+        callbackText: 'Call back',
+      ),
+      extra: <String, dynamic>{
+        'roomId': roomId,
+        'callerId': callerId,
+        'callerName': callerName,
+        'isVideoCall': isVideoCall,
+      },
+      headers: <String, dynamic>{'apiKey': 'v1.0', 'platform': 'flutter'},
+      android: const AndroidParams(
+        isCustomNotification: true,
+        isShowLogo: false,
+        ringtonePath: 'system_ringtone_default',
+        backgroundColor: '#0955fa',
+        backgroundUrl: 'assets/test.png',
+        actionColor: '#4CAF50',
+      ),
+      ios: const IOSParams(
+        iconName: 'CallKitLogo',
+        handleType: '',
+        supportsVideo: true,
+        maximumCallGroups: 2,
+        maximumCallsPerCallGroup: 1,
+        audioSessionMode: 'default',
+        audioSessionActive: true,
+        audioSessionPreferredSampleRate: 44100.0,
+        audioSessionPreferredIOBufferDuration: 0.005,
+        supportsDTMF: true,
+        supportsHolding: true,
+        supportsGrouping: false,
+        supportsUngrouping: false,
+        ringtonePath: 'system_ringtone_default',
+      ),
     );
-
-    final iosDetails = DarwinNotificationDetails(
-      categoryIdentifier: 'incoming_call_category',
-      presentSound: true,
-      presentAlert: true,
-    );
-
-    await localNotifications.show(
-      id: roomId.hashCode,
-      title: 'Incoming ${isVideoCall ? "Video" : "Voice"} Call',
-      body: callerName,
-      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
-      payload: jsonEncode(payloadData),
-    );
+    await FlutterCallkitIncoming.showCallkitIncoming(params);
   }
 
   static Future<void> cancelCallNotification(String roomId) async {
     if (kIsWeb) return;
-    await localNotifications.cancel(id: roomId.hashCode);
+    await FlutterCallkitIncoming.endCall(roomId);
   }
 
   static Future<void> initializeLocalNotifications() async {
@@ -487,7 +534,61 @@ class NotificationService {
       await localNotifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(callChannel);
+
+      const AndroidNotificationChannel friendRequestChannel = AndroidNotificationChannel(
+        'friend_requests_channel',
+        'Friend Requests',
+        description: 'Notifications for incoming friend requests',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
+      await localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(friendRequestChannel);
     }
+
+    FlutterCallkitIncoming.onEvent.listen((CallEvent? event) {
+      if (event == null) return;
+      
+      if (event is CallEventActionCallAccept) {
+        final body = event.callKitParams;
+        final roomId = body.id;
+        final extra = body.extra ?? {};
+        final callerId = extra['callerId'] ?? '';
+        final callerName = extra['callerName'] ?? body.nameCaller ?? 'Unknown';
+        final isVideoCall = extra['isVideoCall'] == true;
+
+        // Stop ringing by removing node
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          FirebaseDatabase.instance
+              .ref('incoming_calls/${currentUser.uid}')
+              .remove();
+        }
+
+        // Ensure CallScreen can push properly
+        if (navigatorKey.currentState != null) {
+          navigatorKey.currentState!.pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => CallScreen(
+                roomId: roomId,
+                receiverId: callerId,
+                receiverName: callerName,
+                isVideoCall: isVideoCall,
+              ),
+            ),
+          );
+        }
+      } else if (event is CallEventActionCallDecline) {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          FirebaseDatabase.instance
+              .ref('incoming_calls/${currentUser.uid}')
+              .remove();
+        }
+      }
+    });
 
     _isLocalNotificationsInitialized = true;
   }
@@ -574,11 +675,48 @@ class NotificationService {
           });
         }
       }
+
+      // 8. Listen to friend requests locally since cloud functions are unavailable
+      _listenForFriendRequests();
     } else {
       if (kDebugMode) {
         print('Notification permissions denied.');
       }
     }
+  }
+
+  void _listenForFriendRequests() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+    
+    FirebaseFirestore.instance
+        .collection('friend_requests')
+        .where('receiverId', isEqualTo: currentUser.uid)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .listen((snapshot) {
+      for (var change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final data = change.doc.data();
+          if (data != null) {
+             final timestamp = data['timestamp'] as Timestamp?;
+             if (timestamp != null) {
+               final diff = DateTime.now().difference(timestamp.toDate());
+               if (diff.inMinutes < 2) { // Only notify if it was created recently
+                 showMessageNotification(RemoteMessage(
+                   data: {
+                     'type': 'friend_request',
+                     'senderId': data['senderId'],
+                     'title': 'New Friend Request',
+                     'body': '${data['senderName'] ?? 'Someone'} sent you a friend request',
+                   }
+                 ));
+               }
+             }
+          }
+        }
+      }
+    });
   }
 
   /// Logic to handle app navigation/routing when a notification is clicked (not inline replied)

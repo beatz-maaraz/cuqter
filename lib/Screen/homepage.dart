@@ -15,6 +15,9 @@ import 'package:cuqter/Screen/create_status_screen.dart';
 import 'package:cuqter/Screen/status_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
+import 'package:cuqter/Screen/notification_screen.dart';
+import 'package:cuqter/Screen/search_screen.dart';
+import 'package:cuqter/Screen/contact_screen.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
@@ -70,14 +73,19 @@ class _HomepageState extends State<Homepage> {
 
     // Listen to media sharing incoming intents when app is in memory
     if (!kIsWeb) {
-      _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
-        if (value.isNotEmpty) _handleIncomingSharing(value);
-      }, onError: (err) {
-        print("getIntentDataStream error: $err");
-      });
+      _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
+        (List<SharedMediaFile> value) {
+          if (value.isNotEmpty) _handleIncomingSharing(value);
+        },
+        onError: (err) {
+          print("getIntentDataStream error: $err");
+        },
+      );
 
       // Get the media sharing incoming intent when app is closed
-      ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
+      ReceiveSharingIntent.instance.getInitialMedia().then((
+        List<SharedMediaFile> value,
+      ) {
         if (value.isNotEmpty) _handleIncomingSharing(value);
       });
     }
@@ -102,12 +110,20 @@ class _HomepageState extends State<Homepage> {
             children: [
               const Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('Share to...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Share to...',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
               ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  child: Icon(Icons.history_edu, color: Theme.of(context).colorScheme.primary),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  child: Icon(
+                    Icons.history_edu,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 title: const Text('My Status'),
                 onTap: () {
@@ -129,8 +145,13 @@ class _HomepageState extends State<Homepage> {
               const Divider(),
               ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                  child: Icon(Icons.chat_bubble, color: Theme.of(context).colorScheme.secondary),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer,
+                  child: Icon(
+                    Icons.chat_bubble,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
                 ),
                 title: const Text('A Chat'),
                 onTap: () {
@@ -140,7 +161,9 @@ class _HomepageState extends State<Homepage> {
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Received ${files.length} file(s). Select a chat below to share.'),
+                      content: Text(
+                        'Received ${files.length} file(s). Select a chat below to share.',
+                      ),
                       duration: const Duration(seconds: 4),
                       backgroundColor: Theme.of(context).colorScheme.primary,
                     ),
@@ -172,7 +195,6 @@ class _HomepageState extends State<Homepage> {
     super.dispose();
   }
 
-
   void getUsername() async {
     try {
       var snap = await AuthMethod().getUserDetails();
@@ -203,12 +225,7 @@ class _HomepageState extends State<Homepage> {
     final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
 
     if (messageDate == today) {
-      final hour = dateTime.hour > 12
-          ? (dateTime.hour - 12).toString()
-          : (dateTime.hour == 0 ? '12' : dateTime.hour.toString());
-      final minute = dateTime.minute.toString().padLeft(2, '0');
-      final amPm = dateTime.hour >= 12 ? 'PM' : 'AM';
-      return '$hour:$minute $amPm';
+      return TimeOfDay.fromDateTime(dateTime).format(context);
     } else if (messageDate == yesterday) {
       return 'Yesterday';
     } else {
@@ -225,6 +242,8 @@ class _HomepageState extends State<Homepage> {
     if (type == 'audio') return '🎵 Audio';
     if (type == 'document') return '📄 Document';
     if (type == 'location') return '📍 Location';
+    if (type == 'video_call') return '📹 Video Call';
+    if (type == 'voice_call') return '📞 Voice Call';
 
     // Fallback URL checking for legacy messages
     if (text.startsWith('http') &&
@@ -291,8 +310,11 @@ class _HomepageState extends State<Homepage> {
 
   Future<void> _pinChat(String otherUserId) async {
     final String currentUserId = _auth.currentUser!.uid;
-    final userDoc = await _firestore.collection('users').doc(currentUserId).get();
-    
+    final userDoc = await _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .get();
+
     List<dynamic> pinnedChats = [];
     if (userDoc.exists) {
       final data = userDoc.data();
@@ -324,7 +346,7 @@ class _HomepageState extends State<Homepage> {
 
     // 1. Remove from contacts list on Firestore
     await _firestore.collection('users').doc(currentUserId).update({
-      'contacts': FieldValue.arrayRemove([otherUserId])
+      'contacts': FieldValue.arrayRemove([otherUserId]),
     });
 
     // 2. Delete messages subcollection
@@ -333,12 +355,12 @@ class _HomepageState extends State<Homepage> {
         .doc(chatId)
         .collection('messages')
         .get();
-    
+
     final batch = _firestore.batch();
     for (var doc in messagesSnapshot.docs) {
       batch.delete(doc.reference);
     }
-    
+
     // Also delete the main chat document
     batch.delete(_firestore.collection('chats').doc(chatId));
     await batch.commit();
@@ -349,17 +371,27 @@ class _HomepageState extends State<Homepage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete conversations?', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to delete the selected ${_selectedUserIds.length} chat(s) and all their messages? This action cannot be undone.'),
+        title: const Text(
+          'Delete conversations?',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to delete the selected ${_selectedUserIds.length} chat(s) and all their messages? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () async {
               Navigator.pop(context);
@@ -371,11 +403,16 @@ class _HomepageState extends State<Homepage> {
                   await _deleteChat(userId);
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Selected chats deleted successfully')),
+                  const SnackBar(
+                    content: Text('Selected chats deleted successfully'),
+                  ),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to delete chats: $e'), backgroundColor: Colors.redAccent),
+                  SnackBar(
+                    content: Text('Failed to delete chats: $e'),
+                    backgroundColor: Colors.redAccent,
+                  ),
                 );
               } finally {
                 setState(() {
@@ -385,7 +422,13 @@ class _HomepageState extends State<Homepage> {
                 });
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -403,8 +446,7 @@ class _HomepageState extends State<Homepage> {
         bottom: !widget.isDesktop,
         child: Column(
           children: [
-            if (_isLoading)
-              const LinearProgressIndicator(),
+            if (_isLoading) const LinearProgressIndicator(),
             // Custom Header
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -488,99 +530,43 @@ class _HomepageState extends State<Homepage> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Profile avatar
-                            if (!widget.isDesktop)
-                              StreamBuilder<DocumentSnapshot>(
-                              stream: _currentUserStream,
-                              builder: (context, snapshot) {
-                                String profilePic = '';
-                                if (snapshot.hasData && snapshot.data!.exists) {
-                                  var data =
-                                      snapshot.data!.data() as Map<String, dynamic>?;
-                                  if (data != null) {
-                                    profilePic = data['profilepic'] ?? '';
-                                  }
-                                }
-                                return GestureDetector(
-                                  onTap: () {
-                                    if (widget.isDesktop) {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => Dialog(
-                                          clipBehavior: Clip.antiAlias,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(24),
-                                          ),
-                                          child: const SizedBox(
-                                            width: 400,
-                                            height: 600,
-                                            child: ProfileScreen(),
-                                          ),
-                                        ),
-                                      );
-                                    } else {
-                                      Navigator.push(
-                                        context,
-                                        PageRouteBuilder(
-                                          pageBuilder:
-                                              (
-                                                context,
-                                                animation,
-                                                secondaryAnimation,
-                                              ) => const ProfileScreen(),
-                                          transitionsBuilder:
-                                              (
-                                                context,
-                                                animation,
-                                                secondaryAnimation,
-                                                child,
-                                              ) {
-                                                return FadeTransition(
-                                                  opacity: animation,
-                                                  child: ScaleTransition(
-                                                    scale:
-                                                        Tween<double>(
-                                                          begin: 0.9,
-                                                          end: 1.0,
-                                                        ).animate(
-                                                          CurvedAnimation(
-                                                            parent: animation,
-                                                            curve: Curves.easeOut,
-                                                          ),
-                                                        ),
-                                                    child: child,
+                            // Notification icon
+                            IconButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  PageRouteBuilder(
+                                    pageBuilder: (context, animation, secondaryAnimation) =>
+                                        const NotificationScreen(),
+                                    transitionsBuilder:
+                                        (context, animation, secondaryAnimation, child) {
+                                          return SlideTransition(
+                                            position:
+                                                Tween<Offset>(
+                                                  begin: const Offset(1.0, 0.0),
+                                                  end: Offset.zero,
+                                                ).animate(
+                                                  CurvedAnimation(
+                                                    parent: animation,
+                                                    curve: Curves.easeOutCubic,
                                                   ),
-                                                );
-                                              },
-                                          transitionDuration: const Duration(
-                                            milliseconds: 250,
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: CircleAvatar(
-                                    radius: 20,
-                                    backgroundColor: colorScheme.primary.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    backgroundImage: profilePic.isNotEmpty
-                                        ? (profilePic.startsWith('http')
-                                              ? CachedNetworkImageProvider(profilePic)
-                                              : AssetImage(profilePic)
-                                                    as ImageProvider)
-                                        : null,
-                                    child: profilePic.isEmpty
-                                        ? Icon(
-                                            Icons.person_outline,
-                                            color: colorScheme.primary,
-                                          )
-                                        : null,
+                                                ),
+                                            child: FadeTransition(
+                                              opacity: animation,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                    transitionDuration: const Duration(milliseconds: 250),
                                   ),
                                 );
                               },
+                              icon: AnimatedNotificationBell(
+                                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                                size: 24,
+                              ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 8),
                             // More vert popup menu
                             PopupMenuButton<String>(
                               onSelected: (value) {
@@ -591,15 +577,21 @@ class _HomepageState extends State<Homepage> {
                                       builder: (context) => Dialog(
                                         clipBehavior: Clip.antiAlias,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(24),
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
                                         ),
                                         child: SizedBox(
                                           width: 500,
                                           height: 650,
                                           child: Navigator(
-                                            onGenerateRoute: (settings) => MaterialPageRoute(
-                                              builder: (context) => const SettingsPage(isDialog: true),
-                                            ),
+                                            onGenerateRoute: (settings) =>
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      const SettingsPage(
+                                                        isDialog: true,
+                                                      ),
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -609,8 +601,11 @@ class _HomepageState extends State<Homepage> {
                                       context,
                                       PageRouteBuilder(
                                         pageBuilder:
-                                            (context, animation, secondaryAnimation) =>
-                                                const SettingsPage(),
+                                            (
+                                              context,
+                                              animation,
+                                              secondaryAnimation,
+                                            ) => const SettingsPage(),
                                         transitionsBuilder:
                                             (
                                               context,
@@ -637,14 +632,18 @@ class _HomepageState extends State<Homepage> {
                               offset: const Offset(0, 44),
                               icon: huge.HugeIcon(
                                 icon: huge.HugeIcons.strokeRoundedMoreVertical,
-                                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
                                 size: 24,
                               ),
                               itemBuilder: (context) => [
                                 PopupMenuItem<String>(
                                   value: 'settings',
                                   height: 56,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
                                   child: Row(
                                     children: [
                                       Container(
@@ -652,14 +651,14 @@ class _HomepageState extends State<Homepage> {
                                         height: 40,
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: colorScheme.secondary.withValues(
-                                            alpha: 0.12,
-                                          ),
+                                          color: colorScheme.secondary
+                                              .withValues(alpha: 0.12),
                                           shape: BoxShape.circle,
                                         ),
                                         child: huge.HugeIcon(
-                                          icon:
-                                              huge.HugeIcons.strokeRoundedSettings01,
+                                          icon: huge
+                                              .HugeIcons
+                                              .strokeRoundedSettings01,
                                           color: colorScheme.secondary,
                                           size: 22,
                                         ),
@@ -688,7 +687,36 @@ class _HomepageState extends State<Homepage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: TextField(
-                controller: _searchController,
+                readOnly: true,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const SearchScreen(),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position:
+                                    Tween<Offset>(
+                                      begin: const Offset(0.0, 0.05),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                      ),
+                                    ),
+                                child: child,
+                              ),
+                            );
+                          },
+                      transitionDuration: const Duration(milliseconds: 250),
+                    ),
+                  );
+                },
                 decoration: InputDecoration(
                   hintText: 'Search users...',
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -700,11 +728,6 @@ class _HomepageState extends State<Homepage> {
                   ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    searchQuery = value.trim().toLowerCase();
-                  });
-                },
               ),
             ),
 
@@ -716,9 +739,14 @@ class _HomepageState extends State<Homepage> {
 
               Container(
                 height: 6,
-                margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                margin: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
@@ -737,7 +765,8 @@ class _HomepageState extends State<Homepage> {
                         userSnapshot.data!.data() as Map<String, dynamic>?;
                     if (myData != null) {
                       myContacts = myData['contacts'] as List<dynamic>? ?? [];
-                      pinnedChats = myData['pinnedChats'] as List<dynamic>? ?? [];
+                      pinnedChats =
+                          myData['pinnedChats'] as List<dynamic>? ?? [];
                     }
                   }
 
@@ -774,14 +803,14 @@ class _HomepageState extends State<Homepage> {
                           );
                           if (!_lastMessageSubscriptions.containsKey(chatId)) {
                             _lastMessageSubscriptions[chatId] = _messageService
-                                  .getLastMessage(chatId)
-                                  .listen((message) {
-                                    if (mounted) {
-                                      setState(() {
-                                        _lastMessages[chatId] = message;
-                                      });
-                                    }
-                                  });
+                                .getLastMessage(chatId)
+                                .listen((message) {
+                                  if (mounted) {
+                                    setState(() {
+                                      _lastMessages[chatId] = message;
+                                    });
+                                  }
+                                });
                           }
                         }
                       }
@@ -793,13 +822,21 @@ class _HomepageState extends State<Homepage> {
                           bool isPinnedB = pinnedChats.contains(b.id);
 
                           if (isPinnedA && isPinnedB) {
-                            return pinnedChats.indexOf(a.id).compareTo(pinnedChats.indexOf(b.id));
+                            return pinnedChats
+                                .indexOf(a.id)
+                                .compareTo(pinnedChats.indexOf(b.id));
                           }
                           if (isPinnedA) return -1;
                           if (isPinnedB) return 1;
 
-                          String chatIdA = getChatId(_auth.currentUser!.uid, a.id);
-                          String chatIdB = getChatId(_auth.currentUser!.uid, b.id);
+                          String chatIdA = getChatId(
+                            _auth.currentUser!.uid,
+                            a.id,
+                          );
+                          String chatIdB = getChatId(
+                            _auth.currentUser!.uid,
+                            b.id,
+                          );
                           Message? msgA = _lastMessages[chatIdA];
                           Message? msgB = _lastMessages[chatIdB];
 
@@ -828,440 +865,580 @@ class _HomepageState extends State<Homepage> {
 
                       return Scrollbar(
                         child: ListView.builder(
-                          cacheExtent: 1000.0, physics: const BouncingScrollPhysics(),
+                          cacheExtent: 1000.0,
+                          physics: const BouncingScrollPhysics(),
                           itemCount: users.length,
                           itemBuilder: (context, index) {
-                          var userData =
-                              users[index].data() as Map<String, dynamic>;
-                          String userName = userData['name'] ?? 'Unknown User';
-                          String userBio =
-                              userData['bio'] ?? 'Stay cozy today!';
-                          String userId = users[index].id;
-                          bool isOnline = userData['isOnline'] ?? false;
-                          String chatId = getChatId(
-                            _auth.currentUser!.uid,
-                            userId,
-                          );
+                            var userData =
+                                users[index].data() as Map<String, dynamic>;
+                            String userName =
+                                userData['name'] ?? 'Unknown User';
+                            String userBio =
+                                userData['bio'] ?? 'Stay cozy today!';
+                            String userId = users[index].id;
+                            bool isOnline = userData['isOnline'] ?? false;
+                            String chatId = getChatId(
+                              _auth.currentUser!.uid,
+                              userId,
+                            );
 
-                          final lastMsg = _lastMessages[chatId];
-                          final isLastMsgFromMe =
-                              lastMsg != null &&
-                              lastMsg.senderId == _auth.currentUser!.uid;
-                          final subtitle = lastMsg != null
-                              ? _getLastMessageDisplay(lastMsg)
-                              : (userData['username'] != null &&
-                                        userData['username']
-                                            .toString()
-                                            .isNotEmpty
-                                    ? '@${userData['username']}'
-                                    : userBio);
-                          final timeText = lastMsg != null
-                              ? _formatDateTime(lastMsg.timestamp)
-                              : '';
+                            final lastMsg = _lastMessages[chatId];
+                            final isLastMsgFromMe =
+                                lastMsg != null &&
+                                lastMsg.senderId == _auth.currentUser!.uid;
+                            final subtitle = lastMsg != null
+                                ? _getLastMessageDisplay(lastMsg)
+                                : (userData['username'] != null &&
+                                          userData['username']
+                                              .toString()
+                                              .isNotEmpty
+                                      ? '@${userData['username']}'
+                                      : userBio);
+                            final timeText = lastMsg != null
+                                ? _formatDateTime(lastMsg.timestamp)
+                                : '';
 
-                          final isSelected = _selectedUserIds.contains(userId);
-                          return InkWell(
-                            onTap: () {
-                              if (_isSelectionMode) {
-                                setState(() {
-                                  if (isSelected) {
-                                    _selectedUserIds.remove(userId);
-                                    if (_selectedUserIds.isEmpty) {
-                                      _isSelectionMode = false;
+                            final isSelected = _selectedUserIds.contains(
+                              userId,
+                            );
+                            return InkWell(
+                              onTap: () {
+                                if (_isSelectionMode) {
+                                  setState(() {
+                                    if (isSelected) {
+                                      _selectedUserIds.remove(userId);
+                                      if (_selectedUserIds.isEmpty) {
+                                        _isSelectionMode = false;
+                                      }
+                                    } else {
+                                      _selectedUserIds.add(userId);
                                     }
-                                  } else {
-                                    _selectedUserIds.add(userId);
-                                  }
-                                });
-                              } else {
-                                if (widget.isDesktop && widget.onChatSelected != null) {
-                                  widget.onChatSelected!(userId, userName);
+                                  });
                                 } else {
-                                  Navigator.push(
-                                    context,
-                                    PageRouteBuilder(
-                                      pageBuilder:
-                                          (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                          ) {
-                                            final currentShared = List<SharedMediaFile>.from(_sharedFiles);
-                                            if (currentShared.isNotEmpty) {
-                                              Future.microtask(() {
-                                                if (mounted) {
-                                                  setState(() {
-                                                    _sharedFiles.clear();
-                                                  });
-                                                }
-                                              });
-                                            }
-                                            return ChatScreen(
-                                              receiverId: userId,
-                                              receiverName: userName,
-                                              sharedMedia: currentShared.isNotEmpty ? currentShared : null,
-                                            );
-                                          },
-                                      transitionsBuilder:
-                                          (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                            child,
-                                          ) {
-                                            return SlideTransition(
-                                              position:
-                                                  Tween<Offset>(
-                                                    begin: const Offset(1.0, 0.0),
-                                                    end: Offset.zero,
-                                                  ).animate(
-                                                    CurvedAnimation(
-                                                      parent: animation,
-                                                      curve: Curves.easeOutCubic,
+                                  if (widget.isDesktop &&
+                                      widget.onChatSelected != null) {
+                                    widget.onChatSelected!(userId, userName);
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      PageRouteBuilder(
+                                        pageBuilder:
+                                            (
+                                              context,
+                                              animation,
+                                              secondaryAnimation,
+                                            ) {
+                                              final currentShared =
+                                                  List<SharedMediaFile>.from(
+                                                    _sharedFiles,
+                                                  );
+                                              if (currentShared.isNotEmpty) {
+                                                Future.microtask(() {
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _sharedFiles.clear();
+                                                    });
+                                                  }
+                                                });
+                                              }
+                                              return ChatScreen(
+                                                receiverId: userId,
+                                                receiverName: userName,
+                                                sharedMedia:
+                                                    currentShared.isNotEmpty
+                                                    ? currentShared
+                                                    : null,
+                                              );
+                                            },
+                                        transitionsBuilder:
+                                            (
+                                              context,
+                                              animation,
+                                              secondaryAnimation,
+                                              child,
+                                            ) {
+                                              return SlideTransition(
+                                                position:
+                                                    Tween<Offset>(
+                                                      begin: const Offset(
+                                                        1.0,
+                                                        0.0,
+                                                      ),
+                                                      end: Offset.zero,
+                                                    ).animate(
+                                                      CurvedAnimation(
+                                                        parent: animation,
+                                                        curve:
+                                                            Curves.easeOutCubic,
+                                                      ),
                                                     ),
-                                                  ),
-                                              child: FadeTransition(
-                                                opacity: animation,
-                                                child: child,
-                                              ),
-                                            );
-                                          },
-                                      transitionDuration: const Duration(
-                                        milliseconds: 250,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            onLongPress: () {
-                              setState(() {
-                                _isSelectionMode = true;
-                                _selectedUserIds.add(userId);
-                              });
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeInOut,
-                              margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
-                              decoration: BoxDecoration(
-                                color: (widget.selectedUserId == userId || isSelected)
-                                    ? colorScheme.primary.withValues(alpha: 0.1) 
-                                    : Colors.transparent,
-                                border: (widget.selectedUserId == userId || isSelected)
-                                    ? Border.all(color: colorScheme.primary, width: 2)
-                                    : Border.all(color: Colors.transparent, width: 2),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 10.0,
-                              ),
-                              child: Row(
-                                children: [
-                                  // Avatar with status
-                                  Stack(
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () {
-                                          final pic =
-                                              userData['profilepic']
-                                                  ?.toString() ??
-                                              '';
-                                          if (pic.isNotEmpty) {
-                                            if (widget.isDesktop) {
-                                              showDialog(
-                                                context: context,
-                                                builder: (context) => Dialog(
-                                                  clipBehavior: Clip.antiAlias,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(24),
-                                                  ),
-                                                  child: SizedBox(
-                                                    width: 400,
-                                                    height: 600,
-                                                    child: FullScreenProfilePicPage(
-                                                      imageUrl: pic,
-                                                      heroTag: 'profile_pic_hero_$userId',
-                                                    ),
-                                                  ),
+                                                child: FadeTransition(
+                                                  opacity: animation,
+                                                  child: child,
                                                 ),
                                               );
-                                            } else {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      FullScreenProfilePicPage(
+                                            },
+                                        transitionDuration: const Duration(
+                                          milliseconds: 250,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              onLongPress: () {
+                                setState(() {
+                                  _isSelectionMode = true;
+                                  _selectedUserIds.add(userId);
+                                });
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeInOut,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                  vertical: 2.0,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      (widget.selectedUserId == userId ||
+                                          isSelected)
+                                      ? colorScheme.primary.withValues(
+                                          alpha: 0.1,
+                                        )
+                                      : Colors.transparent,
+                                  border:
+                                      (widget.selectedUserId == userId ||
+                                          isSelected)
+                                      ? Border.all(
+                                          color: colorScheme.primary,
+                                          width: 2,
+                                        )
+                                      : Border.all(
+                                          color: Colors.transparent,
+                                          width: 2,
+                                        ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                  vertical: 10.0,
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Avatar with status
+                                    Stack(
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () {
+                                            final pic =
+                                                userData['profilepic']
+                                                    ?.toString() ??
+                                                '';
+                                            if (pic.isNotEmpty) {
+                                              if (widget.isDesktop) {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) => Dialog(
+                                                    clipBehavior:
+                                                        Clip.antiAlias,
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            24,
+                                                          ),
+                                                    ),
+                                                    child: SizedBox(
+                                                      width: 400,
+                                                      height: 600,
+                                                      child: FullScreenProfilePicPage(
                                                         imageUrl: pic,
                                                         heroTag:
                                                             'profile_pic_hero_$userId',
                                                       ),
-                                                ),
-                                              );
-                                            }
-                                          }
-                                        },
-                                        child: Hero(
-                                          tag: 'profile_pic_hero_$userId',
-                                          child: CircleAvatar(
-                                            radius: 28,
-                                            backgroundColor:
-                                                colorScheme.primaryContainer,
-                                            backgroundImage:
-                                                userData['profilepic'] !=
-                                                        null &&
-                                                    userData['profilepic']
-                                                        .toString()
-                                                        .isNotEmpty
-                                                ? (userData['profilepic']
-                                                          .toString()
-                                                          .startsWith('http')
-                                                      ? CachedNetworkImageProvider(
-                                                              userData['profilepic']
-                                                                  .toString(),
-                                                            )
-                                                      : AssetImage(
-                                                              userData['profilepic']
-                                                                  .toString(),
-                                                            )
-                                                            as ImageProvider)
-                                                : null,
-                                            child:
-                                                userData['profilepic'] ==
-                                                        null ||
-                                                    userData['profilepic']
-                                                        .toString()
-                                                        .isEmpty
-                                                ? Text(
-                                                    userName[0].toUpperCase(),
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 18,
-                                                      color: colorScheme
-                                                          .onPrimaryContainer,
                                                     ),
-                                                  )
-                                                : null,
-                                          ),
-                                        ),
-                                      ),
-                                      if (isOnline)
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Container(
-                                            width: 14,
-                                            height: 14,
-                                            decoration: BoxDecoration(
-                                              color: Colors.green,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: colorScheme.surface,
-                                                width: 2,
-                                              ),
+                                                  ),
+                                                );
+                                              } else {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        FullScreenProfilePicPage(
+                                                          imageUrl: pic,
+                                                          heroTag:
+                                                              'profile_pic_hero_$userId',
+                                                        ),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          },
+                                          child: Hero(
+                                            tag: 'profile_pic_hero_$userId',
+                                            child: CircleAvatar(
+                                              radius: 28,
+                                              backgroundColor:
+                                                  colorScheme.primaryContainer,
+                                              backgroundImage:
+                                                  userData['profilepic'] !=
+                                                          null &&
+                                                      userData['profilepic']
+                                                          .toString()
+                                                          .isNotEmpty
+                                                  ? (userData['profilepic']
+                                                            .toString()
+                                                            .startsWith('http')
+                                                        ? CachedNetworkImageProvider(
+                                                            userData['profilepic']
+                                                                .toString(),
+                                                          )
+                                                        : AssetImage(
+                                                                userData['profilepic']
+                                                                    .toString(),
+                                                              )
+                                                              as ImageProvider)
+                                                  : null,
+                                              child:
+                                                  userData['profilepic'] ==
+                                                          null ||
+                                                      userData['profilepic']
+                                                          .toString()
+                                                          .isEmpty
+                                                  ? Text(
+                                                      userName[0].toUpperCase(),
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 18,
+                                                        color: colorScheme
+                                                            .onPrimaryContainer,
+                                                      ),
+                                                    )
+                                                  : null,
                                             ),
                                           ),
                                         ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 16),
-                                  // Content
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                userName,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
+                                        if (isOnline)
+                                          Positioned(
+                                            bottom: 0,
+                                            right: 0,
+                                            child: Container(
+                                              width: 14,
+                                              height: 14,
+                                              decoration: BoxDecoration(
+                                                color: Colors.green,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: colorScheme.surface,
+                                                  width: 2,
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                if (pinnedChats.contains(userId)) ...[
-                                                  huge.HugeIcon(
-                                                    icon: huge.HugeIcons.strokeRoundedPin02,
-                                                    color: colorScheme.primary,
-                                                    size: 14,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                ],
-                                                Text(
-                                                  timeText,
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: colorScheme.onSurface
-                                                        .withValues(alpha: 0.5),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 16),
+                                    // Content
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  userName,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
                                                   ),
                                                 ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Row(
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  if (isLastMsgFromMe) ...[
-                                                    Icon(
-                                                      lastMsg.isRead
-                                                          ? Icons.done_all
-                                                          : Icons.done,
-                                                      size: 16,
-                                                      color: lastMsg.isRead
-                                                          ? Colors.blue
-                                                          : colorScheme
-                                                                .onSurface
-                                                                .withValues(
-                                                                  alpha: 0.4,
-                                                                ),
+                                                  if (pinnedChats.contains(
+                                                    userId,
+                                                  )) ...[
+                                                    huge.HugeIcon(
+                                                      icon: huge
+                                                          .HugeIcons
+                                                          .strokeRoundedPin02,
+                                                      color:
+                                                          colorScheme.primary,
+                                                      size: 14,
                                                     ),
                                                     const SizedBox(width: 4),
                                                   ],
-                                                  Expanded(
-                                                    child: Text(
-                                                      subtitle,
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: TextStyle(
-                                                        color: colorScheme
-                                                            .onSurface
-                                                            .withValues(
-                                                              alpha: 0.6,
-                                                            ),
-                                                        fontSize: 14,
-                                                      ),
+                                                  Text(
+                                                    timeText,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: colorScheme
+                                                          .onSurface
+                                                          .withValues(
+                                                            alpha: 0.5,
+                                                          ),
                                                     ),
                                                   ),
                                                 ],
                                               ),
-                                            ),
-                                            StreamBuilder<int>(
-                                              stream: _getUnreadCountStream(
-                                                chatId,
-                                                _auth.currentUser!.uid,
-                                              ),
-                                              builder: (context, unreadSnapshot) {
-                                                int count =
-                                                    unreadSnapshot.data ?? 0;
-                                                if (count > 0 ||
-                                                    userName == "Luv 🌺💕") {
-                                                  // Demo match for screenshot
-                                                  return Container(
-                                                    margin:
-                                                        const EdgeInsets.only(
-                                                          left: 8,
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Row(
+                                                  children: [
+                                                    if (isLastMsgFromMe) ...[
+                                                      Icon(
+                                                        lastMsg.isRead
+                                                            ? Icons.done_all
+                                                            : Icons.done,
+                                                        size: 16,
+                                                        color: lastMsg.isRead
+                                                            ? Colors.blue
+                                                            : colorScheme
+                                                                  .onSurface
+                                                                  .withValues(
+                                                                    alpha: 0.4,
+                                                                  ),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                    ],
+                                                    Expanded(
+                                                      child: Text(
+                                                        subtitle,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: TextStyle(
+                                                          color: colorScheme
+                                                              .onSurface
+                                                              .withValues(
+                                                                alpha: 0.6,
+                                                              ),
+                                                          fontSize: 14,
                                                         ),
-                                                    width: 10,
-                                                    height: 10,
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          colorScheme.primary,
-                                                      shape: BoxShape.circle,
+                                                      ),
                                                     ),
-                                                  );
-                                                }
-                                                return const SizedBox.shrink();
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                                  ],
+                                                ),
+                                              ),
+                                              StreamBuilder<int>(
+                                                stream: _getUnreadCountStream(
+                                                  chatId,
+                                                  _auth.currentUser!.uid,
+                                                ),
+                                                builder: (context, unreadSnapshot) {
+                                                  int count =
+                                                      unreadSnapshot.data ?? 0;
+                                                  if (count > 0 ||
+                                                      userName == "Luv 🌺💕") {
+                                                    // Demo match for screenshot
+                                                    return Container(
+                                                      margin:
+                                                          const EdgeInsets.only(
+                                                            left: 8,
+                                                          ),
+                                                      width: 10,
+                                                      height: 10,
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            colorScheme.primary,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                    );
+                                                  }
+                                                  return const SizedBox.shrink();
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ); // return InkWell
-                        }, // itemBuilder
-                      ), // ListView.builder
-                    ); // Scrollbar
-                  }, // StreamBuilder builder
-                );
-              },
-            ),
+                            ); // return InkWell
+                          }, // itemBuilder
+                        ), // ListView.builder
+                      ); // Scrollbar
+                    }, // StreamBuilder builder
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: widget.isDesktop ? null : FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateStatusScreen()));
-        },
-        backgroundColor: colorScheme.primary,
-        shape: const CircleBorder(),
-        child: Icon(Icons.add, color: colorScheme.onPrimary, size: 32),
-      ),
+      floatingActionButton: widget.isDesktop
+          ? null
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'add_status_fab',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            const CreateStatusScreen(),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              );
+                            },
+                        transitionDuration: const Duration(milliseconds: 250),
+                      ),
+                    );
+                  },
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  child: huge.HugeIcon(
+                    icon: huge.HugeIcons.strokeRoundedCamera01,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FloatingActionButton(
+                  heroTag: 'contacts_fab',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            const ContactScreen(),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                              return SlideTransition(
+                                position:
+                                    Tween<Offset>(
+                                      begin: const Offset(1.0, 0.0),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                      ),
+                                    ),
+                                child: FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                              );
+                            },
+                        transitionDuration: const Duration(milliseconds: 250),
+                      ),
+                    );
+                  },
+                  backgroundColor: colorScheme.primaryContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: huge.HugeIcon(
+                    icon: huge.HugeIcons.strokeRoundedContactBook,
+                    color: colorScheme.onPrimaryContainer,
+                    size: 28,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
   Widget _buildStatusList(BuildContext context) {
-    return StreamBuilder<List<Status>>(
-      stream: _statusesStream,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
-        }
-        
-        final statuses = snapshot.data!;
-        Map<String, List<Status>> groupedStatuses = {};
-        for (var s in statuses) {
-          groupedStatuses.putIfAbsent(s.uid, () => []).add(s);
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _currentUserStream ?? const Stream.empty(),
+      builder: (context, userSnapshot) {
+        List<dynamic> myContacts = [];
+        if (userSnapshot.hasData && userSnapshot.data?.exists == true) {
+          var myData = userSnapshot.data!.data() as Map<String, dynamic>?;
+          if (myData != null) {
+            myContacts = myData['contacts'] as List<dynamic>? ?? [];
+          }
         }
 
-        String? currentUserId = _auth.currentUser?.uid;
-        List<Status> myStatuses = [];
-        if (currentUserId != null && groupedStatuses.containsKey(currentUserId)) {
-          myStatuses = groupedStatuses[currentUserId]!;
-          groupedStatuses.remove(currentUserId);
-        }
-
-        List<List<Status>> allOtherUserStatuses = groupedStatuses.values.toList();
-        
-        if (currentUserId != null) {
-          allOtherUserStatuses.sort((a, b) {
-            bool aAllViewed = a.every((s) => s.viewers.any((v) => v.uid == currentUserId));
-            bool bAllViewed = b.every((s) => s.viewers.any((v) => v.uid == currentUserId));
-            if (aAllViewed == bAllViewed) {
-              return b.last.createdAt.compareTo(a.last.createdAt);
+        return StreamBuilder<List<Status>>(
+          stream: _statusesStream,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox(
+                height: 100,
+                child: Center(child: CircularProgressIndicator()),
+              );
             }
-            return aAllViewed ? 1 : -1;
-          });
-        }
 
-        return Container(
-          height: 100,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: allOtherUserStatuses.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return _buildMyStatusAvatar(context, myStatuses);
+            final statuses = snapshot.data!;
+            Map<String, List<Status>> groupedStatuses = {};
+            for (var s in statuses) {
+              if (s.uid == _auth.currentUser?.uid ||
+                  myContacts.contains(s.uid)) {
+                groupedStatuses.putIfAbsent(s.uid, () => []).add(s);
               }
-              List<Status> userStatuses = allOtherUserStatuses[index - 1];
-              return _buildUserStatusAvatar(context, userStatuses, allOtherUserStatuses, index - 1);
-            },
-          ),
+            }
+
+            String? currentUserId = _auth.currentUser?.uid;
+            List<Status> myStatuses = [];
+            if (currentUserId != null &&
+                groupedStatuses.containsKey(currentUserId)) {
+              myStatuses = groupedStatuses[currentUserId]!;
+              groupedStatuses.remove(currentUserId);
+            }
+
+            List<List<Status>> allOtherUserStatuses = groupedStatuses.values
+                .toList();
+
+            if (currentUserId != null) {
+              allOtherUserStatuses.sort((a, b) {
+                bool aAllViewed = a.every(
+                  (s) => s.viewers.any((v) => v.uid == currentUserId),
+                );
+                bool bAllViewed = b.every(
+                  (s) => s.viewers.any((v) => v.uid == currentUserId),
+                );
+                if (aAllViewed == bAllViewed) {
+                  return b.last.createdAt.compareTo(a.last.createdAt);
+                }
+                return aAllViewed ? 1 : -1;
+              });
+            }
+
+            return Container(
+              height: 100,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: allOtherUserStatuses.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _buildMyStatusAvatar(context, myStatuses);
+                  }
+                  List<Status> userStatuses = allOtherUserStatuses[index - 1];
+                  return _buildUserStatusAvatar(
+                    context,
+                    userStatuses,
+                    allOtherUserStatuses,
+                    index - 1,
+                  );
+                },
+              ),
+            );
+          },
         );
       },
     );
@@ -1269,7 +1446,7 @@ class _HomepageState extends State<Homepage> {
 
   Widget _buildMyStatusAvatar(BuildContext context, List<Status> myStatuses) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return StreamBuilder<DocumentSnapshot>(
       stream: _currentUserStream,
       builder: (context, snapshot) {
@@ -1282,13 +1459,23 @@ class _HomepageState extends State<Homepage> {
             name = data['name'] ?? data['username'] ?? '';
           }
         }
-        
+
         return GestureDetector(
           onTap: () {
             if (myStatuses.isNotEmpty) {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => StatusViewScreen(statuses: myStatuses)));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StatusViewScreen(statuses: myStatuses),
+                ),
+              );
             } else {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateStatusScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CreateStatusScreen(),
+                ),
+              );
             }
           },
           child: Padding(
@@ -1302,8 +1489,10 @@ class _HomepageState extends State<Homepage> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: myStatuses.isNotEmpty ? colorScheme.primary : Colors.transparent, 
-                          width: 2
+                          color: myStatuses.isNotEmpty
+                              ? colorScheme.primary
+                              : Colors.transparent,
+                          width: 2,
                         ),
                       ),
                       child: CircleAvatar(
@@ -1311,11 +1500,16 @@ class _HomepageState extends State<Homepage> {
                         backgroundColor: colorScheme.surfaceContainerHighest,
                         backgroundImage: profilePic.isNotEmpty
                             ? (profilePic.startsWith('http')
-                                ? CachedNetworkImageProvider(profilePic)
-                                : AssetImage(profilePic)) as ImageProvider
+                                      ? CachedNetworkImageProvider(profilePic)
+                                      : AssetImage(profilePic))
+                                  as ImageProvider
                             : null,
-                        child: profilePic.isEmpty 
-                            ? Icon(Icons.person, color: colorScheme.onSurface, size: 24)
+                        child: profilePic.isEmpty
+                            ? Icon(
+                                Icons.person,
+                                color: colorScheme.onSurface,
+                                size: 24,
+                              )
                             : null,
                       ),
                     ),
@@ -1327,18 +1521,28 @@ class _HomepageState extends State<Homepage> {
                           decoration: BoxDecoration(
                             color: colorScheme.primary,
                             shape: BoxShape.circle,
-                            border: Border.all(color: colorScheme.surface, width: 2),
+                            border: Border.all(
+                              color: colorScheme.surface,
+                              width: 2,
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(2.0),
-                            child: Icon(Icons.add, size: 20, color: colorScheme.onPrimary),
+                            child: Icon(
+                              Icons.add,
+                              size: 20,
+                              color: colorScheme.onPrimary,
+                            ),
                           ),
                         ),
                       ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text('My status', style: TextStyle(fontSize: 12, color: colorScheme.onSurface)),
+                Text(
+                  'My status',
+                  style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+                ),
               ],
             ),
           ),
@@ -1347,20 +1551,35 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
-  Widget _buildUserStatusAvatar(BuildContext context, List<Status> statuses, List<List<Status>> allUserStatuses, int userIndex) {
+  Widget _buildUserStatusAvatar(
+    BuildContext context,
+    List<Status> statuses,
+    List<List<Status>> allUserStatuses,
+    int userIndex,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final latestStatus = statuses.last; // Use the most recent status for profile pic
-    
+    final latestStatus =
+        statuses.last; // Use the most recent status for profile pic
+
     final currentUserId = _auth.currentUser?.uid;
-    bool allViewed = currentUserId != null && statuses.every((s) => s.viewers.any((v) => v.uid == currentUserId));
-    Color ringColor = allViewed ? colorScheme.onSurface.withValues(alpha: 0.2) : colorScheme.primary;
+    bool allViewed =
+        currentUserId != null &&
+        statuses.every((s) => s.viewers.any((v) => v.uid == currentUserId));
+    Color ringColor = allViewed
+        ? colorScheme.onSurface.withValues(alpha: 0.2)
+        : colorScheme.primary;
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => StatusViewScreen(
-          groupedStatusesList: allUserStatuses,
-          initialUserIndex: userIndex,
-        )));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => StatusViewScreen(
+              groupedStatusesList: allUserStatuses,
+              initialUserIndex: userIndex,
+            ),
+          ),
+        );
       },
       child: Padding(
         padding: const EdgeInsets.only(right: 16.0),
@@ -1376,19 +1595,141 @@ class _HomepageState extends State<Homepage> {
                 radius: 28,
                 backgroundImage: latestStatus.profilePic.isNotEmpty
                     ? (latestStatus.profilePic.startsWith('http')
-                        ? CachedNetworkImageProvider(latestStatus.profilePic)
-                        : AssetImage(latestStatus.profilePic)) as ImageProvider
+                              ? CachedNetworkImageProvider(
+                                  latestStatus.profilePic,
+                                )
+                              : AssetImage(latestStatus.profilePic))
+                          as ImageProvider
                     : null,
-                child: latestStatus.profilePic.isEmpty 
+                child: latestStatus.profilePic.isEmpty
                     ? Icon(Icons.person, color: colorScheme.onSurface, size: 24)
                     : null,
               ),
             ),
             const SizedBox(height: 4),
-            Text(latestStatus.username.length > 8 ? '${latestStatus.username.substring(0, 8)}...' : latestStatus.username, style: TextStyle(fontSize: 12, color: colorScheme.onSurface)),
+            Text(
+              latestStatus.username.length > 8
+                  ? '${latestStatus.username.substring(0, 8)}...'
+                  : latestStatus.username,
+              style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class AnimatedNotificationBell extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const AnimatedNotificationBell({
+    super.key,
+    required this.color,
+    required this.size,
+  });
+
+  @override
+  State<AnimatedNotificationBell> createState() => _AnimatedNotificationBellState();
+}
+
+class _AnimatedNotificationBellState extends State<AnimatedNotificationBell>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _hasNotifications = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _animation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.25).chain(CurveTween(curve: Curves.easeOut)), weight: 10),
+      TweenSequenceItem(tween: Tween(begin: 0.25, end: -0.25).chain(CurveTween(curve: Curves.easeInOut)), weight: 20),
+      TweenSequenceItem(tween: Tween(begin: -0.25, end: 0.15).chain(CurveTween(curve: Curves.easeInOut)), weight: 20),
+      TweenSequenceItem(tween: Tween(begin: 0.15, end: -0.15).chain(CurveTween(curve: Curves.easeInOut)), weight: 20),
+      TweenSequenceItem(tween: Tween(begin: -0.15, end: 0.0).chain(CurveTween(curve: Curves.easeIn)), weight: 10),
+      TweenSequenceItem(tween: ConstantTween<double>(0.0), weight: 120), // Rest phase
+    ]).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return _buildIcon();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('friend_requests')
+          .where('receiverId', isEqualTo: currentUser.uid)
+          .where('status', isEqualTo: 'pending')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          if (!_hasNotifications) {
+            _hasNotifications = true;
+            _controller.repeat(); // Loop cleanly without reversing
+          }
+        } else {
+          _hasNotifications = false;
+          _controller.stop();
+          _controller.reset();
+        }
+
+        return _buildIcon(hasDot: _hasNotifications);
+      },
+    );
+  }
+
+  Widget _buildIcon({bool hasDot = false}) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle: _animation.value,
+          alignment: Alignment.topCenter, // Pivot from the top of the bell
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              huge.HugeIcon(
+                icon: huge.HugeIcons.strokeRoundedNotification03,
+                color: widget.color,
+                size: widget.size,
+              ),
+              if (hasDot)
+                Positioned(
+                  top: 2,
+                  right: 4,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.surface,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

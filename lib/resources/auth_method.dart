@@ -15,7 +15,7 @@ class AuthMethod {
     required String username,
     required String email,
     required String password,
-    String profilepic = 'assets/profile/BOY (1).jpg',
+    String profilepic = '',
     String? cloudinaryPublicId,
   }) async {
     String res = "Some error occurred";

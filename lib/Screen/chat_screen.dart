@@ -92,11 +92,15 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String _formatDateDivider(DateTime date) {
     DateTime now = DateTime.now();
-    if (date.year == now.year && date.month == now.month && date.day == now.day) {
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day) {
       return 'Today';
     }
     DateTime yesterday = now.subtract(const Duration(days: 1));
-    if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
+    if (date.year == yesterday.year &&
+        date.month == yesterday.month &&
+        date.day == yesterday.day) {
       return 'Yesterday';
     }
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
@@ -114,11 +118,11 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _messageController.text.trim();
     if (text.isNotEmpty) {
       _messageController.clear(); // Clear immediately for better UX
-      
+
       String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
       final replyParams = _getReplyParams();
       _clearReply();
-      
+
       // Use MessageService to send message with isRead field
       await _messageService.sendMessage(
         chatId: chatId,
@@ -133,17 +137,22 @@ class _ChatScreenState extends State<ChatScreen> {
 
       // Update contacts
       await _firestore.collection('users').doc(_auth.currentUser!.uid).set({
-        'contacts': FieldValue.arrayUnion([widget.receiverId])
+        'contacts': FieldValue.arrayUnion([widget.receiverId]),
       }, SetOptions(merge: true));
-      
+
       await _firestore.collection('users').doc(widget.receiverId).set({
-        'contacts': FieldValue.arrayUnion([_auth.currentUser!.uid])
+        'contacts': FieldValue.arrayUnion([_auth.currentUser!.uid]),
       }, SetOptions(merge: true));
     }
   }
 
-  void _showDropMenu(BuildContext context, Offset position, String docId) async {
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+  void _showDropMenu(
+    BuildContext context,
+    Offset position,
+    String docId,
+  ) async {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
     final RelativeRect positionRect = RelativeRect.fromRect(
       Rect.fromPoints(position, position),
       Offset.zero & overlay.size,
@@ -168,10 +177,20 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.redAccent.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.delete_sweep, color: Colors.redAccent, size: 20),
+                child: const Icon(
+                  Icons.delete_sweep,
+                  color: Colors.redAccent,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
-              const Text('Drop Message', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              const Text(
+                'Drop Message',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),
@@ -203,10 +222,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String _formatTime(Timestamp? timestamp) {
     if (timestamp == null) return '';
     DateTime date = timestamp.toDate();
-    String hour = date.hour > 12 ? (date.hour - 12).toString() : (date.hour == 0 ? '12' : date.hour.toString());
-    String minute = date.minute.toString().padLeft(2, '0');
-    String amPm = date.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $amPm';
+    return TimeOfDay.fromDateTime(date).format(context);
   }
 
   Future<void> _deleteAllChat() async {
@@ -250,9 +266,13 @@ class _ChatScreenState extends State<ChatScreen> {
           title: const Text('Delete All Chat?'),
           content: Text(
             'Are you sure you want to delete all messages in this chat? This action cannot be undone.',
-            style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.8)),
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
+            ),
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -265,7 +285,10 @@ class _ChatScreenState extends State<ChatScreen> {
               },
               child: const Text(
                 'Delete All',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -278,14 +301,16 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
       final prefs = await SharedPreferences.getInstance();
-      
+
       final localUrl = prefs.getString('wallpaper_${chatId}_url');
       final localIndex = prefs.getInt('wallpaper_${chatId}_index');
-      
+
       if (mounted) {
         setState(() {
-          _customWallpaperUrl = localUrl ?? prefs.getString('global_wallpaper_url');
-          _wallpaperIndex = localIndex ?? prefs.getInt('global_wallpaper_index') ?? 0;
+          _customWallpaperUrl =
+              localUrl ?? prefs.getString('global_wallpaper_url');
+          _wallpaperIndex =
+              localIndex ?? prefs.getInt('global_wallpaper_index') ?? 0;
           _isLoadingWallpaper = false;
         });
       }
@@ -303,7 +328,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
       final prefs = await SharedPreferences.getInstance();
-      
+
       if (_customWallpaperUrl != null) {
         await prefs.setString('wallpaper_${chatId}_url', _customWallpaperUrl!);
       } else {
@@ -371,7 +396,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 onTap: () async {
                   Navigator.pop(context);
                   final ImagePicker picker = ImagePicker();
-                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                  final XFile? image = await picker.pickImage(
+                    source: ImageSource.gallery,
+                  );
                   if (image != null) {
                     setState(() {
                       _customWallpaperUrl = image.path;
@@ -381,7 +408,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 20,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [colorScheme.primary, colorScheme.tertiary],
@@ -399,7 +429,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.photo_library_rounded, color: Colors.white, size: 28),
+                      Icon(
+                        Icons.photo_library_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       SizedBox(width: 16),
                       Text(
                         'Pick from Gallery',
@@ -410,7 +444,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                       Spacer(),
-                      Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 16),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
                     ],
                   ),
                 ),
@@ -431,7 +469,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   scrollDirection: Axis.horizontal,
                   itemCount: _wallpapers.length,
                   itemBuilder: (context, index) {
-                    bool isSelected = _wallpaperIndex == index && _customWallpaperUrl == null;
+                    bool isSelected =
+                        _wallpaperIndex == index && _customWallpaperUrl == null;
                     return GestureDetector(
                       onTap: () {
                         setState(() {
@@ -449,21 +488,29 @@ class _ChatScreenState extends State<ChatScreen> {
                           color: _wallpapers[index],
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.1),
+                            color: isSelected
+                                ? colorScheme.primary
+                                : colorScheme.onSurface.withValues(alpha: 0.1),
                             width: isSelected ? 3 : 1,
                           ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: colorScheme.primary.withValues(alpha: 0.2),
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.2,
+                                    ),
                                     blurRadius: 8,
                                     spreadRadius: 2,
-                                  )
+                                  ),
                                 ]
                               : null,
                         ),
                         child: isSelected
-                            ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 28)
+                            ? Icon(
+                                Icons.check_rounded,
+                                color: colorScheme.primary,
+                                size: 28,
+                              )
                             : null,
                       ),
                     );
@@ -488,7 +535,10 @@ class _ChatScreenState extends State<ChatScreen> {
           receiverId: widget.receiverId,
           onRoomCreated: (roomId) async {
             // Send a call message
-            String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+            String chatId = getChatId(
+              _auth.currentUser!.uid,
+              widget.receiverId,
+            );
             await _messageService.sendMessage(
               chatId: chatId,
               senderId: _auth.currentUser!.uid,
@@ -546,7 +596,10 @@ class _ChatScreenState extends State<ChatScreen> {
         .collection('messages')
         .orderBy('timestamp', descending: true)
         .snapshots();
-    _receiverStream = _firestore.collection('users').doc(widget.receiverId).snapshots();
+    _receiverStream = _firestore
+        .collection('users')
+        .doc(widget.receiverId)
+        .snapshots();
 
     // Mark all unread messages as read when opening the chat
     _messageService.markAllMessagesAsRead(chatId, _auth.currentUser!.uid);
@@ -562,17 +615,20 @@ class _ChatScreenState extends State<ChatScreen> {
     for (var media in mediaFiles) {
       File file = File(media.path);
       String type = 'document';
-      if (media.type == SharedMediaType.image) type = 'image';
-      else if (media.type == SharedMediaType.video) type = 'video';
-      else if (media.type == SharedMediaType.file) type = 'document';
-      
+      if (media.type == SharedMediaType.image)
+        type = 'image';
+      else if (media.type == SharedMediaType.video)
+        type = 'video';
+      else if (media.type == SharedMediaType.file)
+        type = 'document';
+
       await _uploadFileAndSendMessage(file, type);
     }
   }
 
   Future<void> _uploadFileAndSendMessage(File file, String type) async {
     if (_isUploading) return;
-    
+
     try {
       final bytes = await file.readAsBytes();
       final fileName = file.path.split('/').last;
@@ -587,9 +643,12 @@ class _ChatScreenState extends State<ChatScreen> {
       });
 
       String folderPath = 'cuqter_media/Document';
-      if (type == 'image') folderPath = 'cuqter_media/Photo';
-      else if (type == 'video') folderPath = 'cuqter_media/Video';
-      else if (type == 'audio') folderPath = 'cuqter_media/Audio';
+      if (type == 'image')
+        folderPath = 'cuqter_media/Photo';
+      else if (type == 'video')
+        folderPath = 'cuqter_media/Video';
+      else if (type == 'audio')
+        folderPath = 'cuqter_media/Audio';
 
       final uploadResult = await CloudinaryService.uploadFile(
         fileBytes: kIsWeb ? bytes : null,
@@ -611,7 +670,10 @@ class _ChatScreenState extends State<ChatScreen> {
       if (uploadResult != null && uploadResult['url'] != null) {
         String finalUrl = uploadResult['url']!;
         if (type == 'image') {
-          finalUrl = finalUrl.replaceFirst('/upload/', '/upload/q_auto,f_auto/');
+          finalUrl = finalUrl.replaceFirst(
+            '/upload/',
+            '/upload/q_auto,f_auto/',
+          );
         }
 
         if (!_uploadCancelled) {
@@ -691,6 +753,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         width: 400,
                         height: 600,
                         child: UserProfilePage(
+                          userId: widget.receiverId,
                           name: widget.receiverName,
                           username: data?['username']?.toString() ?? '',
                           bio: data?['bio']?.toString() ?? '',
@@ -704,6 +767,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => UserProfilePage(
+                        userId: widget.receiverId,
                         name: widget.receiverName,
                         username: data?['username']?.toString() ?? '',
                         bio: data?['bio']?.toString() ?? '',
@@ -733,7 +797,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                 height: 600,
                                 child: FullScreenProfilePicPage(
                                   imageUrl: pic,
-                                  heroTag: 'profile_pic_hero_${widget.receiverId}',
+                                  heroTag:
+                                      'profile_pic_hero_${widget.receiverId}',
                                 ),
                               ),
                             ),
@@ -744,70 +809,98 @@ class _ChatScreenState extends State<ChatScreen> {
                             MaterialPageRoute(
                               builder: (context) => FullScreenProfilePicPage(
                                 imageUrl: pic,
-                                heroTag: 'profile_pic_hero_${widget.receiverId}',
+                                heroTag:
+                                    'profile_pic_hero_${widget.receiverId}',
                               ),
                             ),
                           );
                         }
                       }
-                  },
-                  child: Stack(
-                    children: [
-                      Hero(
-                        tag: 'profile_pic_hero_${widget.receiverId}',
-                        child: CircleAvatar(
-                          backgroundColor: colorScheme.primaryContainer,
-                          backgroundImage: data != null && data['profilepic'] != null && data['profilepic'].toString().isNotEmpty
-                              ? (data['profilepic'].toString().startsWith('http')
-                                  ? CachedNetworkImageProvider(data['profilepic'].toString())
-                                  : AssetImage(data['profilepic'].toString()) as ImageProvider)
-                              : null,
-                          child: data == null || data['profilepic'] == null || data['profilepic'].toString().isEmpty
-                              ? Text(
-                                  widget.receiverName[0].toUpperCase(),
-                                  style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
-                                )
-                              : null,
-                        ),
-                      ),
-                      if (data != null && data['isOnline'] == true)
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: colorScheme.primary, width: 2),
-                            ),
+                    },
+                    child: Stack(
+                      children: [
+                        Hero(
+                          tag: 'profile_pic_hero_${widget.receiverId}',
+                          child: CircleAvatar(
+                            backgroundColor: colorScheme.primaryContainer,
+                            backgroundImage:
+                                data != null &&
+                                    data['profilepic'] != null &&
+                                    data['profilepic'].toString().isNotEmpty
+                                ? (data['profilepic'].toString().startsWith(
+                                        'http',
+                                      )
+                                      ? CachedNetworkImageProvider(
+                                          data['profilepic'].toString(),
+                                        )
+                                      : AssetImage(
+                                              data['profilepic'].toString(),
+                                            )
+                                            as ImageProvider)
+                                : null,
+                            child:
+                                data == null ||
+                                    data['profilepic'] == null ||
+                                    data['profilepic'].toString().isEmpty
+                                ? Text(
+                                    widget.receiverName[0].toUpperCase(),
+                                    style: TextStyle(
+                                      color: colorScheme.onPrimaryContainer,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
                           ),
                         ),
+                        if (data != null && data['isOnline'] == true)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: colorScheme.primary,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.receiverName,
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: colorScheme.onPrimary,
+                        ),
+                      ),
+                      Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: status == 'Active Now'
+                              ? Colors.green[300]
+                              : colorScheme.onPrimary.withValues(alpha: 0.7),
+                          fontWeight: status == 'Active Now'
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.receiverName,
-                      style: TextStyle(fontSize: 18, color: colorScheme.onPrimary),
-                    ),
-                    Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: status == 'Active Now' ? Colors.green[300] : colorScheme.onPrimary.withValues(alpha: 0.7),
-                        fontWeight: status == 'Active Now' ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ));
+                ],
+              ),
+            );
           },
         ),
         backgroundColor: colorScheme.primary,
@@ -839,7 +932,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 _showDeleteConfirmation();
               }
             },
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             itemBuilder: (BuildContext context) => [
               PopupMenuItem<String>(
                 value: 'wallpaper',
@@ -890,7 +985,7 @@ class _ChatScreenState extends State<ChatScreen> {
               color: colorScheme.onPrimary,
               size: 22,
             ),
-          )
+          ),
         ],
       ),
       body: _isLoadingWallpaper
@@ -906,302 +1001,450 @@ class _ChatScreenState extends State<ChatScreen> {
                 }
               },
               child: Container(
-              decoration: BoxDecoration(
-                color: _customWallpaperUrl == null ? (_wallpaperIndex == 0 ? colorScheme.surface : _wallpapers[_wallpaperIndex]) : null,
-                image: _customWallpaperUrl != null
-                    ? DecorationImage(
-                        image: kIsWeb
-                            ? CachedNetworkImageProvider(_customWallpaperUrl!)
-                            : FileImage(File(_customWallpaperUrl!)) as ImageProvider,
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: _messageStream,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'No messages yet.',
-                              style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
-                            ),
-                          );
-                        }
-
-                        var messages = snapshot.data!.docs;
-
-                        // Mark received messages as read in a single batch if there are any unread ones
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          bool hasUnread = false;
-                          for (var messageDoc in messages) {
-                            var message = messageDoc.data() as Map<String, dynamic>;
-                            bool isReceived = message['senderId'] != _auth.currentUser!.uid;
-                            bool isRead = message['isRead'] ?? false;
-
-                            if (isReceived && !isRead) {
-                              hasUnread = true;
-                              break;
-                            }
+                decoration: BoxDecoration(
+                  color: _customWallpaperUrl == null
+                      ? (_wallpaperIndex == 0
+                            ? colorScheme.surface
+                            : _wallpapers[_wallpaperIndex])
+                      : null,
+                  image: _customWallpaperUrl != null
+                      ? DecorationImage(
+                          image: kIsWeb
+                              ? CachedNetworkImageProvider(_customWallpaperUrl!)
+                              : FileImage(File(_customWallpaperUrl!))
+                                    as ImageProvider,
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: _messageStream,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
                           }
-                          if (hasUnread) {
-                            _messageService.markAllMessagesAsRead(chatId, _auth.currentUser!.uid);
-                          }
-                        });
 
-                        return LayoutBuilder(
-                          builder: (context, constraints) {
-                            return Scrollbar(
-                              child: ListView.builder(
-                              cacheExtent: 1500.0, physics: const BouncingScrollPhysics(),
-                          reverse: true,
-                          itemCount: _isUploading ? messages.length + 1 : messages.length,
-                          itemBuilder: (context, index) {
-                            if (_isUploading && index == 0) {
-                              return Align(
-                                alignment: Alignment.centerRight,
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.primaryContainer.withValues(alpha: 0.85),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(20),
-                                      topRight: Radius.circular(20),
-                                      bottomLeft: Radius.circular(20),
-                                      bottomRight: Radius.circular(4),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            _getUploadIcon(_uploadingFileType),
-                                            size: 20,
-                                            color: colorScheme.onPrimaryContainer,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            constraints: const BoxConstraints(maxWidth: 180),
-                                            child: Text(
-                                              _uploadingFileName ?? 'Uploading...',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: colorScheme.onPrimaryContainer,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            _uploadingFileSize != null && _uploadingFileSize!.isNotEmpty
-                                                ? '$_uploadingFileSize • ${(_uploadProgress * 100).toInt()}%'
-                                                : '${(_uploadProgress * 100).toInt()}%',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              value: _uploadProgress,
-                                              strokeWidth: 2.0,
-                                              valueColor: AlwaysStoppedAnimation<Color>(
-                                                colorScheme.onPrimaryContainer,
-                                              ),
-                                              backgroundColor: colorScheme.onPrimaryContainer.withValues(alpha: 0.2),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                _uploadCancelled = true;
-                                                _isUploading = false;
-                                              });
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text('Upload cancelled'),
-                                                  duration: Duration(seconds: 2),
-                                                ),
-                                              );
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.15),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                Icons.close_rounded,
-                                                size: 12,
-                                                color: colorScheme.onPrimaryContainer,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-
-                            final int msgIndex = _isUploading ? index - 1 : index;
-                            var message = messages[msgIndex].data() as Map<String, dynamic>;
-                            String docId = messages[msgIndex].id;
-                            bool isMe = message['senderId'] == _auth.currentUser!.uid;
-                            bool isRead = message['isRead'] ?? false;
-                            String timeText = _formatTime(message['timestamp'] as Timestamp?);
-
-                            bool showDivider = false;
-                            DateTime? currentDt = (message['timestamp'] as Timestamp?)?.toDate();
-                            
-                            if (msgIndex == messages.length - 1) {
-                              showDivider = true;
-                            } else {
-                              var olderMsg = messages[msgIndex + 1].data() as Map<String, dynamic>;
-                              DateTime? olderDt = (olderMsg['timestamp'] as Timestamp?)?.toDate();
-                              if (currentDt != null && olderDt != null) {
-                                if (currentDt.year != olderDt.year || 
-                                    currentDt.month != olderDt.month || 
-                                    currentDt.day != olderDt.day) {
-                                  showDivider = true;
-                                }
-                              } else if (currentDt != null && olderDt == null) {
-                                showDivider = true;
-                              }
-                            }
-
-                            Widget messageWidget = SwipeToReply(
-                              onReply: () {
-                                setState(() {
-                                  _replyMessage = {
-                                    'id': docId,
-                                    ...message,
-                                  };
-                                });
-                                _focusNode.requestFocus();
-                              },
-                              child: Align(
-                                alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                                child: GestureDetector(
-                                  onLongPressStart: isMe
-                                      ? (details) => _showDropMenu(context, details.globalPosition, docId)
-                                      : null,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: constraints.maxWidth * 0.75,
-                                    ),
-                                    child: Container(
-                                      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                                      padding: (message['type'] == 'image' || message['type'] == 'video')
-                                          ? const EdgeInsets.all(4)
-                                          : const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                                      decoration: BoxDecoration(
-                                        color: isMe ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest,
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: const Radius.circular(20),
-                                          topRight: const Radius.circular(20),
-                                          bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
-                                          bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.05),
-                                            blurRadius: 2,
-                                            offset: const Offset(0, 1),
-                                          ),
-                                        ],
-                                      ),
-                                      child: _buildMessageBubbleBody(
-                                        message: message,
-                                        isMe: isMe,
-                                        colorScheme: colorScheme,
-                                        timeText: timeText,
-                                        isRead: isRead,
-                                      ),
-                                    ),
+                          if (!snapshot.hasData ||
+                              snapshot.data!.docs.isEmpty) {
+                            return Center(
+                              child: Text(
+                                'No messages yet.',
+                                style: TextStyle(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
                                   ),
                                 ),
                               ),
                             );
+                          }
 
-                            if (showDivider && currentDt != null) {
-                              String dateText = _formatDateDivider(currentDt);
-                              return Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: Text(
-                                        dateText,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  messageWidget,
-                                ],
+                          var messages = snapshot.data!.docs;
+
+                          // Mark received messages as read in a single batch if there are any unread ones
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            bool hasUnread = false;
+                            for (var messageDoc in messages) {
+                              var message =
+                                  messageDoc.data() as Map<String, dynamic>;
+                              bool isReceived =
+                                  message['senderId'] != _auth.currentUser!.uid;
+                              bool isRead = message['isRead'] ?? false;
+
+                              if (isReceived && !isRead) {
+                                hasUnread = true;
+                                break;
+                              }
+                            }
+                            if (hasUnread) {
+                              _messageService.markAllMessagesAsRead(
+                                chatId,
+                                _auth.currentUser!.uid,
                               );
                             }
+                          });
 
-                            return messageWidget;
-                          },
-                        ),
-                      );
-                          },
-                        );
-                      },
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Scrollbar(
+                                child: ListView.builder(
+                                  cacheExtent: 1500.0,
+                                  physics: const BouncingScrollPhysics(),
+                                  reverse: true,
+                                  itemCount: _isUploading
+                                      ? messages.length + 1
+                                      : messages.length,
+                                  itemBuilder: (context, index) {
+                                    if (_isUploading && index == 0) {
+                                      return Align(
+                                        alignment: Alignment.centerRight,
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(
+                                            vertical: 4,
+                                            horizontal: 12,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 10,
+                                            horizontal: 16,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.primaryContainer
+                                                .withValues(alpha: 0.85),
+                                            borderRadius:
+                                                const BorderRadius.only(
+                                                  topLeft: Radius.circular(20),
+                                                  topRight: Radius.circular(20),
+                                                  bottomLeft: Radius.circular(
+                                                    20,
+                                                  ),
+                                                  bottomRight: Radius.circular(
+                                                    4,
+                                                  ),
+                                                ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    _getUploadIcon(
+                                                      _uploadingFileType,
+                                                    ),
+                                                    size: 20,
+                                                    color: colorScheme
+                                                        .onPrimaryContainer,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                          maxWidth: 180,
+                                                        ),
+                                                    child: Text(
+                                                      _uploadingFileName ??
+                                                          'Uploading...',
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: colorScheme
+                                                            .onPrimaryContainer,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    _uploadingFileSize !=
+                                                                null &&
+                                                            _uploadingFileSize!
+                                                                .isNotEmpty
+                                                        ? '$_uploadingFileSize • ${(_uploadProgress * 100).toInt()}%'
+                                                        : '${(_uploadProgress * 100).toInt()}%',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: colorScheme
+                                                          .onPrimaryContainer
+                                                          .withValues(
+                                                            alpha: 0.7,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  SizedBox(
+                                                    width: 18,
+                                                    height: 18,
+                                                    child: CircularProgressIndicator(
+                                                      value: _uploadProgress,
+                                                      strokeWidth: 2.0,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(
+                                                            colorScheme
+                                                                .onPrimaryContainer,
+                                                          ),
+                                                      backgroundColor:
+                                                          colorScheme
+                                                              .onPrimaryContainer
+                                                              .withValues(
+                                                                alpha: 0.2,
+                                                              ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        _uploadCancelled = true;
+                                                        _isUploading = false;
+                                                      });
+                                                      ScaffoldMessenger.of(
+                                                        context,
+                                                      ).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text(
+                                                            'Upload cancelled',
+                                                          ),
+                                                          duration: Duration(
+                                                            seconds: 2,
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            4,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: colorScheme
+                                                            .onPrimaryContainer
+                                                            .withValues(
+                                                              alpha: 0.15,
+                                                            ),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.close_rounded,
+                                                        size: 12,
+                                                        color: colorScheme
+                                                            .onPrimaryContainer,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }
+
+                                    final int msgIndex = _isUploading
+                                        ? index - 1
+                                        : index;
+                                    var message =
+                                        messages[msgIndex].data()
+                                            as Map<String, dynamic>;
+                                    String docId = messages[msgIndex].id;
+                                    bool isMe =
+                                        message['senderId'] ==
+                                        _auth.currentUser!.uid;
+                                    bool isRead = message['isRead'] ?? false;
+                                    String timeText = _formatTime(
+                                      message['timestamp'] as Timestamp?,
+                                    );
+
+                                    bool showDivider = false;
+                                    DateTime? currentDt =
+                                        (message['timestamp'] as Timestamp?)
+                                            ?.toDate();
+
+                                    if (msgIndex == messages.length - 1) {
+                                      showDivider = true;
+                                    } else {
+                                      var olderMsg =
+                                          messages[msgIndex + 1].data()
+                                              as Map<String, dynamic>;
+                                      DateTime? olderDt =
+                                          (olderMsg['timestamp'] as Timestamp?)
+                                              ?.toDate();
+                                      if (currentDt != null &&
+                                          olderDt != null) {
+                                        if (currentDt.year != olderDt.year ||
+                                            currentDt.month != olderDt.month ||
+                                            currentDt.day != olderDt.day) {
+                                          showDivider = true;
+                                        }
+                                      } else if (currentDt != null &&
+                                          olderDt == null) {
+                                        showDivider = true;
+                                      }
+                                    }
+
+                                    Widget messageWidget = SwipeToReply(
+                                      onReply: () {
+                                        setState(() {
+                                          _replyMessage = {
+                                            'id': docId,
+                                            ...message,
+                                          };
+                                        });
+                                        _focusNode.requestFocus();
+                                      },
+                                      child: Align(
+                                        alignment: isMe
+                                            ? Alignment.centerRight
+                                            : Alignment.centerLeft,
+                                        child: GestureDetector(
+                                          onLongPressStart: isMe
+                                              ? (details) => _showDropMenu(
+                                                  context,
+                                                  details.globalPosition,
+                                                  docId,
+                                                )
+                                              : null,
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              maxWidth:
+                                                  constraints.maxWidth * 0.75,
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                              children: [
+                                                if (message['replyToId'] != null)
+                                                  _buildExternalReplyWidget(
+                                                    message: message,
+                                                    isMe: isMe,
+                                                    colorScheme: colorScheme,
+                                                  ),
+                                                Container(
+                                                  margin: const EdgeInsets.symmetric(
+                                                    vertical: 4,
+                                                    horizontal: 12,
+                                                  ),
+                                                  padding:
+                                                      (message['type'] == 'image' ||
+                                                          message['type'] ==
+                                                              'video')
+                                                      ? const EdgeInsets.all(4)
+                                                      : const EdgeInsets.symmetric(
+                                                          vertical: 10,
+                                                          horizontal: 16,
+                                                        ),
+                                                  decoration: BoxDecoration(
+                                                    color: isMe
+                                                        ? colorScheme
+                                                              .primaryContainer
+                                                        : colorScheme
+                                                              .surfaceContainerHighest,
+                                                    borderRadius: BorderRadius.only(
+                                                      topLeft:
+                                                          const Radius.circular(20),
+                                                      topRight:
+                                                          const Radius.circular(20),
+                                                      bottomLeft: isMe
+                                                          ? const Radius.circular(
+                                                              20,
+                                                            )
+                                                          : const Radius.circular(
+                                                              4,
+                                                            ),
+                                                      bottomRight: isMe
+                                                          ? const Radius.circular(4)
+                                                          : const Radius.circular(
+                                                              20,
+                                                            ),
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black
+                                                            .withValues(
+                                                              alpha: 0.05,
+                                                            ),
+                                                        blurRadius: 2,
+                                                        offset: const Offset(0, 1),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: _buildRawMessageBubbleBody(
+                                                    message: message,
+                                                    isMe: isMe,
+                                                    colorScheme: colorScheme,
+                                                    timeText: timeText,
+                                                    isRead: isRead,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+
+                                    if (showDivider && currentDt != null) {
+                                      String dateText = _formatDateDivider(
+                                        currentDt,
+                                      );
+                                      return Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 16.0,
+                                            ),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: colorScheme
+                                                    .surfaceContainerHighest
+                                                    .withValues(alpha: 0.8),
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
+                                              child: Text(
+                                                dateText,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          messageWidget,
+                                        ],
+                                      );
+                                    }
+
+                                    return messageWidget;
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  _buildMessageInput(context),
-                ],
+                    _buildMessageInput(context),
+                  ],
+                ),
               ),
             ),
-          ),
     );
   }
 
   Widget _buildReplyPreviewBar(BuildContext context) {
     if (_replyMessage == null) return const SizedBox.shrink();
-    
+
     final colorScheme = Theme.of(context).colorScheme;
     final String type = _replyMessage!['type'] ?? 'text';
     final String rawText = _replyMessage!['text'] ?? '';
     final List<String> parts = rawText.split('|');
     final String text = parts[0];
-    
+
     final String replyToSenderId = _replyMessage!['senderId'] ?? '';
     final bool isReplyMe = replyToSenderId == _auth.currentUser!.uid;
     final String replySenderName = isReplyMe ? 'You' : widget.receiverName;
@@ -1236,7 +1479,9 @@ class _ChatScreenState extends State<ChatScreen> {
         break;
       case 'video_call':
       case 'voice_call':
-        typeIcon = type == 'video_call' ? Icons.videocam_rounded : Icons.call_rounded;
+        typeIcon = type == 'video_call'
+            ? Icons.videocam_rounded
+            : Icons.call_rounded;
         displayPreview = type == 'video_call' ? 'Video Call' : 'Voice Call';
         break;
     }
@@ -1283,7 +1528,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       Icon(
                         typeIcon,
                         size: 14,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.7,
+                        ),
                       ),
                       const SizedBox(width: 4),
                     ],
@@ -1351,7 +1598,9 @@ class _ChatScreenState extends State<ChatScreen> {
             margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.95),
+              color: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.95,
+              ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: colorScheme.primary.withValues(alpha: 0.1),
@@ -1406,9 +1655,7 @@ class _ChatScreenState extends State<ChatScreen> {
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: const BoxDecoration(
-                color: Colors.transparent,
-              ),
+              decoration: const BoxDecoration(color: Colors.transparent),
               child: SafeArea(
                 child: Row(
                   children: [
@@ -1424,7 +1671,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                         icon: huge.HugeIcon(
                           icon: huge.HugeIcons.strokeRoundedAdd01,
-                          color: _isAttachmentMenuOpen ? colorScheme.error : colorScheme.primary,
+                          color: _isAttachmentMenuOpen
+                              ? colorScheme.error
+                              : colorScheme.primary,
                           size: 24,
                           strokeWidth: 3.0,
                         ),
@@ -1447,10 +1696,14 @@ class _ChatScreenState extends State<ChatScreen> {
                           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: colorScheme.onSurface.withValues(alpha: 0.06),
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.06,
+                              ),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
-                                color: colorScheme.onSurface.withValues(alpha: 0.12),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.12,
+                                ),
                                 width: 1.0,
                               ),
                             ),
@@ -1467,13 +1720,16 @@ class _ChatScreenState extends State<ChatScreen> {
                                 prefixIcon: IconButton(
                                   icon: _showEmojiPicker
                                       ? huge.HugeIcon(
-                                          icon: huge.HugeIcons.strokeRoundedKeyboard,
+                                          icon: huge
+                                              .HugeIcons
+                                              .strokeRoundedKeyboard,
                                           color: colorScheme.primary,
                                           size: 22,
                                           strokeWidth: 1.8,
                                         )
                                       : huge.HugeIcon(
-                                          icon: huge.HugeIcons.strokeRoundedSmile,
+                                          icon:
+                                              huge.HugeIcons.strokeRoundedSmile,
                                           color: colorScheme.primary,
                                           size: 22,
                                           strokeWidth: 1.8,
@@ -1498,7 +1754,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                   children: [
                                     IconButton(
                                       icon: huge.HugeIcon(
-                                        icon: huge.HugeIcons.strokeRoundedCamera01,
+                                        icon: huge
+                                            .HugeIcons
+                                            .strokeRoundedCamera01,
                                         color: colorScheme.primary,
                                         size: 22,
                                         strokeWidth: 1.8,
@@ -1513,11 +1771,17 @@ class _ChatScreenState extends State<ChatScreen> {
                                         strokeWidth: 1.8,
                                       ),
                                       onPressed: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           const SnackBar(
                                             content: Text('Soon'),
                                             behavior: SnackBarBehavior.floating,
-                                            margin: EdgeInsets.only(bottom: 15, left: 16, right: 16),
+                                            margin: EdgeInsets.only(
+                                              bottom: 15,
+                                              left: 16,
+                                              right: 16,
+                                            ),
                                           ),
                                         );
                                       },
@@ -1527,11 +1791,16 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                                 hintText: 'Text a Message...',
                                 hintStyle: TextStyle(
-                                  color: colorScheme.onSurface.withValues(alpha: 0.45),
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.45,
+                                  ),
                                 ),
                                 filled: true,
                                 fillColor: Colors.transparent,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(30),
                                   borderSide: BorderSide.none,
@@ -1586,12 +1855,16 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(28),
                                       child: BackdropFilter(
-                                        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                                        filter: ImageFilter.blur(
+                                          sigmaX: 14,
+                                          sigmaY: 14,
+                                        ),
                                         child: Container(
                                           width: 50,
                                           height: 50,
                                           decoration: BoxDecoration(
-                                            color: colorScheme.primary.withValues(alpha: 0.85),
+                                            color: colorScheme.primary
+                                                .withValues(alpha: 0.85),
                                             shape: BoxShape.circle,
                                           ),
                                           child: AnimatedSendButton(
@@ -1627,11 +1900,14 @@ class _ChatScreenState extends State<ChatScreen> {
                   checkPlatformCompatibility: true,
                   emojiViewConfig: EmojiViewConfig(
                     columns: 7,
-                    emojiSizeMax: 36 * (kIsWeb ? 1.0 : (Platform.isIOS ? 1.20 : 1.0)),
-                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    emojiSizeMax:
+                        36 * (kIsWeb ? 1.0 : (Platform.isIOS ? 1.20 : 1.0)),
+                    backgroundColor: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                   ),
                   categoryViewConfig: CategoryViewConfig(
-                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    backgroundColor: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                   ),
                 ),
               ),
@@ -1664,11 +1940,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 width: 1.5,
               ),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 22,
-            ),
+            child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1703,24 +1975,25 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Future<void> _startDownload(String url, String fileType, {String? originalFileName}) async {
+  Future<void> _startDownload(
+    String url,
+    String fileType, {
+    String? originalFileName,
+  }) async {
     if (kIsWeb) return;
     setState(() {
       _downloadProgress[url] = 0.0;
     });
 
-    final path = await LocalStorageService.downloadAndSaveFile(
-      url,
-      fileType,
-      (progress) {
-        if (mounted) {
-          setState(() {
-            _downloadProgress[url] = progress;
-          });
-        }
-      },
-      originalFileName: originalFileName,
-    );
+    final path = await LocalStorageService.downloadAndSaveFile(url, fileType, (
+      progress,
+    ) {
+      if (mounted) {
+        setState(() {
+          _downloadProgress[url] = progress;
+        });
+      }
+    }, originalFileName: originalFileName);
 
     if (mounted) {
       setState(() {
@@ -1763,7 +2036,11 @@ class _ChatScreenState extends State<ChatScreen> {
     return null;
   }
 
-  Widget _buildVideoPlaceholderFallback(ColorScheme colorScheme, String fileName, String fileSize) {
+  Widget _buildVideoPlaceholderFallback(
+    ColorScheme colorScheme,
+    String fileName,
+    String fileSize,
+  ) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1816,10 +2093,7 @@ class _ChatScreenState extends State<ChatScreen> {
       elevation: 0,
       builder: (context) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.75,
-        child: const AssetManagerScreen(
-          isPicker: true,
-          title: 'Send Media',
-        ),
+        child: const AssetManagerScreen(isPicker: true, title: 'Send Media'),
       ),
     );
 
@@ -1864,14 +2138,15 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _sendAsset(AppAsset asset) async {
     if (_isUploading) return;
     final isVideo = asset.type == 'video';
-    
+
     try {
       final file = File(asset.id);
       if (!await file.exists()) return;
-      
+
       final bytes = await file.readAsBytes();
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${asset.title.replaceAll(' ', '_')}';
-      
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${asset.title.replaceAll(' ', '_')}';
+
       setState(() {
         _isUploading = true;
         _uploadCancelled = false;
@@ -1883,7 +2158,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
       String? localPath;
       if (!kIsWeb) {
-        localPath = await LocalStorageService.saveFileLocally(fileName, bytes, asset.type);
+        localPath = await LocalStorageService.saveFileLocally(
+          fileName,
+          bytes,
+          asset.type,
+        );
       }
 
       final uploadResult = await CloudinaryService.uploadFile(
@@ -1940,8 +2219,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-
-
   Future<void> _sendAudio() async {
     if (_isUploading) return;
     setState(() {
@@ -1973,11 +2250,16 @@ class _ChatScreenState extends State<ChatScreen> {
         _uploadProgress = 0.0;
       });
 
-      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name.replaceAll(' ', '_')}';
-      
+      String fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${file.name.replaceAll(' ', '_')}';
+
       String? localPath;
       if (!kIsWeb) {
-        localPath = await LocalStorageService.saveFileLocally(fileName, fileBytes, 'audio');
+        localPath = await LocalStorageService.saveFileLocally(
+          fileName,
+          fileBytes,
+          'audio',
+        );
       }
 
       final uploadResult = await CloudinaryService.uploadFile(
@@ -2068,11 +2350,16 @@ class _ChatScreenState extends State<ChatScreen> {
         _uploadProgress = 0.0;
       });
 
-      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name.replaceAll(' ', '_')}';
+      String fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${file.name.replaceAll(' ', '_')}';
 
       String? localPath;
       if (!kIsWeb) {
-        localPath = await LocalStorageService.saveFileLocally(fileName, fileBytes, 'document');
+        localPath = await LocalStorageService.saveFileLocally(
+          fileName,
+          fileBytes,
+          'document',
+        );
       }
 
       final uploadResult = await CloudinaryService.uploadFile(
@@ -2140,7 +2427,9 @@ class _ChatScreenState extends State<ChatScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showErrorSnackBar('Location permission denied. Please allow location access.');
+          _showErrorSnackBar(
+            'Location permission denied. Please allow location access.',
+          );
           return;
         }
       }
@@ -2148,10 +2437,14 @@ class _ChatScreenState extends State<ChatScreen> {
       if (permission == LocationPermission.deniedForever) {
         if (!kIsWeb) {
           // On mobile, guide user to app settings
-          _showErrorSnackBar('Location permission permanently denied. Please enable it in app settings.');
+          _showErrorSnackBar(
+            'Location permission permanently denied. Please enable it in app settings.',
+          );
           await Geolocator.openAppSettings();
         } else {
-          _showErrorSnackBar('Location permission is blocked. Please allow location in your browser settings.');
+          _showErrorSnackBar(
+            'Location permission is blocked. Please allow location in your browser settings.',
+          );
         }
         return;
       }
@@ -2159,13 +2452,17 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!kIsWeb) {
         bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
         if (!serviceEnabled) {
-          _showErrorSnackBar('Location services are disabled. Please enable GPS.');
+          _showErrorSnackBar(
+            'Location services are disabled. Please enable GPS.',
+          );
           return;
         }
       }
 
       Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
@@ -2194,7 +2491,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
       // Clean up double extensions if any (e.g. "my_video.mp4.mp4" -> "my_video.mp4")
       final List<String> parts = filename.split('.');
-      if (parts.length > 2 && parts[parts.length - 1].toLowerCase() == parts[parts.length - 2].toLowerCase()) {
+      if (parts.length > 2 &&
+          parts[parts.length - 1].toLowerCase() ==
+              parts[parts.length - 2].toLowerCase()) {
         filename = parts.sublist(0, parts.length - 1).join('.');
       }
 
@@ -2242,14 +2541,14 @@ class _ChatScreenState extends State<ChatScreen> {
       width: 240,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isMe 
+        color: isMe
             ? colorScheme.primaryContainer.withValues(alpha: 0.5)
             : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isMe 
-              ? colorScheme.primary.withValues(alpha: 0.15) 
-              : colorScheme.outlineVariant.withValues(alpha: 0.5)
+          color: isMe
+              ? colorScheme.primary.withValues(alpha: 0.15)
+              : colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Row(
@@ -2265,16 +2564,24 @@ class _ChatScreenState extends State<ChatScreen> {
                         value: progress,
                         strokeWidth: 3.0,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          isMe ? colorScheme.onPrimaryContainer : colorScheme.primary,
+                          isMe
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.primary,
                         ),
-                        backgroundColor: (isMe ? colorScheme.onPrimaryContainer : colorScheme.primary).withValues(alpha: 0.2),
+                        backgroundColor:
+                            (isMe
+                                    ? colorScheme.onPrimaryContainer
+                                    : colorScheme.primary)
+                                .withValues(alpha: 0.2),
                       ),
                       Text(
                         '${(progress * 100).toInt()}',
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
-                          color: isMe ? colorScheme.onPrimaryContainer : colorScheme.primary,
+                          color: isMe
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.primary,
                         ),
                       ),
                     ],
@@ -2283,13 +2590,19 @@ class _ChatScreenState extends State<ChatScreen> {
               : Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: (isMe ? colorScheme.onPrimaryContainer : colorScheme.primary).withValues(alpha: 0.1),
+                    color:
+                        (isMe
+                                ? colorScheme.onPrimaryContainer
+                                : colorScheme.primary)
+                            .withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    typeIcon, 
-                    color: isMe ? colorScheme.onPrimaryContainer : colorScheme.primary, 
-                    size: 20
+                    typeIcon,
+                    color: isMe
+                        ? colorScheme.onPrimaryContainer
+                        : colorScheme.primary,
+                    size: 20,
                   ),
                 ),
           const SizedBox(width: 12),
@@ -2305,7 +2618,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                    color: isMe
+                        ? colorScheme.onPrimaryContainer
+                        : colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2313,7 +2628,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   fileSize.isNotEmpty ? fileSize : 'Media File',
                   style: TextStyle(
                     fontSize: 11,
-                    color: isMe 
+                    color: isMe
                         ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
                         : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
@@ -2325,10 +2640,16 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!isDownloading)
             IconButton(
               icon: Icon(
-                Icons.download_rounded, 
-                color: isMe ? colorScheme.onPrimaryContainer : colorScheme.primary
+                Icons.download_rounded,
+                color: isMe
+                    ? colorScheme.onPrimaryContainer
+                    : colorScheme.primary,
               ),
-              onPressed: () => _startDownload(url, fileType, originalFileName: originalFileName),
+              onPressed: () => _startDownload(
+                url,
+                fileType,
+                originalFileName: originalFileName,
+              ),
             ),
         ],
       ),
@@ -2339,7 +2660,9 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final result = await OpenFilex.open(localPath);
       if (result.type != ResultType.done) {
-        _showErrorSnackBar('No application found to open this file. Path: $localPath');
+        _showErrorSnackBar(
+          'No application found to open this file. Path: $localPath',
+        );
       }
     } catch (e) {
       _showErrorSnackBar('Error opening file: $e');
@@ -2353,9 +2676,9 @@ class _ChatScreenState extends State<ChatScreen> {
     ColorScheme colorScheme,
     bool isMe,
     String timeText,
-    bool isRead,
-    {String? originalFileName}
-  ) {
+    bool isRead, {
+    String? originalFileName,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2363,18 +2686,33 @@ class _ChatScreenState extends State<ChatScreen> {
           colorScheme: colorScheme,
           url: url,
           fileType: fileType,
-          fileName: originalFileName?.isNotEmpty == true ? originalFileName! : _getFileNameFromUrl(url),
+          fileName: originalFileName?.isNotEmpty == true
+              ? originalFileName!
+              : _getFileNameFromUrl(url),
           fileSize: fileSize,
           isMe: isMe,
           originalFileName: originalFileName,
         ),
         const SizedBox(height: 4),
-        _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead, isOverMedia: false),
+        _buildTimeAndStatusRow(
+          isMe,
+          colorScheme,
+          timeText,
+          isRead,
+          isOverMedia: false,
+        ),
       ],
     );
   }
 
-  Widget _buildLocalImageBubble(String localPath, ColorScheme colorScheme, String timeText, bool isMe, bool isRead, String text) {
+  Widget _buildLocalImageBubble(
+    String localPath,
+    ColorScheme colorScheme,
+    String timeText,
+    bool isMe,
+    bool isRead,
+    String text,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2391,9 +2729,7 @@ class _ChatScreenState extends State<ChatScreen> {
             );
           },
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 300,
-            ),
+            constraints: const BoxConstraints(maxHeight: 300),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Hero(
@@ -2421,12 +2757,27 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead, isOverMedia: true),
+        _buildTimeAndStatusRow(
+          isMe,
+          colorScheme,
+          timeText,
+          isRead,
+          isOverMedia: true,
+        ),
       ],
     );
   }
 
-  Widget _buildLocalVideoBubble(String localPath, ColorScheme colorScheme, String timeText, bool isMe, bool isRead, String text, String fileName, String fileSize) {
+  Widget _buildLocalVideoBubble(
+    String localPath,
+    ColorScheme colorScheme,
+    String timeText,
+    bool isMe,
+    bool isRead,
+    String text,
+    String fileName,
+    String fileSize,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2456,7 +2807,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: [
                       if (_getVideoThumbnailUrl(text) != null)
                         Image.network(
-                          Uri.encodeFull(Uri.decodeFull(_getVideoThumbnailUrl(text)!)),
+                          Uri.encodeFull(
+                            Uri.decodeFull(_getVideoThumbnailUrl(text)!),
+                          ),
                           fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
@@ -2468,20 +2821,28 @@ class _ChatScreenState extends State<ChatScreen> {
                             );
                           },
                           errorBuilder: (context, error, stackTrace) {
-                            return _buildVideoPlaceholderFallback(colorScheme, fileName, fileSize);
+                            return _buildVideoPlaceholderFallback(
+                              colorScheme,
+                              fileName,
+                              fileSize,
+                            );
                           },
                         )
                       else
-                        _buildVideoPlaceholderFallback(colorScheme, fileName, fileSize),
-                      Container(
-                        color: Colors.black.withValues(alpha: 0.35),
-                      ),
+                        _buildVideoPlaceholderFallback(
+                          colorScheme,
+                          fileName,
+                          fileSize,
+                        ),
+                      Container(color: Colors.black.withValues(alpha: 0.35)),
                       Positioned(
                         left: 12,
                         bottom: 12,
                         right: 12,
                         child: Text(
-                          fileSize.isNotEmpty ? '$fileName • $fileSize' : fileName,
+                          fileSize.isNotEmpty
+                              ? '$fileName • $fileSize'
+                              : fileName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -2520,12 +2881,26 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead, isOverMedia: true),
+        _buildTimeAndStatusRow(
+          isMe,
+          colorScheme,
+          timeText,
+          isRead,
+          isOverMedia: true,
+        ),
       ],
     );
   }
 
-  Widget _buildLocalAudioBubble(String localPath, ColorScheme colorScheme, String timeText, bool isMe, bool isRead, String fileName, String fileSize) {
+  Widget _buildLocalAudioBubble(
+    String localPath,
+    ColorScheme colorScheme,
+    String timeText,
+    bool isMe,
+    bool isRead,
+    String fileName,
+    String fileSize,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2542,7 +2917,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.orange.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.play_arrow_rounded, color: Colors.orange),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  color: Colors.orange,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -2556,17 +2934,25 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                        color: isMe
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      fileSize.isNotEmpty ? 'Cached Audio • $fileSize' : 'Cached Audio Message',
+                      fileSize.isNotEmpty
+                          ? 'Cached Audio • $fileSize'
+                          : 'Cached Audio Message',
                       style: TextStyle(
                         fontSize: 11,
                         color: isMe
-                            ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                            : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            ? colorScheme.onPrimaryContainer.withValues(
+                                alpha: 0.7,
+                              )
+                            : colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.7,
+                              ),
                       ),
                     ),
                   ],
@@ -2581,7 +2967,15 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildLocalDocumentBubble(String localPath, ColorScheme colorScheme, String timeText, bool isMe, bool isRead, String fileName, String fileSize) {
+  Widget _buildLocalDocumentBubble(
+    String localPath,
+    ColorScheme colorScheme,
+    String timeText,
+    bool isMe,
+    bool isRead,
+    String fileName,
+    String fileSize,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2598,7 +2992,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.blue.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.description_rounded, color: Colors.blue),
+                child: const Icon(
+                  Icons.description_rounded,
+                  color: Colors.blue,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -2612,17 +3009,25 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                        color: isMe
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      fileSize.isNotEmpty ? 'Cached Document • $fileSize' : 'Cached Document',
+                      fileSize.isNotEmpty
+                          ? 'Cached Document • $fileSize'
+                          : 'Cached Document',
                       style: TextStyle(
                         fontSize: 11,
                         color: isMe
-                            ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                            : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            ? colorScheme.onPrimaryContainer.withValues(
+                                alpha: 0.7,
+                              )
+                            : colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.7,
+                              ),
                       ),
                     ),
                   ],
@@ -2640,10 +3045,18 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Network / Remote bubble builders (no local copy) ──────────────────────
 
   /// Like WhatsApp: images load from network automatically
-  Widget _buildNetworkImageBubble(String url, ColorScheme colorScheme, String timeText, bool isMe, bool isRead) {
-    final String safeUrl = Uri.encodeFull(Uri.decodeFull(
-      url.startsWith('http://') ? 'https://' + url.substring(7) : url,
-    ));
+  Widget _buildNetworkImageBubble(
+    String url,
+    ColorScheme colorScheme,
+    String timeText,
+    bool isMe,
+    bool isRead,
+  ) {
+    final String safeUrl = Uri.encodeFull(
+      Uri.decodeFull(
+        url.startsWith('http://') ? 'https://' + url.substring(7) : url,
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2652,10 +3065,8 @@ class _ChatScreenState extends State<ChatScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => FullScreenProfilePicPage(
-                  imageUrl: url,
-                  heroTag: url,
-                ),
+                builder: (context) =>
+                    FullScreenProfilePicPage(imageUrl: url, heroTag: url),
               ),
             );
           },
@@ -2683,7 +3094,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     height: 100,
                     color: colorScheme.surfaceContainerHighest,
                     child: const Center(
-                      child: Icon(Icons.broken_image_rounded, color: Colors.grey, size: 40),
+                      child: Icon(
+                        Icons.broken_image_rounded,
+                        color: Colors.grey,
+                        size: 40,
+                      ),
                     ),
                   ),
                 ),
@@ -2692,14 +3107,24 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead, isOverMedia: true),
+        _buildTimeAndStatusRow(
+          isMe,
+          colorScheme,
+          timeText,
+          isRead,
+          isOverMedia: true,
+        ),
       ],
     );
   }
 
-
-
-  Widget _buildWebImageBubble(String text, ColorScheme colorScheme, String timeText, bool isMe, bool isRead) {
+  Widget _buildWebImageBubble(
+    String text,
+    ColorScheme colorScheme,
+    String timeText,
+    bool isMe,
+    bool isRead,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2708,23 +3133,25 @@ class _ChatScreenState extends State<ChatScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => FullScreenProfilePicPage(
-                  imageUrl: text,
-                  heroTag: text,
-                ),
+                builder: (context) =>
+                    FullScreenProfilePicPage(imageUrl: text, heroTag: text),
               ),
             );
           },
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 300,
-            ),
+            constraints: const BoxConstraints(maxHeight: 300),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Hero(
                 tag: text,
                 child: Image.network(
-                  Uri.encodeFull(Uri.decodeFull(text.startsWith('http://') ? 'https://' + text.substring(7) : text)),
+                  Uri.encodeFull(
+                    Uri.decodeFull(
+                      text.startsWith('http://')
+                          ? 'https://' + text.substring(7)
+                          : text,
+                    ),
+                  ),
                   fit: BoxFit.contain,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
@@ -2754,12 +3181,26 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead, isOverMedia: true),
+        _buildTimeAndStatusRow(
+          isMe,
+          colorScheme,
+          timeText,
+          isRead,
+          isOverMedia: true,
+        ),
       ],
     );
   }
 
-  Widget _buildWebVideoBubble(String text, String fileName, String fileSize, ColorScheme colorScheme, String timeText, bool isMe, bool isRead) {
+  Widget _buildWebVideoBubble(
+    String text,
+    String fileName,
+    String fileSize,
+    ColorScheme colorScheme,
+    String timeText,
+    bool isMe,
+    bool isRead,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2768,9 +3209,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => FullScreenVideoPage(
-                  videoUrl: text,
-                ),
+                builder: (context) => FullScreenVideoPage(videoUrl: text),
               ),
             );
           },
@@ -2788,7 +3227,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: [
                       if (_getVideoThumbnailUrl(text) != null)
                         Image.network(
-                          Uri.encodeFull(Uri.decodeFull(_getVideoThumbnailUrl(text)!)),
+                          Uri.encodeFull(
+                            Uri.decodeFull(_getVideoThumbnailUrl(text)!),
+                          ),
                           fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
@@ -2800,20 +3241,28 @@ class _ChatScreenState extends State<ChatScreen> {
                             );
                           },
                           errorBuilder: (context, error, stackTrace) {
-                            return _buildVideoPlaceholderFallback(colorScheme, fileName, fileSize);
+                            return _buildVideoPlaceholderFallback(
+                              colorScheme,
+                              fileName,
+                              fileSize,
+                            );
                           },
                         )
                       else
-                        _buildVideoPlaceholderFallback(colorScheme, fileName, fileSize),
-                      Container(
-                        color: Colors.black.withValues(alpha: 0.35),
-                      ),
+                        _buildVideoPlaceholderFallback(
+                          colorScheme,
+                          fileName,
+                          fileSize,
+                        ),
+                      Container(color: Colors.black.withValues(alpha: 0.35)),
                       Positioned(
                         left: 12,
                         bottom: 12,
                         right: 12,
                         child: Text(
-                          fileSize.isNotEmpty ? '$fileName • $fileSize' : fileName,
+                          fileSize.isNotEmpty
+                              ? '$fileName • $fileSize'
+                              : fileName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -2852,12 +3301,26 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead, isOverMedia: true),
+        _buildTimeAndStatusRow(
+          isMe,
+          colorScheme,
+          timeText,
+          isRead,
+          isOverMedia: true,
+        ),
       ],
     );
   }
 
-  Widget _buildWebAudioBubble(String text, String fileName, String fileSize, ColorScheme colorScheme, String timeText, bool isMe, bool isRead) {
+  Widget _buildWebAudioBubble(
+    String text,
+    String fileName,
+    String fileSize,
+    ColorScheme colorScheme,
+    String timeText,
+    bool isMe,
+    bool isRead,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2874,7 +3337,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.orange.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.play_arrow_rounded, color: Colors.orange),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  color: Colors.orange,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -2888,17 +3354,25 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                        color: isMe
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      fileSize.isNotEmpty ? 'Audio • $fileSize' : 'Audio Message',
+                      fileSize.isNotEmpty
+                          ? 'Audio • $fileSize'
+                          : 'Audio Message',
                       style: TextStyle(
                         fontSize: 11,
                         color: isMe
-                            ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                            : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            ? colorScheme.onPrimaryContainer.withValues(
+                                alpha: 0.7,
+                              )
+                            : colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.7,
+                              ),
                       ),
                     ),
                   ],
@@ -2913,7 +3387,15 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildWebDocumentBubble(String text, String fileName, String fileSize, ColorScheme colorScheme, String timeText, bool isMe, bool isRead) {
+  Widget _buildWebDocumentBubble(
+    String text,
+    String fileName,
+    String fileSize,
+    ColorScheme colorScheme,
+    String timeText,
+    bool isMe,
+    bool isRead,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2930,7 +3412,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.blue.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.description_rounded, color: Colors.blue),
+                child: const Icon(
+                  Icons.description_rounded,
+                  color: Colors.blue,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -2944,7 +3429,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                        color: isMe
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -2953,8 +3440,12 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         color: isMe
-                            ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                            : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            ? colorScheme.onPrimaryContainer.withValues(
+                                alpha: 0.7,
+                              )
+                            : colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.7,
+                              ),
                       ),
                     ),
                   ],
@@ -2972,7 +3463,11 @@ class _ChatScreenState extends State<ChatScreen> {
   void _triggerFileCheck(String text, String type, {String? originalFileName}) {
     if (!_checkingFiles.contains(text)) {
       _checkingFiles.add(text);
-      LocalStorageService.checkFileExists(text, type, originalFileName: originalFileName).then((path) {
+      LocalStorageService.checkFileExists(
+        text,
+        type,
+        originalFileName: originalFileName,
+      ).then((path) {
         if (mounted) {
           setState(() {
             _localFilePaths[text] = path;
@@ -3022,12 +3517,14 @@ class _ChatScreenState extends State<ChatScreen> {
         break;
       case 'video_call':
       case 'voice_call':
-        typeIcon = type == 'video_call' ? Icons.videocam_rounded : Icons.call_rounded;
+        typeIcon = type == 'video_call'
+            ? Icons.videocam_rounded
+            : Icons.call_rounded;
         displayPreview = type == 'video_call' ? 'Video Call' : 'Voice Call';
         break;
     }
 
-    final Color verticalLineColor = isMe 
+    final Color verticalLineColor = isMe
         ? colorScheme.onPrimaryContainer.withValues(alpha: 0.8)
         : colorScheme.primary;
 
@@ -3045,14 +3542,14 @@ class _ChatScreenState extends State<ChatScreen> {
       child: IntrinsicHeight(
         child: Row(
           children: [
-            Container(
-              width: 4,
-              color: verticalLineColor,
-            ),
+            Container(width: 4, color: verticalLineColor),
             const SizedBox(width: 8),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6.0,
+                  horizontal: 4.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -3062,7 +3559,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: isMe ? colorScheme.onPrimaryContainer : colorScheme.primary,
+                        color: isMe
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -3072,9 +3571,13 @@ class _ChatScreenState extends State<ChatScreen> {
                           Icon(
                             typeIcon,
                             size: 14,
-                            color: isMe 
-                                ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                                : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            color: isMe
+                                ? colorScheme.onPrimaryContainer.withValues(
+                                    alpha: 0.7,
+                                  )
+                                : colorScheme.onSurfaceVariant.withValues(
+                                    alpha: 0.7,
+                                  ),
                           ),
                           const SizedBox(width: 4),
                         ],
@@ -3085,9 +3588,13 @@ class _ChatScreenState extends State<ChatScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 12,
-                              color: isMe 
-                                  ? colorScheme.onPrimaryContainer.withValues(alpha: 0.8)
-                                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                              color: isMe
+                                  ? colorScheme.onPrimaryContainer.withValues(
+                                      alpha: 0.8,
+                                    )
+                                  : colorScheme.onSurfaceVariant.withValues(
+                                      alpha: 0.8,
+                                    ),
                             ),
                           ),
                         ),
@@ -3103,47 +3610,62 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildMessageBubbleBody({
+  Widget _buildExternalReplyWidget({
     required Map<String, dynamic> message,
     required bool isMe,
     required ColorScheme colorScheme,
-    required String timeText,
-    required bool isRead,
   }) {
-    final Widget bubbleContent = _buildRawMessageBubbleBody(
-      message: message,
-      isMe: isMe,
-      colorScheme: colorScheme,
-      timeText: timeText,
-      isRead: isRead,
-    );
+    final String replyToText = message['replyToText'] ?? '';
+    final String replyToSenderId = message['replyToSenderId'] ?? '';
+    final String replyToType = message['replyToType'] ?? 'text';
 
-    final String? replyToId = message['replyToId'];
-    if (replyToId != null) {
-      final String replyToText = message['replyToText'] ?? '';
-      final String replyToSenderId = message['replyToSenderId'] ?? '';
-      final String replyToType = message['replyToType'] ?? 'text';
-      
-      final bool isReplyMe = replyToSenderId == _auth.currentUser!.uid;
-      final String replySenderName = isReplyMe ? 'You' : widget.receiverName;
+    final bool isReplyMe = replyToSenderId == _auth.currentUser!.uid;
+    final String replySenderName = isReplyMe ? 'You' : widget.receiverName;
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      child: Column(
+        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          _buildReplyQuoteWidget(
-            senderName: replySenderName,
-            text: replyToText,
-            type: replyToType,
-            isMe: isMe,
-            colorScheme: colorScheme,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                width: 1.5,
+              ),
+            ),
+            child: _buildReplyQuoteWidget(
+              senderName: replySenderName,
+              text: replyToText,
+              type: replyToType,
+              isMe: isMe,
+              colorScheme: colorScheme,
+            ),
           ),
-          const SizedBox(height: 8),
-          bubbleContent,
+          Padding(
+            padding: EdgeInsets.only(
+              left: isMe ? 0 : 20,
+              right: isMe ? 20 : 0,
+              top: 2,
+              bottom: 2,
+            ),
+            child: SizedBox(
+              width: 24,
+              height: 20,
+              child: CustomPaint(
+                painter: CurvedReplyArrowPainter(
+                  isMe: isMe,
+                  color: colorScheme.primary.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+          ),
         ],
-      );
-    }
-    return bubbleContent;
+      ),
+    );
   }
 
   Widget _buildRawMessageBubbleBody({
@@ -3163,88 +3685,248 @@ class _ChatScreenState extends State<ChatScreen> {
     switch (type) {
       case 'image':
         if (kIsWeb) {
-          return _buildWebImageBubble(text, colorScheme, timeText, isMe, isRead);
+          return _buildWebImageBubble(
+            text,
+            colorScheme,
+            timeText,
+            isMe,
+            isRead,
+          );
         }
         final bool isDownloadingImage = _downloadProgress.containsKey(text);
         if (isDownloadingImage) {
-          return _buildDownloadPlaceholderCard(text, 'image', fileSize, colorScheme, isMe, timeText, isRead);
+          return _buildDownloadPlaceholderCard(
+            text,
+            'image',
+            fileSize,
+            colorScheme,
+            isMe,
+            timeText,
+            isRead,
+          );
         }
         if (_localFilePaths.containsKey(text)) {
           final String? localPath = _localFilePaths[text];
           if (localPath != null) {
-            return _buildLocalImageBubble(localPath, colorScheme, timeText, isMe, isRead, text);
+            return _buildLocalImageBubble(
+              localPath,
+              colorScheme,
+              timeText,
+              isMe,
+              isRead,
+              text,
+            );
           } else {
-            return _buildNetworkImageBubble(text, colorScheme, timeText, isMe, isRead);
+            return _buildNetworkImageBubble(
+              text,
+              colorScheme,
+              timeText,
+              isMe,
+              isRead,
+            );
           }
         }
         _triggerFileCheck(text, 'image');
-        return _buildNetworkImageBubble(text, colorScheme, timeText, isMe, isRead);
+        return _buildNetworkImageBubble(
+          text,
+          colorScheme,
+          timeText,
+          isMe,
+          isRead,
+        );
 
       case 'video':
         String fileName = _getFileNameFromUrl(text);
         if (kIsWeb) {
-          return _buildWebVideoBubble(text, fileName, fileSize, colorScheme, timeText, isMe, isRead);
+          return _buildWebVideoBubble(
+            text,
+            fileName,
+            fileSize,
+            colorScheme,
+            timeText,
+            isMe,
+            isRead,
+          );
         }
         final bool isDownloadingVideo = _downloadProgress.containsKey(text);
         if (isDownloadingVideo) {
-          return _buildDownloadPlaceholderCard(text, 'video', fileSize, colorScheme, isMe, timeText, isRead);
+          return _buildDownloadPlaceholderCard(
+            text,
+            'video',
+            fileSize,
+            colorScheme,
+            isMe,
+            timeText,
+            isRead,
+          );
         }
         if (_localFilePaths.containsKey(text)) {
           final String? localPath = _localFilePaths[text];
           if (localPath != null) {
-            return _buildLocalVideoBubble(localPath, colorScheme, timeText, isMe, isRead, text, fileName, fileSize);
+            return _buildLocalVideoBubble(
+              localPath,
+              colorScheme,
+              timeText,
+              isMe,
+              isRead,
+              text,
+              fileName,
+              fileSize,
+            );
           } else {
-            return _buildDownloadPlaceholderCard(text, 'video', fileSize, colorScheme, isMe, timeText, isRead);
+            return _buildDownloadPlaceholderCard(
+              text,
+              'video',
+              fileSize,
+              colorScheme,
+              isMe,
+              timeText,
+              isRead,
+            );
           }
         }
         _triggerFileCheck(text, 'video');
-        return _buildDownloadPlaceholderCard(text, 'video', fileSize, colorScheme, isMe, timeText, isRead);
+        return _buildDownloadPlaceholderCard(
+          text,
+          'video',
+          fileSize,
+          colorScheme,
+          isMe,
+          timeText,
+          isRead,
+        );
 
       case 'audio':
         String fileName = _getFileNameFromUrl(text);
         if (kIsWeb) {
-          return _buildWebAudioBubble(text, fileName, fileSize, colorScheme, timeText, isMe, isRead);
+          return _buildWebAudioBubble(
+            text,
+            fileName,
+            fileSize,
+            colorScheme,
+            timeText,
+            isMe,
+            isRead,
+          );
         }
         final bool isDownloadingAudio = _downloadProgress.containsKey(text);
         if (isDownloadingAudio) {
-          return _buildDownloadPlaceholderCard(text, 'audio', fileSize, colorScheme, isMe, timeText, isRead);
+          return _buildDownloadPlaceholderCard(
+            text,
+            'audio',
+            fileSize,
+            colorScheme,
+            isMe,
+            timeText,
+            isRead,
+          );
         }
         if (_localFilePaths.containsKey(text)) {
           final String? localPath = _localFilePaths[text];
           if (localPath != null) {
-            return _buildLocalAudioBubble(localPath, colorScheme, timeText, isMe, isRead, fileName, fileSize);
+            return _buildLocalAudioBubble(
+              localPath,
+              colorScheme,
+              timeText,
+              isMe,
+              isRead,
+              fileName,
+              fileSize,
+            );
           } else {
-            return _buildDownloadPlaceholderCard(text, 'audio', fileSize, colorScheme, isMe, timeText, isRead);
+            return _buildDownloadPlaceholderCard(
+              text,
+              'audio',
+              fileSize,
+              colorScheme,
+              isMe,
+              timeText,
+              isRead,
+            );
           }
         }
         _triggerFileCheck(text, 'audio');
-        return _buildDownloadPlaceholderCard(text, 'audio', fileSize, colorScheme, isMe, timeText, isRead);
+        return _buildDownloadPlaceholderCard(
+          text,
+          'audio',
+          fileSize,
+          colorScheme,
+          isMe,
+          timeText,
+          isRead,
+        );
 
       case 'document':
-        String fileName = originalFileName.isNotEmpty ? originalFileName : _getFileNameFromUrl(text);
+        String fileName = originalFileName.isNotEmpty
+            ? originalFileName
+            : _getFileNameFromUrl(text);
         if (kIsWeb) {
-          return _buildWebDocumentBubble(text, fileName, fileSize, colorScheme, timeText, isMe, isRead);
+          return _buildWebDocumentBubble(
+            text,
+            fileName,
+            fileSize,
+            colorScheme,
+            timeText,
+            isMe,
+            isRead,
+          );
         }
         final bool isDownloadingDocument = _downloadProgress.containsKey(text);
         if (isDownloadingDocument) {
-          return _buildDownloadPlaceholderCard(text, 'document', fileSize, colorScheme, isMe, timeText, isRead, originalFileName: fileName);
+          return _buildDownloadPlaceholderCard(
+            text,
+            'document',
+            fileSize,
+            colorScheme,
+            isMe,
+            timeText,
+            isRead,
+            originalFileName: fileName,
+          );
         }
         if (_localFilePaths.containsKey(text)) {
           final String? localPath = _localFilePaths[text];
           if (localPath != null) {
-            return _buildLocalDocumentBubble(localPath, colorScheme, timeText, isMe, isRead, fileName, fileSize);
+            return _buildLocalDocumentBubble(
+              localPath,
+              colorScheme,
+              timeText,
+              isMe,
+              isRead,
+              fileName,
+              fileSize,
+            );
           } else {
-            return _buildDownloadPlaceholderCard(text, 'document', fileSize, colorScheme, isMe, timeText, isRead, originalFileName: fileName);
+            return _buildDownloadPlaceholderCard(
+              text,
+              'document',
+              fileSize,
+              colorScheme,
+              isMe,
+              timeText,
+              isRead,
+              originalFileName: fileName,
+            );
           }
         }
         _triggerFileCheck(text, 'document', originalFileName: fileName);
-        return _buildDownloadPlaceholderCard(text, 'document', fileSize, colorScheme, isMe, timeText, isRead, originalFileName: fileName);
+        return _buildDownloadPlaceholderCard(
+          text,
+          'document',
+          fileSize,
+          colorScheme,
+          isMe,
+          timeText,
+          isRead,
+          originalFileName: fileName,
+        );
 
       case 'location':
         List<String> latLng = text.split(',');
         String displayCoords = text;
         if (latLng.length == 2) {
-          displayCoords = '${double.tryParse(latLng[0])?.toStringAsFixed(4) ?? latLng[0]}, ${double.tryParse(latLng[1])?.toStringAsFixed(4) ?? latLng[1]}';
+          displayCoords =
+              '${double.tryParse(latLng[0])?.toStringAsFixed(4) ?? latLng[0]}, ${double.tryParse(latLng[1])?.toStringAsFixed(4) ?? latLng[1]}';
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3259,13 +3941,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Container(
                   width: 260,
                   decoration: BoxDecoration(
-                    color: isMe 
+                    color: isMe
                         ? colorScheme.primaryContainer.withValues(alpha: 0.5)
-                        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        : colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.5,
+                          ),
                     border: Border.all(
-                      color: isMe 
-                          ? colorScheme.primary.withValues(alpha: 0.15) 
-                          : colorScheme.outlineVariant.withValues(alpha: 0.5)
+                      color: isMe
+                          ? colorScheme.primary.withValues(alpha: 0.15)
+                          : colorScheme.outlineVariant.withValues(alpha: 0.5),
                     ),
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -3285,7 +3969,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               return Container(
                                 color: colorScheme.surfaceContainerHighest,
                                 child: const Center(
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               );
                             },
@@ -3295,7 +3981,13 @@ class _ChatScreenState extends State<ChatScreen> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.map_rounded, size: 36, color: colorScheme.primary.withValues(alpha: 0.5)),
+                                    Icon(
+                                      Icons.map_rounded,
+                                      size: 36,
+                                      color: colorScheme.primary.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
                                     const SizedBox(height: 8),
                                     Text(
                                       'Map Preview Unavailable',
@@ -3320,7 +4012,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                 color: Colors.teal.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.location_on_rounded, color: Colors.teal, size: 20),
+                              child: const Icon(
+                                Icons.location_on_rounded,
+                                color: Colors.teal,
+                                size: 20,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -3332,7 +4028,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
-                                      color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                                      color: isMe
+                                          ? colorScheme.onPrimaryContainer
+                                          : colorScheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -3340,9 +4038,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                     displayCoords,
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: isMe 
-                                          ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                                          : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                      color: isMe
+                                          ? colorScheme.onPrimaryContainer
+                                                .withValues(alpha: 0.7)
+                                          : colorScheme.onSurfaceVariant
+                                                .withValues(alpha: 0.7),
                                     ),
                                   ),
                                 ],
@@ -3357,62 +4057,131 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead, isOverMedia: false),
+            _buildTimeAndStatusRow(
+              isMe,
+              colorScheme,
+              timeText,
+              isRead,
+              isOverMedia: false,
+            ),
           ],
         );
 
       case 'video_call':
       case 'voice_call':
         bool isVideo = type == 'video_call';
+        final int? duration = message['duration'] as int?;
+        String durationText = '';
+        if (duration != null && duration > 0) {
+          if (duration < 60) {
+            durationText = '$duration Sec';
+          } else {
+            final minutes = (duration ~/ 60).toString().padLeft(2, '0');
+            final secs = (duration % 60).toString().padLeft(2, '0');
+            durationText = '$minutes:$secs min';
+          }
+        }
+
+        String statusText = durationText.isNotEmpty 
+            ? durationText 
+            : (isVideo ? 'Video Call' : 'Voice Call');
+
+        IconData callIcon;
+        if (isVideo) {
+          callIcon = Icons.videocam_rounded;
+        } else {
+          // Missed/no answer vs answered
+          if (duration == null || duration == 0) {
+            callIcon = Icons.phone_missed_rounded;
+          } else {
+            callIcon = Icons.call_rounded;
+          }
+        }
+
+        Color innerBoxColor = isMe
+            ? colorScheme.onPrimary.withValues(alpha: 0.15)
+            : colorScheme.primary.withValues(alpha: 0.08);
+
+        Color borderColor = isMe
+            ? colorScheme.onPrimaryContainer.withValues(alpha: 0.2)
+            : colorScheme.outlineVariant.withValues(alpha: 0.5);
+
+        Color iconBgColor = isMe
+            ? colorScheme.onPrimary.withValues(alpha: 0.25)
+            : colorScheme.primary.withValues(alpha: 0.15);
+
+        Color iconColor = isMe
+            ? colorScheme.onPrimaryContainer
+            : colorScheme.primary;
+            
+        // If missed, make icon red
+        if (!isVideo && (duration == null || duration == 0)) {
+          iconBgColor = Colors.red.withValues(alpha: 0.15);
+          iconColor = Colors.red;
+          if (!isMe) {
+             statusText = 'Missed Call';
+          }
+        }
+
         return Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 220,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isMe
-                    ? colorScheme.primaryContainer
-                    : colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    isVideo ? Icons.videocam : Icons.call,
-                    size: 40,
-                    color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    isVideo ? 'Video Call' : 'Voice Call',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+            GestureDetector(
+              onTap: () {
+                if (!isMe) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CallScreen(
+                        roomId: text, // text holds the room ID
+                        isVideoCall: isVideo,
+                        receiverName: widget.receiverName,
+                        receiverId: widget.receiverId,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (!isMe)
-                    FilledButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CallScreen(
-                              roomId: text, // text holds the room ID
-                              isVideoCall: isVideo,
-                              receiverName: widget.receiverName,
-                              receiverId: widget.receiverId,
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Text('Join Call'),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: innerBoxColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor, width: 1.5),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: iconBgColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        callIcon,
+                        size: 20,
+                        color: iconColor,
+                      ),
                     ),
-                ],
+                    const SizedBox(width: 12),
+                    Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: _fontSize,
+                        fontWeight: FontWeight.w600,
+                        color: isMe
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             _buildTimeAndStatusRow(isMe, colorScheme, timeText, isRead),
           ],
         );
@@ -3426,7 +4195,9 @@ class _ChatScreenState extends State<ChatScreen> {
               text: text,
               baseStyle: TextStyle(
                 fontSize: _fontSize,
-                color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                color: isMe
+                    ? colorScheme.onPrimaryContainer
+                    : colorScheme.onSurfaceVariant,
               ),
               linkColor: isMe ? colorScheme.onPrimary : colorScheme.primary,
             ),
@@ -3447,22 +4218,18 @@ class _ChatScreenState extends State<ChatScreen> {
     final Color textColor = isOverMedia
         ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
         : (isMe
-            ? colorScheme.onPrimaryContainer.withValues(alpha: 0.6)
-            : colorScheme.onSurfaceVariant.withValues(alpha: 0.6));
+              ? colorScheme.onPrimaryContainer.withValues(alpha: 0.6)
+              : colorScheme.onSurfaceVariant.withValues(alpha: 0.6));
 
     return Padding(
-      padding: isOverMedia ? const EdgeInsets.symmetric(horizontal: 8, vertical: 4) : EdgeInsets.zero,
+      padding: isOverMedia
+          ? const EdgeInsets.symmetric(horizontal: 8, vertical: 4)
+          : EdgeInsets.zero,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            timeText,
-            style: TextStyle(
-              fontSize: 10,
-              color: textColor,
-            ),
-          ),
+          Text(timeText, style: TextStyle(fontSize: 10, color: textColor)),
           if (isMe) ...[
             const SizedBox(width: 4),
             Icon(
@@ -3486,7 +4253,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _launchLocation(String latLngString) async {
-    final Uri uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$latLngString');
+    final Uri uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$latLngString',
+    );
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -3502,7 +4271,8 @@ class ZigZagLoading extends StatefulWidget {
   _ZigZagLoadingState createState() => _ZigZagLoadingState();
 }
 
-class _ZigZagLoadingState extends State<ZigZagLoading> with TickerProviderStateMixin {
+class _ZigZagLoadingState extends State<ZigZagLoading>
+    with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
   late List<Animation<double>> _animations;
 
@@ -3517,12 +4287,10 @@ class _ZigZagLoadingState extends State<ZigZagLoading> with TickerProviderStateM
     });
 
     _animations = _controllers.map((controller) {
-      return Tween<double>(begin: 0, end: -12).animate(
-        CurvedAnimation(
-          parent: controller,
-          curve: Curves.easeInOut,
-        ),
-      );
+      return Tween<double>(
+        begin: 0,
+        end: -12,
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
     }).toList();
 
     // Start staggered animation loop
@@ -3601,13 +4369,15 @@ class _ZigZagLoadingState extends State<ZigZagLoading> with TickerProviderStateM
 
 class ZigZagLoadingDotsOnly extends StatefulWidget {
   final Color color;
-  const ZigZagLoadingDotsOnly({Key? key, required this.color}) : super(key: key);
+  const ZigZagLoadingDotsOnly({Key? key, required this.color})
+    : super(key: key);
 
   @override
   _ZigZagLoadingDotsOnlyState createState() => _ZigZagLoadingDotsOnlyState();
 }
 
-class _ZigZagLoadingDotsOnlyState extends State<ZigZagLoadingDotsOnly> with TickerProviderStateMixin {
+class _ZigZagLoadingDotsOnlyState extends State<ZigZagLoadingDotsOnly>
+    with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
   late List<Animation<double>> _animations;
 
@@ -3622,12 +4392,10 @@ class _ZigZagLoadingDotsOnlyState extends State<ZigZagLoadingDotsOnly> with Tick
     });
 
     _animations = _controllers.map((controller) {
-      return Tween<double>(begin: 0, end: -6).animate(
-        CurvedAnimation(
-          parent: controller,
-          curve: Curves.easeInOut,
-        ),
-      );
+      return Tween<double>(
+        begin: 0,
+        end: -6,
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
     }).toList();
 
     for (int i = 0; i < 3; i++) {
@@ -3679,17 +4447,15 @@ class SwipeToReply extends StatefulWidget {
   final Widget child;
   final VoidCallback onReply;
 
-  const SwipeToReply({
-    Key? key,
-    required this.child,
-    required this.onReply,
-  }) : super(key: key);
+  const SwipeToReply({Key? key, required this.child, required this.onReply})
+    : super(key: key);
 
   @override
   _SwipeToReplyState createState() => _SwipeToReplyState();
 }
 
-class _SwipeToReplyState extends State<SwipeToReply> with SingleTickerProviderStateMixin {
+class _SwipeToReplyState extends State<SwipeToReply>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   double _dragOffset = 0.0;
   bool _triggered = false;
@@ -3717,7 +4483,10 @@ class _SwipeToReplyState extends State<SwipeToReply> with SingleTickerProviderSt
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (details.primaryDelta! > 0 || _dragOffset > 0) {
       setState(() {
-        _dragOffset = (_dragOffset + details.primaryDelta!).clamp(0.0, _threshold + 30.0);
+        _dragOffset = (_dragOffset + details.primaryDelta!).clamp(
+          0.0,
+          _threshold + 30.0,
+        );
         if (_dragOffset >= _threshold && !_triggered) {
           _triggered = true;
         } else if (_dragOffset < _threshold) {
@@ -3757,7 +4526,9 @@ class _SwipeToReplyState extends State<SwipeToReply> with SingleTickerProviderSt
         alignment: Alignment.centerLeft,
         children: [
           AnimatedOpacity(
-            opacity: _dragOffset > 10 ? (_dragOffset / _threshold).clamp(0.0, 1.0) : 0.0,
+            opacity: _dragOffset > 10
+                ? (_dragOffset / _threshold).clamp(0.0, 1.0)
+                : 0.0,
             duration: Duration.zero,
             child: Padding(
               padding: const EdgeInsets.only(left: 16.0),
@@ -3766,14 +4537,18 @@ class _SwipeToReplyState extends State<SwipeToReply> with SingleTickerProviderSt
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.reply,
                     color: _triggered
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                        : Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.6),
                     size: 20,
                   ),
                 ),
@@ -3790,3 +4565,51 @@ class _SwipeToReplyState extends State<SwipeToReply> with SingleTickerProviderSt
   }
 }
 
+class CurvedReplyArrowPainter extends CustomPainter {
+  final bool isMe;
+  final Color color;
+
+  CurvedReplyArrowPainter({required this.isMe, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final Path path = Path();
+    if (isMe) {
+      // Start top right
+      path.moveTo(size.width, 0);
+      // Curve down and to the left
+      path.quadraticBezierTo(size.width, size.height, 0, size.height);
+      canvas.drawPath(path, paint);
+
+      // Arrow head pointing left
+      final Path arrow = Path()
+        ..moveTo(6, size.height - 4)
+        ..lineTo(0, size.height)
+        ..lineTo(6, size.height + 4);
+      canvas.drawPath(arrow, paint);
+    } else {
+      // Start top left
+      path.moveTo(0, 0);
+      // Curve down and to the right
+      path.quadraticBezierTo(0, size.height, size.width, size.height);
+      canvas.drawPath(path, paint);
+
+      // Arrow head pointing right
+      final Path arrow = Path()
+        ..moveTo(size.width - 6, size.height - 4)
+        ..lineTo(size.width, size.height)
+        ..lineTo(size.width - 6, size.height + 4);
+      canvas.drawPath(arrow, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}

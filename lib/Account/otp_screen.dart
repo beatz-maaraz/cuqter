@@ -69,7 +69,7 @@ class _OtpScreenState extends State<OtpScreen> {
             password: '',
             uid: userCred.user!.uid,
             username: defaultUsername,
-            profilepic: 'assets/profile/BOY (1).jpg',
+            profilepic: '',
           );
 
           await FirebaseFirestore.instance

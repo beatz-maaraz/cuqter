@@ -39,6 +39,8 @@ class _CallScreenState extends State<CallScreen> {
   String? _roomId;
   
   Timer? _ringTimer;
+  Timer? _callTimer;
+  int _callDurationInSeconds = 0;
   bool _isConnected = false;
   bool _isHangingUp = false;
   bool _isDisposed = false; // guards against double-dispose
@@ -61,6 +63,7 @@ class _CallScreenState extends State<CallScreen> {
         _remoteRenderer.srcObject = stream;
         _isConnected = true;
       });
+      _startCallTimer();
     });
 
     signaling.onCallEnded = () async {
@@ -154,13 +157,15 @@ class _CallScreenState extends State<CallScreen> {
               debugPrint('Error fetching caller name: $e');
             }
 
-            await FirebaseDatabase.instance.ref('incoming_calls/${widget.receiverId}').set({
+            final incomingCallRef = FirebaseDatabase.instance.ref('incoming_calls/${widget.receiverId}');
+            await incomingCallRef.set({
               'roomId': _roomId,
               'callerId': currentUser.uid,
               'callerName': callerName,
               'isVideo': widget.isVideoCall,
               'timestamp': ServerValue.timestamp,
             });
+            incomingCallRef.onDisconnect().remove();
           }
         }
 
@@ -213,6 +218,7 @@ class _CallScreenState extends State<CallScreen> {
     if (_isDisposed) return;
     _isDisposed = true;
     _ringTimer?.cancel();
+    _callTimer?.cancel();
     if (!kIsWeb) {
       try { FlutterRingtonePlayer().stop(); } catch (_) {}
     }
@@ -235,6 +241,48 @@ class _CallScreenState extends State<CallScreen> {
       signaling.hangUp();
     }
     super.dispose();
+  }
+
+  void _startCallTimer() {
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _callDurationInSeconds++;
+        });
+      }
+    });
+  }
+
+  String _formatDuration(int seconds) {
+    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
+    final secs = (seconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$secs';
+  }
+
+  Future<void> _updateCallDurationMessage() async {
+    if (widget.receiverId == null || _roomId == null) return;
+    try {
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserId == null) return;
+      
+      String chatId = currentUserId.compareTo(widget.receiverId!) > 0 
+          ? '${currentUserId}_${widget.receiverId}' 
+          : '${widget.receiverId}_$currentUserId';
+
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .where('text', isEqualTo: _roomId)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        await querySnapshot.docs.first.reference.update({'duration': _callDurationInSeconds});
+      }
+    } catch (e) {
+      debugPrint('Error updating call duration: $e');
+    }
   }
 
   void _toggleMic() {
@@ -272,22 +320,28 @@ class _CallScreenState extends State<CallScreen> {
     }
     // 1. Stop tracks FIRST — releases mic/camera OS indicator immediately
     _releaseLocalMedia();
-    // 2. Fully tear down WebRTC (removes room from DB, disposes streams)
-    await signaling.hangUp();
-    // 3. Remove incoming_calls nodes
-    if (widget.receiverId != null && widget.roomId == null) {
-      await FirebaseDatabase.instance.ref('incoming_calls/${widget.receiverId}').remove();
-    }
-    if (widget.roomId != null) {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser != null) {
-        await FirebaseDatabase.instance.ref('incoming_calls/${currentUser.uid}').remove();
-      }
-    }
-    // 4. Pop only if still mounted and not already disposed by the framework
+
+    // 2. Pop immediately so the UI doesn't hang waiting for network operations
     if (mounted && !_isDisposed) {
       Navigator.pop(context);
     }
+
+    // 3. Fully tear down WebRTC (removes room from DB, disposes streams)
+    signaling.hangUp().then((_) async {
+      // 4. Remove incoming_calls nodes in background and update duration
+      await _updateCallDurationMessage();
+      if (widget.receiverId != null && widget.roomId == null) {
+        await FirebaseDatabase.instance.ref('incoming_calls/${widget.receiverId}').remove();
+      }
+      if (widget.roomId != null) {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          await FirebaseDatabase.instance.ref('incoming_calls/${currentUser.uid}').remove();
+        }
+      }
+    }).catchError((e) {
+      debugPrint('Error during background hangup: $e');
+    });
   }
 
   @override
@@ -440,7 +494,7 @@ class _CallScreenState extends State<CallScreen> {
                     child: Text(
                       _remoteRenderer.srcObject == null
                           ? (widget.roomId == null ? 'Calling...' : 'Connecting...')
-                          : 'Connected',
+                          : _formatDuration(_callDurationInSeconds),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,

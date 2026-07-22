@@ -13,6 +13,7 @@ import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
 import 'package:cuqter/Screen/camera_screen.dart';
 import 'package:cuqter/media.dart';
+import 'package:cuqter/Screen/contact_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -33,12 +34,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _currentUsername = '';
 
   final List<String> _profilePictures = [
-    'assets/profile/BOY (1).jpg',
-    'assets/profile/BOY (2).jpg',
-    'assets/profile/BOY (3).jpg',
-    'assets/profile/BOY (4).jpg',
-    'assets/profile/Girl (1).jpg',
-    'assets/profile/Girl (2).jpg',
+    'assets/profile/BOY_1.jpg',
+    'assets/profile/BOY_2.jpg',
+    'assets/profile/BOY_3.jpg',
+    'assets/profile/BOY_4.jpg',
+    'assets/profile/Girl_1.jpg',
+    'assets/profile/Girl_2.jpg',
     'assets/profile/NEW (1).jpg',
     'assets/profile/NEW (2).jpg',
     'assets/profile/NEW (3).jpg',
@@ -62,7 +63,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final String? cachedUsername = prefs.getString('cached_profile_username');
       final String? cachedBio = prefs.getString('cached_profile_bio');
       final String? cachedPic = prefs.getString('cached_profile_pic');
-      final String? cachedPublicId = prefs.getString('cached_cloudinary_public_id');
+      final String? cachedPublicId = prefs.getString(
+        'cached_cloudinary_public_id',
+      );
 
       if (mounted) {
         setState(() {
@@ -91,7 +94,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      var snap = await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
+      var snap = await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .get();
       if (snap.exists && snap.data() != null) {
         var data = snap.data() as Map<String, dynamic>;
         final String name = data['name'] ?? '';
@@ -118,7 +124,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await prefs.setString('cached_profile_bio', bio);
         await prefs.setString('cached_profile_pic', profilepic);
         if (cloudinaryPublicId != null) {
-          await prefs.setString('cached_cloudinary_public_id', cloudinaryPublicId);
+          await prefs.setString(
+            'cached_cloudinary_public_id',
+            cloudinaryPublicId,
+          );
         } else {
           await prefs.remove('cached_cloudinary_public_id');
         }
@@ -149,7 +158,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
 
-      var snap = await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
+      var snap = await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .get();
       String? oldPublicId;
       if (snap.exists && snap.data() != null) {
         var data = snap.data() as Map<String, dynamic>;
@@ -187,12 +199,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await prefs.setString('cached_profile_bio', _bioController.text);
       await prefs.setString('cached_profile_pic', _selectedProfilePic);
       if (_currentCloudinaryPublicId != null) {
-        await prefs.setString('cached_cloudinary_public_id', _currentCloudinaryPublicId!);
+        await prefs.setString(
+          'cached_cloudinary_public_id',
+          _currentCloudinaryPublicId!,
+        );
       } else {
         await prefs.remove('cached_cloudinary_public_id');
       }
 
-      if (oldPublicId != null && oldPublicId.isNotEmpty && oldPublicId != _currentCloudinaryPublicId) {
+      if (oldPublicId != null &&
+          oldPublicId.isNotEmpty &&
+          oldPublicId != _currentCloudinaryPublicId) {
         await CloudinaryService.deleteMedia(oldPublicId);
       }
 
@@ -200,9 +217,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SnackBar(content: Text('Profile updated successfully!')),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update profile: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
     }
     setState(() {
       isLoading = false;
@@ -236,7 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           imageBytes = await File(result.imageUrl).readAsBytes();
         }
       }
-      
+
       if (imageBytes == null) return;
 
       setState(() {
@@ -254,10 +271,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _currentCloudinaryPublicId = newPublicId;
         });
 
-        await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
-          'profilepic': newUrl,
-          'cloudinary_public_id': newPublicId,
-        });
+        await _firestore.collection('users').doc(_auth.currentUser!.uid).update(
+          {'profilepic': newUrl, 'cloudinary_public_id': newPublicId},
+        );
 
         // Sync new profile pic to active statuses
         final batch = _firestore.batch();
@@ -266,9 +282,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .where('uid', isEqualTo: _auth.currentUser!.uid)
             .get();
         for (var doc in statusesSnapshot.docs) {
-          batch.update(doc.reference, {
-            'profilePic': newUrl,
-          });
+          batch.update(doc.reference, {'profilePic': newUrl});
         }
         await batch.commit();
 
@@ -282,17 +296,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture updated successfully!')),
+          const SnackBar(
+            content: Text('Profile picture updated successfully!'),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to upload image to Cloudinary.')),
+          const SnackBar(
+            content: Text('Failed to upload image to Cloudinary.'),
+          ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       setState(() {
         isLoading = false;
@@ -312,7 +330,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return Container(
               decoration: BoxDecoration(
                 color: colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
               ),
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
               child: SingleChildScrollView(
@@ -333,7 +353,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 24),
                     const Text(
                       'Choose Profile Picture',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -384,11 +407,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
                       itemCount: _profilePictures.length,
                       itemBuilder: (context, index) {
                         final path = _profilePictures[index];
@@ -408,7 +432,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isSelected ? colorScheme.primary : Colors.transparent,
+                                color: isSelected
+                                    ? colorScheme.primary
+                                    : Colors.transparent,
                                 width: 4,
                               ),
                             ),
@@ -428,20 +454,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           backgroundColor: colorScheme.primary,
                           foregroundColor: colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
                         ),
                         onPressed: () {
                           Navigator.pop(sheetContext);
                           _updateProfile();
                         },
-                        child: const Text('Save Selection', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        child: const Text(
+                          'Save Selection',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             );
-          }
+          },
         );
       },
     );
@@ -453,25 +487,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
     try {
       String userId = _auth.currentUser!.uid;
-      
+
       // Delete user data from Firestore
       await _firestore.collection('users').doc(userId).delete();
-      
+
       // Delete user authentication account
       await _auth.currentUser!.delete();
-      
+
       if (mounted) {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Account deleted successfully! Redirecting to login...'),
+            content: Text(
+              'Account deleted successfully! Redirecting to login...',
+            ),
             duration: Duration(seconds: 2),
           ),
         );
-        
+
         // Wait for 2 seconds before navigation
         await Future.delayed(const Duration(seconds: 2));
-        
+
         // Pop back to root route
         Navigator.of(context).popUntil((route) => route.isFirst);
         // Sign out explicitly
@@ -482,9 +518,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete account: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete account: $e')));
       }
     }
   }
@@ -494,9 +530,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (sheetContext) => DeleteConfirmationSheet(
-        onDelete: _deleteUserAccount,
-      ),
+      builder: (sheetContext) =>
+          DeleteConfirmationSheet(onDelete: _deleteUserAccount),
     );
   }
 
@@ -509,7 +544,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'My Profile',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -519,132 +557,281 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Column(
                 children: [
-                   const SizedBox(height: 10),
-                   Center(
-                     child: Stack(
-                       alignment: Alignment.center,
-                       children: [
-                         GestureDetector(
-                           onTap: () {
-                             if (_selectedProfilePic.isNotEmpty) {
-                               Navigator.push(
-                                 context,
-                                 MaterialPageRoute(
-                                   builder: (context) => FullScreenProfilePicPage(
-                                     imageUrl: _selectedProfilePic,
-                                     heroTag: 'profile_pic_hero_current_user',
-                                   ),
-                                 ),
-                               );
-                             } else {
-                               _showProfilePicPicker();
-                             }
-                           },
-                           child: Container(
-                             padding: const EdgeInsets.all(4),
-                             decoration: BoxDecoration(
-                               color: colorScheme.primary.withValues(alpha: 0.1),
-                               shape: BoxShape.circle,
-                             ),
-                             child: Hero(
-                               tag: 'profile_pic_hero_current_user',
-                               child: CircleAvatar(
-                                 radius: 60,
-                                 backgroundColor: colorScheme.primaryContainer,
-                                 backgroundImage: _selectedProfilePic.isNotEmpty
-                                     ? (_selectedProfilePic.startsWith('http')
-                                         ? CachedNetworkImageProvider(_selectedProfilePic)
-                                         : AssetImage(_selectedProfilePic) as ImageProvider)
-                                     : null,
-                                 child: _selectedProfilePic.isEmpty ? Text(
-                                   _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : '?',
-                                   style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
-                                 ) : null,
-                               ),
-                             ),
-                           ),
-                         ),
-                         Positioned(
-                           bottom: 4,
-                           right: 4,
-                           child: GestureDetector(
-                             onTap: _showProfilePicPicker,
-                             child: Container(
-                               padding: const EdgeInsets.all(6),
-                               decoration: BoxDecoration(
-                                 color: colorScheme.primary,
-                                 shape: BoxShape.circle,
-                                 border: Border.all(color: colorScheme.surface, width: 3),
-                               ),
-                               child: const Icon(Icons.camera_alt, size: 19, color: Colors.white),
-                             ),
-                           ),
-                         ),
-                       ],
-                     ),
-                   ),
-                   const SizedBox(height: 24),
-                   Text(
-                     _nameController.text,
-                     style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                   ),
-                   if (_usernameController.text.isNotEmpty) ...[
-                     const SizedBox(height: 4),
-                     Text(
-                       '@${_usernameController.text}',
-                       style: TextStyle(
-                         fontSize: 15,
-                         fontWeight: FontWeight.w600,
-                         color: colorScheme.primary,
-                       ),
-                     ),
-                   ],
-                   const SizedBox(height: 32),
-                   Container(
-                     padding: const EdgeInsets.all(24),
-                     decoration: BoxDecoration(
-                       color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                       borderRadius: BorderRadius.circular(24),
-                     ),
-                     child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         _buildInfoItem(context, 'EMAIL ADDRESS', user?.email ?? 'No email'),
-                         const Divider(height: 32),
-                         _buildInfoItem(context, 'BIO', _bioController.text.isNotEmpty ? _bioController.text : 'Cuqter Member'),
-                         const Divider(height: 32),
-                         _buildColabFeatureItem(context),
-                       ],
-                     ),
-                   ),
-                   const SizedBox(height: 32),
-                   SizedBox(
-                     width: double.infinity,
-                     child: ElevatedButton.icon(
-                       style: ElevatedButton.styleFrom(
-                         backgroundColor: colorScheme.primary,
-                         foregroundColor: colorScheme.onPrimary,
-                         padding: const EdgeInsets.symmetric(vertical: 16),
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                         elevation: 4,
-                         shadowColor: colorScheme.primary.withValues(alpha: 0.4),
-                       ),
-                       onPressed: _showEditDialog,
-                       icon: const Icon(Icons.edit, size: 20),
-                       label: const Text(
-                         'Edit Profile',
-                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                       ),
-                     ),
-                   ),
-                   const SizedBox(height: 16),
-                   TextButton(
-                     onPressed: _showDeleteConfirmationDialog,
-                     child: Text(
-                       'Delete Account',
-                       style: TextStyle(color: colorScheme.error),
-                     ),
-                   ),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            if (_selectedProfilePic.isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      FullScreenProfilePicPage(
+                                        imageUrl: _selectedProfilePic,
+                                        heroTag:
+                                            'profile_pic_hero_current_user',
+                                      ),
+                                ),
+                              );
+                            } else {
+                              _showProfilePicPicker();
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Hero(
+                              tag: 'profile_pic_hero_current_user',
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: colorScheme.primaryContainer,
+                                backgroundImage: _selectedProfilePic.isNotEmpty
+                                    ? (_selectedProfilePic.startsWith('http')
+                                          ? CachedNetworkImageProvider(
+                                              _selectedProfilePic,
+                                            )
+                                          : AssetImage(_selectedProfilePic)
+                                                as ImageProvider)
+                                    : null,
+                                child: _selectedProfilePic.isEmpty
+                                    ? Text(
+                                        _nameController.text.isNotEmpty
+                                            ? _nameController.text[0]
+                                                  .toUpperCase()
+                                            : '?',
+                                        style: TextStyle(
+                                          fontSize: 40,
+                                          fontWeight: FontWeight.bold,
+                                          color: colorScheme.onPrimaryContainer,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: _showProfilePicPicker,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: colorScheme.surface,
+                                  width: 3,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                size: 19,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+
+                  // Name and Bio Box
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.3,
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: colorScheme.onSurface.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          _nameController.text,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '@${_usernameController.text}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(),
+                        ),
+                        Text(
+                          _bioController.text.isNotEmpty
+                              ? _bioController.text
+                              : 'Cuqter Member',
+                          style: const TextStyle(fontSize: 16),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Friends and Followers Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            side: BorderSide(
+                              color: colorScheme.primary.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        const ContactScreen(),
+                                transitionsBuilder:
+                                    (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      return SlideTransition(
+                                        position:
+                                            Tween<Offset>(
+                                              begin: const Offset(1.0, 0.0),
+                                              end: Offset.zero,
+                                            ).animate(
+                                              CurvedAnimation(
+                                                parent: animation,
+                                                curve: Curves.easeOutCubic,
+                                              ),
+                                            ),
+                                        child: FadeTransition(
+                                          opacity: animation,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                transitionDuration: const Duration(
+                                  milliseconds: 250,
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Friends',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            side: BorderSide(
+                              color: colorScheme.primary.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          onPressed: () {
+                            // Action for followers if any
+                          },
+                          child: const Text(
+                            'Followers',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Close Friend Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        side: BorderSide(
+                          color: colorScheme.onSurface.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      onPressed: () {
+                        // Action for close friend
+                      },
+                      icon: huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedLockPassword,
+                        size: 22,
+                        color: colorScheme.onSurface,
+                      ),
+                      label: Text(
+                        'close friend',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Edit and Delete
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton.icon(
+                        onPressed: _showEditDialog,
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Edit Profile'),
+                      ),
+                      TextButton(
+                        onPressed: _showDeleteConfirmationDialog,
+                        child: Text(
+                          'Delete Account',
+                          style: TextStyle(color: colorScheme.error),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -744,7 +931,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.primary,
                   borderRadius: BorderRadius.circular(12),
@@ -785,10 +975,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (context, setDialogState) {
           final colorScheme = Theme.of(context).colorScheme;
 
-          final bool isSaveDisabled = isChecking ||
+          final bool isSaveDisabled =
+              isChecking ||
               usernameErrorText != null ||
               _usernameController.text.trim().isEmpty ||
-              (isAvailable == false && _usernameController.text.trim().toLowerCase() != _currentUsername.toLowerCase());
+              (isAvailable == false &&
+                  _usernameController.text.trim().toLowerCase() !=
+                      _currentUsername.toLowerCase());
 
           return AlertDialog(
             title: const Text('Edit Profile'),
@@ -808,7 +1001,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       labelText: 'Username',
                       prefixText: '@',
                       errorText: usernameErrorText,
-                      helperText: isAvailable == true && usernameErrorText == null
+                      helperText:
+                          isAvailable == true && usernameErrorText == null
                           ? 'Username is available'
                           : null,
                       helperStyle: const TextStyle(color: Colors.green),
@@ -818,17 +1012,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               height: 20,
                               child: Padding(
                                 padding: EdgeInsets.all(12.0),
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             )
                           : (isAvailable == true
-                              ? const Icon(Icons.check_circle, color: Colors.green)
-                              : (isAvailable == false || usernameErrorText != null
-                                  ? const Icon(Icons.error, color: Colors.red)
-                                  : null)),
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                  )
+                                : (isAvailable == false ||
+                                          usernameErrorText != null
+                                      ? const Icon(
+                                          Icons.error,
+                                          color: Colors.red,
+                                        )
+                                      : null)),
                     ),
                     onChanged: (val) {
-                      if (debounceTimer?.isActive ?? false) debounceTimer?.cancel();
+                      if (debounceTimer?.isActive ?? false)
+                        debounceTimer?.cancel();
 
                       if (val.contains(' ')) {
                         setDialogState(() {
@@ -851,7 +1055,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (!regExp.hasMatch(trimmed)) {
                         setDialogState(() {
                           isAvailable = null;
-                          usernameErrorText = 'Only letters, numbers, underscores, and dots';
+                          usernameErrorText =
+                              'Only letters, numbers, underscores, and dots';
                         });
                         return;
                       }
@@ -870,40 +1075,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         usernameErrorText = null;
                       });
 
-                      debounceTimer = Timer(const Duration(milliseconds: 500), () async {
-                        try {
-                          final query = await FirebaseFirestore.instance
-                              .collection('users')
-                              .where('username', isEqualTo: trimmed)
-                              .get();
+                      debounceTimer = Timer(
+                        const Duration(milliseconds: 500),
+                        () async {
+                          try {
+                            final query = await FirebaseFirestore.instance
+                                .collection('users')
+                                .where('username', isEqualTo: trimmed)
+                                .get();
 
-                          if (!context.mounted) return;
+                            if (!context.mounted) return;
 
-                          if (_usernameController.text.trim().toLowerCase() != trimmed) {
-                            return;
-                          }
-
-                          setDialogState(() {
-                            isChecking = false;
-                            if (query.docs.isNotEmpty) {
-                              isAvailable = false;
-                              usernameErrorText = 'Username is already taken';
-                            } else {
-                              isAvailable = true;
-                              usernameErrorText = null;
+                            if (_usernameController.text.trim().toLowerCase() !=
+                                trimmed) {
+                              return;
                             }
-                          });
-                        } catch (e) {
-                          if (!context.mounted) return;
-                          if (_usernameController.text.trim().toLowerCase() != trimmed) {
-                            return;
+
+                            setDialogState(() {
+                              isChecking = false;
+                              if (query.docs.isNotEmpty) {
+                                isAvailable = false;
+                                usernameErrorText = 'Username is already taken';
+                              } else {
+                                isAvailable = true;
+                                usernameErrorText = null;
+                              }
+                            });
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            if (_usernameController.text.trim().toLowerCase() !=
+                                trimmed) {
+                              return;
+                            }
+                            setDialogState(() {
+                              isChecking = false;
+                              usernameErrorText = 'Error checking username';
+                            });
                           }
-                          setDialogState(() {
-                            isChecking = false;
-                            usernameErrorText = 'Error checking username';
-                          });
-                        }
-                      });
+                        },
+                      );
                     },
                   ),
                   const SizedBox(height: 16),
@@ -912,7 +1122,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     decoration: const InputDecoration(labelText: 'Bio'),
                   ),
                   const SizedBox(height: 20),
-                  const Text('Select Avatar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const Text(
+                    'Select Avatar',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
                   const SizedBox(height: 8),
                   SizedBox(
                     height: 60,
@@ -933,7 +1146,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isSelected ? colorScheme.primary : Colors.transparent,
+                                color: isSelected
+                                    ? colorScheme.primary
+                                    : Colors.transparent,
                                 width: 3,
                               ),
                             ),
@@ -961,7 +1176,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: isSaveDisabled
                     ? null
                     : () {
-                        if (debounceTimer?.isActive ?? false) debounceTimer?.cancel();
+                        if (debounceTimer?.isActive ?? false)
+                          debounceTimer?.cancel();
                         setState(() {
                           _selectedProfilePic = dialogSelectedPic;
                           if (_selectedProfilePic.startsWith('assets/')) {
@@ -975,7 +1191,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           );
-        }
+        },
       ),
     );
   }
@@ -984,13 +1200,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class DeleteConfirmationSheet extends StatefulWidget {
   final VoidCallback onDelete;
 
-  const DeleteConfirmationSheet({Key? key, required this.onDelete}) : super(key: key);
+  const DeleteConfirmationSheet({Key? key, required this.onDelete})
+    : super(key: key);
 
   @override
-  State<DeleteConfirmationSheet> createState() => _DeleteConfirmationSheetState();
+  State<DeleteConfirmationSheet> createState() =>
+      _DeleteConfirmationSheetState();
 }
 
-class _DeleteConfirmationSheetState extends State<DeleteConfirmationSheet> with TickerProviderStateMixin {
+class _DeleteConfirmationSheetState extends State<DeleteConfirmationSheet>
+    with TickerProviderStateMixin {
   late AnimationController _entryController;
   late AnimationController _pulseController;
   late Animation<double> _slideAnimation;
@@ -1008,9 +1227,10 @@ class _DeleteConfirmationSheetState extends State<DeleteConfirmationSheet> with 
     _slideAnimation = Tween<double>(begin: 80.0, end: 0.0).animate(
       CurvedAnimation(parent: _entryController, curve: Curves.easeOutBack),
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _entryController, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _entryController, curve: Curves.easeOut));
 
     // Pulse Animation for warning icon
     _pulseController = AnimationController(
@@ -1041,10 +1261,7 @@ class _DeleteConfirmationSheetState extends State<DeleteConfirmationSheet> with 
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(0, _slideAnimation.value),
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: child,
-          ),
+          child: Opacity(opacity: _fadeAnimation.value, child: child),
         );
       },
       child: Container(
@@ -1109,13 +1326,18 @@ class _DeleteConfirmationSheetState extends State<DeleteConfirmationSheet> with 
                   backgroundColor: colorScheme.error,
                   foregroundColor: colorScheme.onError,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
                 onPressed: () {
                   Navigator.pop(context);
                   widget.onDelete();
                 },
-                child: const Text('Delete Account', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: const Text(
+                  'Delete Account',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -1123,13 +1345,19 @@ class _DeleteConfirmationSheetState extends State<DeleteConfirmationSheet> with 
               width: double.infinity,
               child: TextButton(
                 style: TextButton.styleFrom(
-                  backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  backgroundColor: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.5),
                   foregroundColor: colorScheme.onSurface,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
             ),
           ],
@@ -1138,4 +1366,3 @@ class _DeleteConfirmationSheetState extends State<DeleteConfirmationSheet> with 
     );
   }
 }
-

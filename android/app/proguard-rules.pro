@@ -1,0 +1,2 @@
+-dontwarn com.cloudwebrtc.webrtc.**
+-keep class com.cloudwebrtc.webrtc.** { *; }

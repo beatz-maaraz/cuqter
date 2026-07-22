@@ -1,4 +1,5 @@
-import 'package:cuqter/Screen/chatai.dart';
+import 'package:cuqter/Screen/profile_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuqter/services/update_service.dart';
 import 'package:cuqter/services/notification_service.dart';
 import 'package:cuqter/widgets/update_dialog.dart';
@@ -30,10 +31,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
   String? _currentRingingRoomId;
   bool _isShowingIncomingCall = false;
 
+  Stream<DocumentSnapshot>? _currentUserStream;
+
   List<Widget> get _screens => [
     const Homepage(),
-    const AIChatScreen(),
-    CallsHistoryPage(isActive: _selectedIndex == 2),
+    CallsHistoryPage(isActive: _selectedIndex == 1),
+    const ProfileScreen(),
   ];
 
   @override
@@ -57,6 +60,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
     
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
+      _currentUserStream = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .snapshots();
       setupWebLifecycle(currentUser.uid);
       _listenForIncomingCalls(currentUser.uid);
     }
@@ -299,7 +306,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     label: 'CHATS',
                   ),
 
-                  // AI BOT
+                  // CALLS
                   BottomNavigationBarItem(
                     icon: Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
@@ -308,7 +315,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         duration: const Duration(milliseconds: 200),
                         curve: Curves.easeOutBack,
                         child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedAiBrain01,
+                          icon: huge.HugeIcons.strokeRoundedCall,
                           color: _selectedIndex == 1
                               ? colorScheme.primary
                               : colorScheme.onSurface.withValues(alpha: 0.4),
@@ -323,16 +330,16 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         duration: const Duration(milliseconds: 200),
                         curve: Curves.easeOutBack,
                         child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedAiBrain03,
+                          icon: huge.HugeIcons.strokeRoundedCalling,
                           color: colorScheme.primary,
                           size: 22,
                         ),
                       ),
                     ),
-                    label: 'AI BOT',
+                    label: 'CALLS',
                   ),
 
-                  // CALLS — Coming Soon
+                  // PROFILE
                   BottomNavigationBarItem(
                     icon: Padding(
                       padding: const EdgeInsets.only(bottom: 4.0),
@@ -340,12 +347,33 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         scale: _selectedIndex == 2 ? 1.15 : 1.0,
                         duration: const Duration(milliseconds: 200),
                         curve: Curves.easeOutBack,
-                        child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedCall,
-                          color: _selectedIndex == 2
-                              ? colorScheme.primary
-                              : colorScheme.onSurface.withValues(alpha: 0.4),
-                          size: 22,
+                        child: StreamBuilder<DocumentSnapshot>(
+                          stream: _currentUserStream,
+                          builder: (context, snapshot) {
+                            String profilePic = '';
+                            if (snapshot.hasData && snapshot.data!.exists) {
+                              var data = snapshot.data!.data() as Map<String, dynamic>?;
+                              if (data != null) profilePic = data['profilepic'] ?? '';
+                            }
+                            return CircleAvatar(
+                              radius: 12,
+                              backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                              backgroundImage: profilePic.isNotEmpty
+                                  ? (profilePic.startsWith('http')
+                                      ? CachedNetworkImageProvider(profilePic)
+                                      : AssetImage(profilePic) as ImageProvider)
+                                  : null,
+                              child: profilePic.isEmpty
+                                  ? Icon(
+                                      Icons.person_outline,
+                                      size: 16,
+                                      color: _selectedIndex == 2 
+                                        ? colorScheme.primary 
+                                        : colorScheme.onSurface.withValues(alpha: 0.4),
+                                    )
+                                  : null,
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -355,14 +383,41 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         scale: _selectedIndex == 2 ? 1.15 : 1.0,
                         duration: const Duration(milliseconds: 200),
                         curve: Curves.easeOutBack,
-                        child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedCalling,
-                          color: colorScheme.primary,
-                          size: 22,
+                        child: StreamBuilder<DocumentSnapshot>(
+                          stream: _currentUserStream,
+                          builder: (context, snapshot) {
+                            String profilePic = '';
+                            if (snapshot.hasData && snapshot.data!.exists) {
+                              var data = snapshot.data!.data() as Map<String, dynamic>?;
+                              if (data != null) profilePic = data['profilepic'] ?? '';
+                            }
+                            return Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: colorScheme.primary,
+                                  width: 2,
+                                ),
+                              ),
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                                backgroundImage: profilePic.isNotEmpty
+                                    ? (profilePic.startsWith('http')
+                                        ? CachedNetworkImageProvider(profilePic)
+                                        : AssetImage(profilePic) as ImageProvider)
+                                    : null,
+                                child: profilePic.isEmpty
+                                    ? Icon(Icons.person, size: 16, color: colorScheme.primary)
+                                    : null,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
-                    label: 'CALLS',
+                    label: 'PROFILE',
                   ),
 
                 ],

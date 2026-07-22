@@ -11,6 +11,7 @@ import 'package:cuqter/services/status_service.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/media.dart';
+import 'package:cuqter/Screen/camera_screen.dart';
 
 class CreateStatusScreen extends StatefulWidget {
   final String? sharedMediaPath;
@@ -279,88 +280,201 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Status'),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _postStatus,
-            child: const Text('POST', style: TextStyle(fontWeight: FontWeight.bold)),
-          )
-        ],
+        title: const Text('new status'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _captionController,
-                    style: const TextStyle(fontSize: 24),
-                    textAlign: TextAlign.center,
-                    decoration: const InputDecoration(
-                      hintText: 'Type a status...',
-                      border: InputBorder.none,
+          : Column(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_selectedNetworkUrl == null && _selectedLocalPath == null && _file == null && !_isVideo)
+                          Expanded(
+                            child: Center(
+                              child: TextField(
+                                controller: _captionController,
+                                style: const TextStyle(fontSize: 24),
+                                textAlign: TextAlign.center,
+                                decoration: const InputDecoration(
+                                  hintText: 'Type a text....',
+                                  border: InputBorder.none,
+                                ),
+                                maxLines: null,
+                              ),
+                            ),
+                          )
+                        else
+                          TextField(
+                            controller: _captionController,
+                            style: const TextStyle(fontSize: 24),
+                            textAlign: TextAlign.center,
+                            decoration: const InputDecoration(
+                              hintText: 'Type a text....',
+                              border: InputBorder.none,
+                            ),
+                            maxLines: null,
+                          ),
+                        if (_selectedNetworkUrl != null || _selectedLocalPath != null || _file != null || _isVideo)
+                          const SizedBox(height: 20),
+                        if (_selectedNetworkUrl != null && !_isVideo)
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: NetworkImage(_selectedNetworkUrl!),
+                                  fit: BoxFit.cover,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          )
+                        else if (_selectedLocalPath != null && !_isVideo)
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: FileImage(File(_selectedLocalPath!)),
+                                  fit: BoxFit.cover,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          )
+                        else if (_file != null && !_isVideo)
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: MemoryImage(_file!),
+                                  fit: BoxFit.cover,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          )
+                        else if (_isVideo && _videoController != null && _videoController!.value.isInitialized)
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: AspectRatio(
+                                aspectRatio: _videoController!.value.aspectRatio,
+                                child: VideoPlayer(_videoController!),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    maxLines: null,
                   ),
-                  const SizedBox(height: 20),
-                  if (_selectedNetworkUrl != null && !_isVideo)
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: NetworkImage(_selectedNetworkUrl!),
-                            fit: BoxFit.cover,
+                ),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildPillButton('Text', () {
+                                  setState(() {
+                                    _file = null;
+                                    _videoFile = null;
+                                    _selectedLocalPath = null;
+                                    _selectedNetworkUrl = null;
+                                    _isVideo = false;
+                                  });
+                                }),
+                                const SizedBox(width: 8),
+                                _buildPillButton('Gallery', _selectMedia),
+                                const SizedBox(width: 8),
+                                _buildPillButton('Camera', () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
+                                  );
+                                  if (result != null) {
+                                    final XFile file = result['file'];
+                                    final bool isVideo = result['type'] == 'video';
+                                    
+                                    if (_videoController != null) {
+                                      _videoController!.dispose();
+                                      _videoController = null;
+                                    }
+
+                                    setState(() {
+                                      _isVideo = isVideo;
+                                      _file = null;
+                                      if (isVideo) {
+                                        _videoFile = file;
+                                        _selectedLocalPath = null;
+                                        _selectedNetworkUrl = null;
+                                      } else {
+                                        _videoFile = null;
+                                        _selectedLocalPath = file.path;
+                                        _selectedNetworkUrl = null;
+                                      }
+                                    });
+
+                                    if (isVideo) {
+                                      _videoController = kIsWeb 
+                                        ? VideoPlayerController.networkUrl(Uri.parse(file.path)) 
+                                        : VideoPlayerController.file(File(file.path));
+                                      _videoController!
+                                        ..initialize().then((_) {
+                                          if (mounted) setState(() {});
+                                          _videoController!.play();
+                                          _videoController!.setLooping(true);
+                                        });
+                                    }
+                                  }
+                                }),
+                              ],
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                    )
-                  else if (_selectedLocalPath != null && !_isVideo)
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: FileImage(File(_selectedLocalPath!)),
-                            fit: BoxFit.cover,
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: _isLoading ? null : _postStatus,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                    )
-                  else if (_file != null && !_isVideo)
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: MemoryImage(_file!),
-                            fit: BoxFit.cover,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    )
-                  else if (_isVideo && _videoController != null && _videoController!.value.isInitialized)
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: AspectRatio(
-                          aspectRatio: _videoController!.value.aspectRatio,
-                          child: VideoPlayer(_videoController!),
-                        ),
-                      ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _selectMedia,
-        child: huge.HugeIcon(
-          icon: huge.HugeIcons.strokeRoundedImage01, 
-          color: Theme.of(context).colorScheme.onSecondaryContainer, 
-          size: 24,
+    );
+  }
+
+  Widget _buildPillButton(String text, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.5)),
         ),
+        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500)),
       ),
     );
   }
 }
+

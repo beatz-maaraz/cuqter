@@ -25,10 +25,13 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
     if (timestamp == null) return '';
     DateTime date = timestamp.toDate();
     DateTime now = DateTime.now();
+    
+    String timeStr = TimeOfDay.fromDateTime(date).format(context);
+    
     if (date.year == now.year && date.month == now.month && date.day == now.day) {
-      return DateFormat('HH:mm').format(date);
+      return timeStr;
     }
-    return DateFormat('MMM d, HH:mm').format(date);
+    return '${DateFormat('MMM d').format(date)}, $timeStr';
   }
 
   void _startNewCall(BuildContext context, String peerId, String peerName, bool isVideo) {
@@ -129,10 +132,56 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
             );
           }
 
+          final groupedDocs = <String, List<QueryDocumentSnapshot>>{};
+          for (var doc in docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            final timestamp = data['timestamp'] as Timestamp?;
+            String dateLabel = 'Unknown';
+            if (timestamp != null) {
+              DateTime date = timestamp.toDate();
+              DateTime now = DateTime.now();
+              DateTime yesterday = now.subtract(const Duration(days: 1));
+              if (date.year == now.year && date.month == now.month && date.day == now.day) {
+                dateLabel = 'Today';
+              } else if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
+                dateLabel = 'Yesterday';
+              } else {
+                dateLabel = DateFormat('MMMM d, yyyy').format(date);
+              }
+            }
+            if (!groupedDocs.containsKey(dateLabel)) {
+              groupedDocs[dateLabel] = [];
+            }
+            groupedDocs[dateLabel]!.add(doc);
+          }
+
+          final listItems = [];
+          for (var dateLabel in groupedDocs.keys) {
+            listItems.add(dateLabel);
+            listItems.addAll(groupedDocs[dateLabel]!);
+          }
+
           return ListView.builder(
-            itemCount: docs.length,
+            itemCount: listItems.length,
             itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
+              final item = listItems[index];
+
+              if (item is String) {
+                return Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8, right: 16),
+                  child: Text(
+                    item,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                );
+              }
+
+              final doc = item as QueryDocumentSnapshot;
+              final data = doc.data() as Map<String, dynamic>;
               final peerId = data['peerId'] ?? '';
               final type = data['type'] ?? 'voice'; // 'voice' or 'video'
               final status = data['status'] ?? 'incoming'; // 'incoming' or 'outgoing'

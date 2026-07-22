@@ -26,17 +26,17 @@ class _SighuppageState extends State<Sighuppage> {
   TextEditingController passwordController = TextEditingController();
   bool isPasswordVisible = false;
   
-  String _selectedProfilePic = 'assets/profile/BOY (1).jpg';
+  String _selectedProfilePic = 'assets/profile/BOY_1.jpg';
   String? _cloudinaryPublicId;
   bool _isLoading = false;
 
   final List<String> _profilePictures = [
-    'assets/profile/BOY (1).jpg',
-    'assets/profile/BOY (2).jpg',
-    'assets/profile/BOY (3).jpg',
-    'assets/profile/BOY (4).jpg',
-    'assets/profile/Girl (1).jpg',
-    'assets/profile/Girl (2).jpg',
+    'assets/profile/BOY_1.jpg',
+    'assets/profile/BOY_2.jpg',
+    'assets/profile/BOY_3.jpg',
+    'assets/profile/BOY_4.jpg',
+    'assets/profile/Girl_1.jpg',
+    'assets/profile/Girl_2.jpg',
     'assets/profile/NEW (1).jpg',
     'assets/profile/NEW (2).jpg',
     'assets/profile/NEW (3).jpg',

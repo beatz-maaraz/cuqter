@@ -44,6 +44,7 @@ class SignalingService {
   Future<String> createRoom() async {
     DatabaseReference roomRef = _database.ref('calls').push();
     currentRoomId = roomRef.key;
+    roomRef.onDisconnect().remove();
 
     peerConnection = await createPeerConnection(configuration);
 
@@ -69,7 +70,7 @@ class SignalingService {
         'sdp': offer.sdp,
       }
     };
-    await roomRef.set(roomWithOffer);
+    await roomRef.update(roomWithOffer);
     
     if (onRoomCreated != null) {
       onRoomCreated!(currentRoomId!);

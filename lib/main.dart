@@ -70,7 +70,7 @@ class MainApp extends StatelessWidget {
         ).copyWith(
           primary: AppColors.primary,
           secondary: AppColors.secondary,
-          surface: AppColors.background,
+          surface: Colors.white,
           onSurface: AppColors.text,
           primaryContainer: AppColors.secondary,
           onPrimaryContainer: AppColors.text,
@@ -79,14 +79,17 @@ class MainApp extends StatelessWidget {
           secondaryContainer: AppColors.accent,
           onSecondaryContainer: Colors.white,
         ),
-        scaffoldBackgroundColor: AppColors.background,
+        scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.primary,
           brightness: Brightness.dark,
+        ).copyWith(
+          surface: Colors.black,
         ),
+        scaffoldBackgroundColor: Colors.black,
         useMaterial3: true,
       ),
       builder: (context, child) {
