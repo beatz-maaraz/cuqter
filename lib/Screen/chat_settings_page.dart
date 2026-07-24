@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import '../widgets/chat_message_text.dart';
+import '../modules/wallpaper.dart';
 
 class ChatSettingsPage extends StatefulWidget {
   const ChatSettingsPage({super.key});
@@ -16,14 +17,6 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
   bool _saveToGallery = false;
   double _fontSize = 20.0;
   bool _isLoading = true;
-
-  final List<Color> _wallpapers = [
-    Colors.white,
-    const Color(0xFFFEF3C7), // Amber 50
-    const Color(0xFFEFF6FF), // Blue 50
-    const Color(0xFFF0FDF4), // Green 50
-    const Color(0xFFFAF5FF), // Purple 50
-  ];
 
   @override
   void initState() {
@@ -144,8 +137,9 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                         height: 60,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _wallpapers.length,
+                          itemCount: ChatWallpaper.defaultWallpapers.length,
                           itemBuilder: (context, index) {
+                            final wp = ChatWallpaper.defaultWallpapers[index];
                             bool isSelected = _wallpaperIndex == index;
                             return GestureDetector(
                               onTap: () {
@@ -159,7 +153,10 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                                 width: 60,
                                 margin: const EdgeInsets.only(right: 12),
                                 decoration: BoxDecoration(
-                                  color: _wallpapers[index],
+                                  color: wp.type == WallpaperType.color ? wp.color : Colors.grey[200],
+                                  image: wp.type == WallpaperType.asset 
+                                    ? DecorationImage(image: AssetImage(wp.path!), fit: wp.fit)
+                                    : null,
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.1),

@@ -33,21 +33,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _currentCloudinaryPublicId;
   String _currentUsername = '';
 
-  final List<String> _profilePictures = [
-    'assets/profile/BOY_1.jpg',
-    'assets/profile/BOY_2.jpg',
-    'assets/profile/BOY_3.jpg',
-    'assets/profile/BOY_4.jpg',
-    'assets/profile/Girl_1.jpg',
-    'assets/profile/Girl_2.jpg',
-    'assets/profile/NEW (1).jpg',
-    'assets/profile/NEW (2).jpg',
-    'assets/profile/NEW (3).jpg',
-    'assets/profile/NEW (4).jpg',
-    'assets/profile/NEW (5).jpg',
-    'assets/profile/NEW (6).jpg',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -226,7 +211,98 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Future<void> _pickAndUploadCustomImage(ImageSource source) async {
+  Future<void> _removeProfilePicture() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+      String? oldPublicId = _currentCloudinaryPublicId;
+
+      setState(() {
+        _selectedProfilePic = '';
+        _currentCloudinaryPublicId = null;
+      });
+
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).update(
+        {'profilepic': '', 'cloudinary_public_id': null},
+      );
+
+      final batch = _firestore.batch();
+      final statusesSnapshot = await _firestore
+          .collection('statuses')
+          .where('uid', isEqualTo: _auth.currentUser!.uid)
+          .get();
+      for (var doc in statusesSnapshot.docs) {
+        batch.update(doc.reference, {'profilePic': ''});
+      }
+      await batch.commit();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_profile_pic', '');
+      await prefs.remove('cached_cloudinary_public_id');
+
+      if (oldPublicId != null && oldPublicId.isNotEmpty) {
+        await CloudinaryService.deleteMedia(oldPublicId);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile picture removed')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error removing picture: $e')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildChooseOptionItem({
+    required dynamic icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: color.withValues(alpha: 0.3),
+                width: 1.2,
+              ),
+            ),
+            child: Center(
+              child: huge.HugeIcon(
+                icon: icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadCustomImage(ImageSource source, {bool isNativePicker = false}) async {
     try {
       Uint8List? imageBytes;
       if (source == ImageSource.camera) {
@@ -238,7 +314,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final XFile file = result['file'] as XFile;
           imageBytes = await file.readAsBytes();
         }
+      } else if (isNativePicker) {
+        // Mobile own native gallery / Google Photos / Files app
+        final XFile? file = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 90,
+        );
+        if (file != null) {
+          imageBytes = await file.readAsBytes();
+        }
       } else {
+        // Internal App Gallery (AssetManagerScreen)
         final result = await showModalBottomSheet(
           context: context,
           isScrollControlled: true,
@@ -325,157 +411,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isScrollControlled: true,
       builder: (sheetContext) {
         final colorScheme = Theme.of(context).colorScheme;
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Container(
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(32),
+        return Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(28),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurface.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: colorScheme.onSurface.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Choose',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Choose Profile Picture',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Select an avatar for your profile.',
-                      style: TextStyle(
-                        color: colorScheme.onSurface.withValues(alpha: 0.6),
-                        fontSize: 14,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(sheetContext);
-                              _pickAndUploadCustomImage(ImageSource.camera);
-                            },
-                            icon: const Icon(Icons.camera_alt),
-                            label: const Text('Camera'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(sheetContext);
-                              _pickAndUploadCustomImage(ImageSource.gallery);
-                            },
-                            icon: const Icon(Icons.photo_library),
-                            label: const Text('Gallery'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                      itemCount: _profilePictures.length,
-                      itemBuilder: (context, index) {
-                        final path = _profilePictures[index];
-                        final isSelected = _selectedProfilePic == path;
-                        return GestureDetector(
-                          onTap: () {
-                            setSheetState(() {
-                              _selectedProfilePic = path;
-                              _currentCloudinaryPublicId = null;
-                            });
-                            setState(() {
-                              _selectedProfilePic = path;
-                              _currentCloudinaryPublicId = null;
-                            });
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected
-                                    ? colorScheme.primary
-                                    : Colors.transparent,
-                                width: 4,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 40,
-                              backgroundImage: AssetImage(path),
-                            ),
-                          ),
-                        );
+                  ),
+                  if (_selectedProfilePic.isNotEmpty)
+                    IconButton(
+                      tooltip: 'Remove profile picture',
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _removeProfilePicture();
                       },
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(sheetContext);
-                          _updateProfile();
-                        },
-                        child: const Text(
-                          'Save Selection',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
+                      icon: const huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedDelete02,
+                        color: Colors.red,
+                        size: 22,
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
-            );
-          },
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildChooseOptionItem(
+                    icon: huge.HugeIcons.strokeRoundedCamera01,
+                    label: 'Camera',
+                    color: colorScheme.primary,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _pickAndUploadCustomImage(ImageSource.camera);
+                    },
+                  ),
+                  _buildChooseOptionItem(
+                    icon: huge.HugeIcons.strokeRoundedImage01,
+                    label: 'Gallery',
+                    color: Colors.purple,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _pickAndUploadCustomImage(ImageSource.gallery);
+                    },
+                  ),
+                  _buildChooseOptionItem(
+                    icon: huge.HugeIcons.strokeRoundedFolder01,
+                    label: 'Other',
+                    color: Colors.orange,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _pickAndUploadCustomImage(ImageSource.gallery, isNativePicker: true);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );
@@ -554,7 +572,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.only(
+                  left: 24, right: 24, top: 16, bottom: 90),
               child: Column(
                 children: [
                   const SizedBox(height: 10),
@@ -598,20 +617,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             )
                                           : AssetImage(_selectedProfilePic)
                                                 as ImageProvider)
-                                    : null,
-                                child: _selectedProfilePic.isEmpty
-                                    ? Text(
-                                        _nameController.text.isNotEmpty
-                                            ? _nameController.text[0]
-                                                  .toUpperCase()
-                                            : '?',
-                                        style: TextStyle(
-                                          fontSize: 40,
-                                          fontWeight: FontWeight.bold,
-                                          color: colorScheme.onPrimaryContainer,
-                                        ),
-                                      )
-                                    : null,
+                                    : const AssetImage('assets/icon/default_profile.png'),
                               ),
                             ),
                           ),
@@ -1120,46 +1126,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   TextField(
                     controller: _bioController,
                     decoration: const InputDecoration(labelText: 'Bio'),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Select Avatar',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 60,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _profilePictures.length,
-                      itemBuilder: (context, index) {
-                        final path = _profilePictures[index];
-                        final isSelected = dialogSelectedPic == path;
-                        return GestureDetector(
-                          onTap: () {
-                            setDialogState(() {
-                              dialogSelectedPic = path;
-                            });
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 12),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected
-                                    ? colorScheme.primary
-                                    : Colors.transparent,
-                                width: 3,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 25,
-                              backgroundImage: AssetImage(path),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
                   ),
                 ],
               ),

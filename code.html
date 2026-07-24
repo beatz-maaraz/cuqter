@@ -1,0 +1,257 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title class="">Cuqter - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Plus+Jakarta+Sans:wght@100..900&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed-dim": "#edb1ff",
+                    "surface": "#f9f9fc",
+                    "on-secondary": "#ffffff",
+                    "surface-dim": "#dadadc",
+                    "outline": "#727786",
+                    "on-secondary-fixed": "#320046",
+                    "on-tertiary-fixed": "#3b002d",
+                    "on-surface-variant": "#424754",
+                    "background": "#f9f9fc",
+                    "on-tertiary-fixed-variant": "#88006a",
+                    "primary-fixed": "#d9e2ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-highest": "#e2e2e5",
+                    "on-error": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "secondary-container": "#e08efe",
+                    "tertiary": "#ad0088",
+                    "on-primary-container": "#fefcff",
+                    "surface-bright": "#f9f9fc",
+                    "on-background": "#1a1c1e",
+                    "surface-container-low": "#f3f3f6",
+                    "on-tertiary-container": "#fffbff",
+                    "tertiary-fixed": "#ffd8ec",
+                    "surface-container": "#eeeef0",
+                    "on-primary-fixed-variant": "#004299",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#ce2da3",
+                    "secondary": "#883ca6",
+                    "inverse-primary": "#afc6ff",
+                    "surface-variant": "#e2e2e5",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#001944",
+                    "on-surface": "#1a1c1e",
+                    "secondary-fixed": "#f9d8ff",
+                    "on-secondary-fixed-variant": "#6e208c",
+                    "primary": "#0057c3",
+                    "surface-tint": "#0059c7",
+                    "primary-container": "#0f6ef0",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-high": "#e8e8ea",
+                    "tertiary-fixed-dim": "#ffaedd",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f0f0f3",
+                    "inverse-surface": "#2f3133",
+                    "primary-fixed-dim": "#afc6ff",
+                    "outline-variant": "#c2c6d7",
+                    "on-secondary-container": "#681986"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "8px",
+                    "xl": "32px",
+                    "lg": "24px",
+                    "sm": "12px",
+                    "margin-mobile": "16px",
+                    "gutter": "16px",
+                    "md": "16px",
+                    "base": "4px",
+                    "margin-desktop": "40px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "chat-bubble": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "chat-bubble": ["15px", {"lineHeight": "22px", "fontWeight": "450"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "26px", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "30px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .bubble-float {
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(10px, -15px) rotate(5deg); }
+            66% { transform: translate(-5px, 10px) rotate(-5deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .vibrant-bg {
+            background: radial-gradient(circle at top left, #d9e2ff 0%, #ffffff 50%, #f9d8ff 100%);
+        }
+
+        .primary-gradient {
+            background: linear-gradient(135deg, #0057c3 0%, #883ca6 100%);
+        }
+    </style>
+</head>
+<body class="vibrant-bg min-h-screen font-body-md text-on-background relative overflow-hidden flex flex-col items-center justify-center">
+<!-- Background Decoration: Madam Spread Style Icons -->
+<div class="absolute inset-0 z-0 pointer-events-none" id="bubble-container">
+<!-- Manually placed high-impact bubbles for layout control, JS will fill others -->
+<span class="material-symbols-outlined text-primary/10 absolute top-[10%] left-[5%] text-[120px] bubble-float" style="animation-delay: 0s;">forum</span>
+<span class="material-symbols-outlined text-secondary/15 absolute top-[70%] left-[15%] text-[80px] bubble-float" style="animation-delay: 2s;">chat_bubble</span>
+<span class="material-symbols-outlined text-tertiary/10 absolute top-[20%] right-[10%] text-[100px] bubble-float" style="animation-delay: 4s;">send</span>
+<span class="material-symbols-outlined text-primary/10 absolute bottom-[10%] right-[5%] text-[140px] bubble-float" style="animation-delay: 1s;">alternate_email</span>
+<span class="material-symbols-outlined text-secondary/15 absolute top-[50%] right-[20%] text-[60px] bubble-float" style="animation-delay: 3s;">add_reaction</span>
+<span class="material-symbols-outlined text-tertiary/10 absolute bottom-[40%] left-[10%] text-[90px] bubble-float" style="animation-delay: 5s;">sms</span>
+<span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-secondary" style="font-size: 79px; opacity: 0.116003; top: 72.782%; left: 14.0658%; animation: 26.75s linear -8.35639s infinite normal none running float;">send</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-tertiary" style="font-size: 27px; opacity: 0.134997; top: 56.3415%; left: 65.3034%; animation: 19.3445s linear -4.89935s infinite normal none running float;">sms</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-tertiary" style="font-size: 88px; opacity: 0.123193; top: 26.3275%; left: 35.0076%; animation: 26.0896s linear -10.7023s infinite normal none running float;">sms</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-primary" style="font-size: 77px; opacity: 0.113106; top: 7.10476%; left: 50.8966%; animation: 19.2811s linear -3.2398s infinite normal none running float;">forum</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-primary" style="font-size: 25px; opacity: 0.140024; top: 92.8847%; left: 62.3078%; animation: 23.1914s linear -16.8152s infinite normal none running float;">sms</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-secondary" style="font-size: 47px; opacity: 0.110422; top: 33.9635%; left: 36.3572%; animation: 16.9524s linear -7.38761s infinite normal none running float;">image</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-secondary" style="font-size: 26px; opacity: 0.0854195; top: 13.9501%; left: 96.5485%; animation: 16.1453s linear -4.79605s infinite normal none running float;">image</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-secondary" style="font-size: 56px; opacity: 0.060908; top: 93.2648%; left: 66.7764%; animation: 26.5501s linear -12.4625s infinite normal none running float;">alternate_email</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-primary" style="font-size: 35px; opacity: 0.0825704; top: 4.61505%; left: 36.497%; animation: 16.3049s linear -7.44387s infinite normal none running float;">send</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-primary" style="font-size: 56px; opacity: 0.0843347; top: 27.3345%; left: 60.199%; animation: 18.2539s linear -4.36844s infinite normal none running float;">sms</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-primary" style="font-size: 80px; opacity: 0.10428; top: 0.731661%; left: 99.5034%; animation: 26.6511s linear -16.323s infinite normal none running float;">send</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-secondary" style="font-size: 41px; opacity: 0.110767; top: 22.5751%; left: 96.3479%; animation: 29.0489s linear -5.61023s infinite normal none running float;">chat_bubble</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-secondary" style="font-size: 48px; opacity: 0.0878439; top: 51.0038%; left: 62.9492%; animation: 21.8582s linear -7.99479s infinite normal none running float;">mic</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-secondary" style="font-size: 72px; opacity: 0.14996; top: 54.4918%; left: 82.1609%; animation: 26.3229s linear -6.96514s infinite normal none running float;">forum</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-tertiary" style="font-size: 24px; opacity: 0.123433; top: 95.3447%; left: 20.3913%; animation: 24.2716s linear -2.47593s infinite normal none running float;">send</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-tertiary" style="font-size: 56px; opacity: 0.131867; top: 92.0222%; left: 45.2547%; animation: 23.2379s linear -17.8872s infinite normal none running float;">add_reaction</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-tertiary" style="font-size: 97px; opacity: 0.0695752; top: 51.8905%; left: 42.865%; animation: 27.7696s linear -16.2053s infinite normal none running float;">alternate_email</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-tertiary" style="font-size: 27px; opacity: 0.141107; top: 3.94508%; left: 46.8092%; animation: 23.6293s linear -11.5263s infinite normal none running float;">add_reaction</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-tertiary" style="font-size: 44px; opacity: 0.125076; top: 42.025%; left: 3.66099%; animation: 18.4087s linear -5.89356s infinite normal none running float;">sms</span><span class="material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000 text-secondary" style="font-size: 24px; opacity: 0.131987; top: 91.5349%; left: 68.5082%; animation: 29.8367s linear -0.211929s infinite normal none running float;">thumb_up</span></div>
+<!-- Main Content Canvas -->
+<main class="relative z-10 w-full max-w-[420px] px-margin-mobile">
+<!-- Header Branding (Suppressed TopAppBar per Transactional Rule, using brand elements here) -->
+<div class="flex flex-col items-center mb-xl">
+<div class="mb-xs p-3 rounded-full bg-primary-container/10"><img alt="Cuqter Logo" class="w-16 h-16 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVtlv_iVRUbB-3ATm4y8hDWZEzu2shx8NkYTJTQkkXv_mdggYPiUdYP4uu1C2wrVLtaNrE8bquHNrJe1AZT6OXG_dAjZm3VG-4Lpi2QYcjOzramZK789jMkYqNCDjKlZdmfbEMgh3ORvpxTi7JgzmidTuqu1vowabQAlHr0kk9iwmJza1DPvkolhNoFHf4qFcZb9gbTZbF7ODisEm3rtDBhtsk2saa5Owkho_GGXKENmg5cWOeEoeJUFEOI0a6WPIhUUvEw8tAhUA"></div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Cuqter</h1>
+<p class="font-body-md text-on-surface-variant mt-xs">Join the world of conversation</p>
+</div>
+<!-- Login Glassmorphic Card -->
+<div class="glass-card rounded-[32px] p-xl shadow-[0px_10px_25px_rgba(46,125,255,0.15)]">
+<form action="#" class="flex flex-col gap-lg">
+<!-- Email Field -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider ml-1" for="email">Email</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline">mail</span>
+<input class="w-full bg-surface-container-lowest/50 border-outline-variant/30 rounded-full py-4 pl-12 pr-4 focus:ring-primary focus:border-primary transition-all font-body-md text-on-surface placeholder:text-outline-variant" id="email" placeholder="hello@example.com" type="email">
+</div>
+</div>
+<!-- Password Field -->
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center px-1">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" for="password">Password</label>
+<a class="font-label-md text-label-md text-primary hover:underline" href="#">Forgot?</a>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline">lock</span>
+<input class="w-full bg-surface-container-lowest/50 border-outline-variant/30 rounded-full py-4 pl-12 pr-4 focus:ring-primary focus:border-primary transition-all font-body-md text-on-surface placeholder:text-outline-variant" id="password" placeholder="••••••••" type="password">
+</div>
+</div>
+<!-- Action Button -->
+<button class="primary-gradient text-white font-headline-sm text-headline-sm py-4 rounded-full shadow-[0px_8px_20px_rgba(0,87,195,0.3)] hover:opacity-90 active:scale-[0.98] transition-all duration-300 mt-md" type="submit">
+                    Login
+                </button>
+<!-- Social Divider -->
+<div class="flex items-center gap-md py-xs">
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+<span class="font-label-md text-label-md text-outline-variant">OR CONTINUE WITH</span>
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+</div>
+<!-- Social Buttons -->
+<div class="flex gap-md">
+<button class="flex-1 flex items-center justify-center gap-xs py-3 rounded-full border border-outline-variant/30 hover:bg-surface-container-low transition-colors active:scale-95 duration-200" type="button">
+<div class="w-5 h-5 bg-contain bg-center bg-no-repeat" data-alt="Official minimalist Google logo icon in color on a transparent background, high resolution." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCtF0X7r-LDvbc7TOU6fxLngl1So1N6QhXTCKmBzOlrzCgvVsklMdei2ISVAz9FWGVUpqsPAFcAm8gtL5KtyzMpscGpLNTe-GrRoogbxFMIeuwwf6ZfqJ-Z3AxdK3kJzbdQbc7YzfHSclUxD6pWRg91fTTC_h75wODvQR104b22Nysnva7GJlpaYyzsQcjD9k_O9wl0NF0Mcf6NVwMs-Bdc_cD8lcvFPkU_wTJal8H77LtmmJ2NtxnFnmXNxGU7BNygAMgeGQTNbzo')"></div>
+</button>
+<button class="flex-1 flex items-center justify-center gap-xs py-3 rounded-full border border-outline-variant/30 hover:bg-surface-container-low transition-colors active:scale-95 duration-200" type="button">
+<div class="w-5 h-5 bg-contain bg-center bg-no-repeat" data-alt="Official minimalist Apple logo icon in black on a transparent background, high resolution." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA6tBWycCFzgnJAh01VgGH3514NAd6N6ZJwqj2x0JTwSWHUc-SwvUgt5z7iwN5Q14Ev3KsFab_BF5ECzZvIyO6zW0yxWZhovpCTL_ilGRdMFWGYqNWiOrzpNCTwJ3uvx2DazDd-bc5RaMUE7kz_lt9hif1mR5Xb-HOlgMQQ1esb9kbHZ6rDO8vqA0T8uozUk2C1QqiYi56fMF9rz3KnUoV0owbdjdGGvWd1V91aBlGffO4pVpSMW_R_41Mlekjmn-wHdPPHQiPRC_o')"></div>
+</button>
+</div>
+</form>
+</div>
+<!-- Footer Link -->
+<p class="text-center mt-xl text-body-md text-on-surface-variant">
+            Don't have an account? 
+            <a class="text-primary font-bold hover:underline" href="#">Sign Up</a>
+</p>
+</main>
+<!-- Scripts for dynamic background elements -->
+<script>
+        const container = document.getElementById('bubble-container');
+        const icons = ['forum', 'chat_bubble', 'send', 'alternate_email', 'add_reaction', 'sms', 'notifications', 'thumb_up', 'image', 'mic'];
+        const colors = ['text-primary', 'text-secondary', 'text-tertiary'];
+
+        function createBubble() {
+            const span = document.createElement('span');
+            span.className = 'material-symbols-outlined absolute bubble-float pointer-events-none transition-opacity duration-1000';
+            
+            const size = Math.floor(Math.random() * 80) + 20;
+            const icon = icons[Math.floor(Math.random() * icons.length)];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const opacity = (Math.random() * 0.1) + 0.05;
+            
+            span.textContent = icon;
+            span.style.fontSize = `${size}px`;
+            span.classList.add(color);
+            span.style.opacity = opacity;
+            
+            const top = Math.random() * 100;
+            const left = Math.random() * 100;
+            span.style.top = `${top}%`;
+            span.style.left = `${left}%`;
+            
+            const duration = 15 + Math.random() * 15;
+            const delay = Math.random() * -20;
+            span.style.animation = `float ${duration}s infinite linear`;
+            span.style.animationDelay = `${delay}s`;
+            
+            container.appendChild(span);
+        }
+
+        // Fill background with more subtle icons
+        for (let i = 0; i < 20; i++) {
+            createBubble();
+        }
+
+        // Micro-interaction for input fields
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.parentElement.classList.add('scale-[1.02]');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.parentElement.classList.remove('scale-[1.02]');
+            });
+        });
+    </script>
+
+
+</body></html>

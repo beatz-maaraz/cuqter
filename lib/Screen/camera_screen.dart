@@ -9,7 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class CustomCameraScreen extends StatefulWidget {
-  const CustomCameraScreen({super.key});
+  final bool isActive;
+  const CustomCameraScreen({super.key, this.isActive = true});
 
   @override
   State<CustomCameraScreen> createState() => _CustomCameraScreenState();
@@ -35,7 +36,27 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initCameras();
+    if (widget.isActive) {
+      _initCameras();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant CustomCameraScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        _initCameras();
+      } else {
+        _controller?.dispose();
+        _controller = null;
+        if (mounted) {
+          setState(() {
+            _isReady = false;
+          });
+        }
+      }
+    }
   }
 
   @override
@@ -48,6 +69,7 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!widget.isActive) return;
     final CameraController? cameraController = _controller;
     if (cameraController == null || !cameraController.value.isInitialized) {
       return;
@@ -196,7 +218,13 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
       final XFile savedPhoto = await _saveToCuqterFolder(photo);
       
       if (mounted) {
-        Navigator.pop(context, {'file': savedPhoto, 'type': 'photo'});
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context, {'file': savedPhoto, 'type': 'photo'});
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Photo saved to gallery')),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error taking photo: $e');
@@ -234,7 +262,13 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
       _recordDurationNotifier.value = 0;
       
       if (mounted) {
-        Navigator.pop(context, {'file': savedVideo, 'type': 'video'});
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context, {'file': savedVideo, 'type': 'video'});
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Video saved to gallery')),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error stopping video: $e');

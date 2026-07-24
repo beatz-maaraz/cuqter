@@ -58,6 +58,14 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
+    // Pre-cache key brand assets for instant flicker-free opening
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        precacheImage(const AssetImage('assets/icon/icon.png'), context);
+        precacheImage(const AssetImage('assets/icon/google_icon.png'), context);
+      } catch (_) {}
+    });
+
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
@@ -131,12 +139,88 @@ class MainApp extends StatelessWidget {
             } else if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
             }
+            return const Loginpage();
           }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          return const Loginpage();
+          return const _StartupSplashScreen();
         },
+      ),
+    );
+  }
+}
+
+class _StartupSplashScreen extends StatelessWidget {
+  const _StartupSplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? const LinearGradient(
+                  colors: [Color(0xFF14142B), Color(0xFF0E0E1E), Color(0xFF1F122B)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : const LinearGradient(
+                  colors: [Color(0xFFD9E2FF), Color(0xFFFFFFFF), Color(0xFFF9D8FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0057C3).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Image.asset(
+                  'assets/icon/icon.png',
+                  height: 64,
+                  width: 64,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.chat_bubble_rounded,
+                    size: 48,
+                    color: Color(0xFF0057C3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color(0xFF0057C3), Color(0xFF883CA6)],
+                ).createShader(bounds),
+                child: const Text(
+                  'Cuqter',
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Color(0xFF0057C3),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

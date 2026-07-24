@@ -81,6 +81,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
         final roomId = data['roomId'] as String?;
         final callerName = data['callerName'] as String? ?? 'Unknown';
         final callerId = data['callerId'] as String? ?? '';
+        final callerPic = data['callerPic'] as String?;
         final isVideoCall = data['isVideo'] as bool? ?? false;
 
         // Guard: skip if this room is already being shown or ringing
@@ -94,6 +95,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           roomId: roomId ?? '',
           callerId: callerId,
           isVideoCall: isVideoCall,
+          callerPic: callerPic,
         );
 
         // Push incoming call screen
@@ -167,15 +169,188 @@ class _NavigationScreenState extends State<NavigationScreen> {
     }
   }
 
+  void _onTabSelected(int index) {
+    if (_selectedIndex == index) return;
+    setState(() {
+      _selectedIndex = index;
+      _isProgrammaticChange = true;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Widget _buildNavItem(
+      int index, String label, dynamic icon, dynamic activeIcon) {
+    final isSelected = _selectedIndex == index;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _onTabSelected(index),
+          borderRadius: BorderRadius.circular(25),
+          splashColor: colorScheme.primary.withValues(alpha: 0.1),
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.fastOutSlowIn,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? colorScheme.primary.withValues(alpha: 0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(25),
+              border: isSelected
+                  ? Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.35),
+                      width: 1.5,
+                    )
+                  : Border.all(color: Colors.transparent, width: 1.5),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedScale(
+                  scale: isSelected ? 1.12 : 1.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutBack,
+                  child: huge.HugeIcon(
+                    icon: isSelected ? activeIcon : icon,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurface.withValues(alpha: 0.45),
+                    size: 19,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.fastOutSlowIn,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurface.withValues(alpha: 0.45),
+                    letterSpacing: 0.3,
+                  ),
+                  child: Text(label),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileItem(int index) {
+    final isSelected = _selectedIndex == index;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _onTabSelected(index),
+          borderRadius: BorderRadius.circular(25),
+          splashColor: colorScheme.primary.withValues(alpha: 0.1),
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.fastOutSlowIn,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? colorScheme.primary.withValues(alpha: 0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(25),
+              border: isSelected
+                  ? Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.35),
+                      width: 1.5,
+                    )
+                  : Border.all(color: Colors.transparent, width: 1.5),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                StreamBuilder<DocumentSnapshot>(
+                  stream: _currentUserStream,
+                  builder: (context, snapshot) {
+                    String profilePic = '';
+                    if (snapshot.hasData && snapshot.data!.exists) {
+                      var data = snapshot.data!.data() as Map<String, dynamic>?;
+                      if (data != null) profilePic = data['profilepic'] ?? '';
+                    }
+                    return AnimatedScale(
+                      scale: isSelected ? 1.12 : 1.0,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutBack,
+                      child: Container(
+                        padding: EdgeInsets.all(isSelected ? 1.5 : 0),
+                        decoration: isSelected
+                            ? BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: colorScheme.primary, width: 1.5),
+                              )
+                            : null,
+                        child: CircleAvatar(
+                          radius: 9.5,
+                          backgroundColor:
+                              colorScheme.primary.withValues(alpha: 0.1),
+                          backgroundImage: profilePic.isNotEmpty
+                              ? (profilePic.startsWith('http')
+                                  ? CachedNetworkImageProvider(profilePic)
+                                  : AssetImage(profilePic) as ImageProvider)
+                              : const AssetImage(
+                                  'assets/icon/default_profile.png'),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 1),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.fastOutSlowIn,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurface.withValues(alpha: 0.45),
+                    letterSpacing: 0.3,
+                  ),
+                  child: const Text('PROFILE'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      extendBody: false,
+      extendBody: true,
       body: PageView(
         controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         onPageChanged: (index) {
           if (_isProgrammaticChange) {
             if (index == _selectedIndex) {
@@ -191,242 +366,60 @@ class _NavigationScreenState extends State<NavigationScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? colorScheme.surfaceContainerHigh
-                  : colorScheme.surface,
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: colorScheme.onSurface.withValues(
-                  alpha: Theme.of(context).brightness == Brightness.dark
-                      ? 0.08
-                      : 0.03,
-                ),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark
-                        ? 0.4
-                        : 0.12,
-                  ),
-                  blurRadius: 20,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(
-                    alpha: Theme.of(context).brightness == Brightness.dark
-                        ? 0.2
-                        : 0.06,
-                  ),
-                  blurRadius: 10,
-                  spreadRadius: -2,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  navigationBarTheme: const NavigationBarThemeData(
-                    indicatorColor: Colors.transparent,
-                  ),
-                ),
-                child: BottomNavigationBar(
-                  currentIndex: _selectedIndex,
-                  onTap: (index) {
-                    if (_selectedIndex == index) return;
-                    setState(() {
-                      _selectedIndex = index;
-                      _isProgrammaticChange = true;
-                    });
-                    _pageController.animateToPage(
-                      index,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  type: BottomNavigationBarType.fixed,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                selectedItemColor: colorScheme.primary,
-                unselectedItemColor:
-                    colorScheme.onSurface.withValues(alpha: 0.4),
-                showUnselectedLabels: true,
-                selectedLabelStyle: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                  color: colorScheme.primary,
-                  letterSpacing: 0.5,
-                ),
-                unselectedLabelStyle: TextStyle(
-                  fontSize: 10,
-                  color: colorScheme.onSurface.withValues(alpha: 0.4),
-                  letterSpacing: 0.5,
-                ),
-                items: [
-                  // CHATS
-                  BottomNavigationBarItem(
-                    icon: Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: AnimatedScale(
-                        scale: _selectedIndex == 0 ? 1.15 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutBack,
-                        child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedChat01,
-                          color: _selectedIndex == 0
-                              ? colorScheme.primary
-                              : colorScheme.onSurface.withValues(alpha: 0.4),
-                          size: 22,
-                        ),
-                      ),
+          padding:
+              const EdgeInsets.only(left: 80, right: 80, bottom: 15, top: 8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                height: 62,
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? colorScheme.surfaceContainerHigh
+                          .withValues(alpha: 0.60)
+                      : colorScheme.surface.withValues(alpha: 0.70),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: colorScheme.onSurface.withValues(
+                      alpha: isDark ? 0.12 : 0.06,
                     ),
-                    activeIcon: Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: AnimatedScale(
-                        scale: _selectedIndex == 0 ? 1.15 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutBack,
-                        child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedBubbleChat,
-                          color: colorScheme.primary,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    label: 'CHATS',
+                    width: 1,
                   ),
-
-                  // CALLS
-                  BottomNavigationBarItem(
-                    icon: Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: AnimatedScale(
-                        scale: _selectedIndex == 1 ? 1.15 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutBack,
-                        child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedCall,
-                          color: _selectedIndex == 1
-                              ? colorScheme.primary
-                              : colorScheme.onSurface.withValues(alpha: 0.4),
-                          size: 22,
-                        ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.3 : 0.08,
                       ),
+                      blurRadius: 16,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 8),
                     ),
-                    activeIcon: Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: AnimatedScale(
-                        scale: _selectedIndex == 1 ? 1.15 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutBack,
-                        child: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedCalling,
-                          color: colorScheme.primary,
-                          size: 22,
-                        ),
-                      ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    _buildNavItem(
+                      0,
+                      'CHATS',
+                      huge.HugeIcons.strokeRoundedChat01,
+                      huge.HugeIcons.strokeRoundedBubbleChat,
                     ),
-                    label: 'CALLS',
-                  ),
-
-                  // PROFILE
-                  BottomNavigationBarItem(
-                    icon: Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: AnimatedScale(
-                        scale: _selectedIndex == 2 ? 1.15 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutBack,
-                        child: StreamBuilder<DocumentSnapshot>(
-                          stream: _currentUserStream,
-                          builder: (context, snapshot) {
-                            String profilePic = '';
-                            if (snapshot.hasData && snapshot.data!.exists) {
-                              var data = snapshot.data!.data() as Map<String, dynamic>?;
-                              if (data != null) profilePic = data['profilepic'] ?? '';
-                            }
-                            return CircleAvatar(
-                              radius: 12,
-                              backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                              backgroundImage: profilePic.isNotEmpty
-                                  ? (profilePic.startsWith('http')
-                                      ? CachedNetworkImageProvider(profilePic)
-                                      : AssetImage(profilePic) as ImageProvider)
-                                  : null,
-                              child: profilePic.isEmpty
-                                  ? Icon(
-                                      Icons.person_outline,
-                                      size: 16,
-                                      color: _selectedIndex == 2 
-                                        ? colorScheme.primary 
-                                        : colorScheme.onSurface.withValues(alpha: 0.4),
-                                    )
-                                  : null,
-                            );
-                          },
-                        ),
-                      ),
+                    _buildNavItem(
+                      1,
+                      'CALLS',
+                      huge.HugeIcons.strokeRoundedCall,
+                      huge.HugeIcons.strokeRoundedCalling,
                     ),
-                    activeIcon: Padding(
-                      padding: const EdgeInsets.only(bottom: 4.0),
-                      child: AnimatedScale(
-                        scale: _selectedIndex == 2 ? 1.15 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutBack,
-                        child: StreamBuilder<DocumentSnapshot>(
-                          stream: _currentUserStream,
-                          builder: (context, snapshot) {
-                            String profilePic = '';
-                            if (snapshot.hasData && snapshot.data!.exists) {
-                              var data = snapshot.data!.data() as Map<String, dynamic>?;
-                              if (data != null) profilePic = data['profilepic'] ?? '';
-                            }
-                            return Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: colorScheme.primary,
-                                  width: 2,
-                                ),
-                              ),
-                              child: CircleAvatar(
-                                radius: 12,
-                                backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                                backgroundImage: profilePic.isNotEmpty
-                                    ? (profilePic.startsWith('http')
-                                        ? CachedNetworkImageProvider(profilePic)
-                                        : AssetImage(profilePic) as ImageProvider)
-                                    : null,
-                                child: profilePic.isEmpty
-                                    ? Icon(Icons.person, size: 16, color: colorScheme.primary)
-                                    : null,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    label: 'PROFILE',
-                  ),
-
-                ],
+                    _buildProfileItem(2),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

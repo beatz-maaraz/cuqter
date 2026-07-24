@@ -248,14 +248,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                           )
                                         : AssetImage(widget.profilepic))
                                     as ImageProvider
-                              : null,
-                          child: widget.profilepic.isEmpty
-                              ? Icon(
-                                  Icons.person,
-                                  size: 40,
-                                  color: colorScheme.onSurfaceVariant,
-                                )
-                              : null,
+                              : const AssetImage('assets/icon/default_profile.png'),
                         ),
                       ),
                     ),
@@ -439,6 +432,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                       .collection('friend_requests')
                                       .doc(requestId)
                                       .delete();
+                                  await FirebaseFirestore.instance
+                                      .collection('notifications')
+                                      .doc('friend_request_$requestId')
+                                      .delete();
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('Friend request cancelled')),
@@ -479,6 +476,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                         'senderName': myName,
                                         'senderProfilePic': myPic,
                                         'timestamp': FieldValue.serverTimestamp(),
+                                      });
+
+                                  await FirebaseFirestore.instance
+                                      .collection('notifications')
+                                      .doc('friend_request_$requestId')
+                                      .set({
+                                        'notificationId': 'friend_request_$requestId',
+                                        'type': 'friend_request',
+                                        'requestId': requestId,
+                                        'senderId': _currentUserId,
+                                        'receiverId': widget.userId,
+                                        'senderName': myName,
+                                        'senderProfilePic': myPic,
+                                        'title': 'Friend Request',
+                                        'body': '$myName sent you a friend request',
+                                        'timestamp': FieldValue.serverTimestamp(),
+                                        'isRead': false,
                                       });
 
                                   if (context.mounted) {

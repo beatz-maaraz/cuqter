@@ -115,9 +115,18 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     _isActionTaken = true;
     _stopRingtone();
 
-    // Remove the incoming call node to stop ringing and notify caller
-    if (_auth.currentUser != null) {
-      _database.ref('incoming_calls/${_auth.currentUser!.uid}').remove();
+    final currentUid = _auth.currentUser?.uid;
+    if (currentUid != null) {
+      _database.ref('incoming_calls/$currentUid').remove();
+      // Log call as missed for receiver
+      final messageService = MessageService();
+      messageService.logCall(
+        currentUserId: currentUid,
+        peerId: widget.callerId,
+        type: widget.isVideoCall ? 'video' : 'voice',
+        status: 'missed',
+        roomId: widget.roomId,
+      );
     }
     // Remove the call room so the caller's screen closes
     _database.ref('calls/${widget.roomId}').remove();
@@ -149,6 +158,13 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
       // Stop call & clean nodes
       if (_auth.currentUser != null) {
         _database.ref('incoming_calls/${_auth.currentUser!.uid}').remove();
+        messageService.logCall(
+          currentUserId: _auth.currentUser!.uid,
+          peerId: widget.callerId,
+          type: widget.isVideoCall ? 'video' : 'voice',
+          status: 'missed',
+          roomId: widget.roomId,
+        );
       }
       _database.ref('calls/${widget.roomId}').remove();
 
@@ -322,14 +338,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                         backgroundColor: Colors.white.withValues(alpha: 0.1),
                         backgroundImage: profilePic != null && profilePic.isNotEmpty
                             ? NetworkImage(profilePic)
-                            : null,
-                        child: profilePic == null || profilePic.isEmpty
-                            ? const Icon(
-                                Icons.person,
-                                size: 64,
-                                color: Colors.white,
-                              )
-                            : null,
+                            : const AssetImage('assets/icon/default_profile.png') as ImageProvider,
                       );
                     },
                   ),

@@ -25,17 +25,35 @@ class SignalingService {
     'iceServers': [
       {
         'urls': [
+          'stun:stun.l.google.com:19302',
           'stun:stun1.l.google.com:19302',
-          'stun:stun2.l.google.com:19302'
+          'stun:stun2.l.google.com:19302',
+          'stun:stun3.l.google.com:19302',
+          'stun:stun4.l.google.com:19302',
         ]
       }
-    ]
+    ],
+    'sdpSemantics': 'unified-plan',
   };
 
   Future<void> initLocalStream(bool isVideo) async {
     final Map<String, dynamic> mediaConstraints = {
-      'audio': true,
-      'video': isVideo ? {'facingMode': 'user'} : false,
+      'audio': {
+        'echoCancellation': true,
+        'noiseSuppression': true,
+        'autoGainControl': true,
+      },
+      'video': isVideo
+          ? {
+              'facingMode': 'user',
+              'mandatory': {
+                'minWidth': '640',
+                'minHeight': '480',
+                'minFrameRate': '30',
+              },
+              'optional': [],
+            }
+          : false,
     };
 
     localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
@@ -60,8 +78,15 @@ class SignalingService {
       callerCandidatesRef.push().set(candidate.toMap());
     };
 
-    // Add the RTCSessionDescription to the room
-    RTCSessionDescription offer = await peerConnection!.createOffer();
+    // Add the RTCSessionDescription to the room with offer constraints
+    Map<String, dynamic> offerOptions = {
+      'mandatory': {
+        'OfferToReceiveAudio': true,
+        'OfferToReceiveVideo': true,
+      },
+      'optional': [],
+    };
+    RTCSessionDescription offer = await peerConnection!.createOffer(offerOptions);
     await peerConnection!.setLocalDescription(offer);
 
     Map<String, dynamic> roomWithOffer = {

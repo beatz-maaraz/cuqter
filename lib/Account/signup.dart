@@ -4,12 +4,14 @@ import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:flutter/material.dart';
-import 'package:cuqter/utils/colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cuqter/Screen/camera_screen.dart';
 import 'package:cuqter/media.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:cuqter/widgets/floating_background_bubbles.dart';
+import 'package:cuqter/widgets/google_logo_icon.dart';
 
 class Sighuppage extends StatefulWidget {
   const Sighuppage({super.key});
@@ -26,24 +28,9 @@ class _SighuppageState extends State<Sighuppage> {
   TextEditingController passwordController = TextEditingController();
   bool isPasswordVisible = false;
   
-  String _selectedProfilePic = 'assets/profile/BOY_1.jpg';
+  String _selectedProfilePic = '';
   String? _cloudinaryPublicId;
   bool _isLoading = false;
-
-  final List<String> _profilePictures = [
-    'assets/profile/BOY_1.jpg',
-    'assets/profile/BOY_2.jpg',
-    'assets/profile/BOY_3.jpg',
-    'assets/profile/BOY_4.jpg',
-    'assets/profile/Girl_1.jpg',
-    'assets/profile/Girl_2.jpg',
-    'assets/profile/NEW (1).jpg',
-    'assets/profile/NEW (2).jpg',
-    'assets/profile/NEW (3).jpg',
-    'assets/profile/NEW (4).jpg',
-    'assets/profile/NEW (5).jpg',
-    'assets/profile/NEW (6).jpg',
-  ];
 
   signUpUser() async {
     final String usernameRaw = usernameController.text;
@@ -107,7 +94,81 @@ class _SighuppageState extends State<Sighuppage> {
     });
   }
 
-  Future<void> _pickAndUploadCustomImage(ImageSource source) async {
+  void signUpWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    String res = await AuthMethod().signInWithGoogle();
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (res == 'success') {
+        showSnackBar('Account connected with Google successfully', context);
+        Navigator.of(context).pop();
+      } else if (res != 'cancelled') {
+        showSnackBar(res, context);
+      }
+    }
+  }
+
+  void _removeProfilePicture() {
+    setState(() {
+      _selectedProfilePic = '';
+      if (_cloudinaryPublicId != null) {
+        CloudinaryService.deleteMedia(_cloudinaryPublicId!);
+        _cloudinaryPublicId = null;
+      }
+    });
+    showSnackBar('Profile picture removed', context);
+  }
+
+  Widget _buildChooseOptionItem({
+    required dynamic icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: color.withValues(alpha: 0.3),
+                width: 1.2,
+              ),
+            ),
+            child: Center(
+              child: huge.HugeIcon(
+                icon: icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadCustomImage(ImageSource source, {bool isNativePicker = false}) async {
     try {
       Uint8List? imageBytes;
       if (source == ImageSource.camera) {
@@ -119,7 +180,17 @@ class _SighuppageState extends State<Sighuppage> {
           final XFile file = result['file'] as XFile;
           imageBytes = await file.readAsBytes();
         }
+      } else if (isNativePicker) {
+        // Mobile own native gallery / Google Photos / Files app
+        final XFile? file = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 90,
+        );
+        if (file != null) {
+          imageBytes = await file.readAsBytes();
+        }
       } else {
+        // Internal App Gallery (AssetManagerScreen)
         final result = await showModalBottomSheet(
           context: context,
           isScrollControlled: true,
@@ -177,144 +248,84 @@ class _SighuppageState extends State<Sighuppage> {
       isScrollControlled: true,
       builder: (sheetContext) {
         final colorScheme = Theme.of(context).colorScheme;
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Container(
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-              ),
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: colorScheme.onSurface.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Choose Profile Picture',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Select an avatar or upload your own.',
-                      style: TextStyle(
-                        color: colorScheme.onSurface.withValues(alpha: 0.6),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(sheetContext);
-                              _pickAndUploadCustomImage(ImageSource.camera);
-                            },
-                            icon: const Icon(Icons.camera_alt),
-                            label: const Text('Camera'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(sheetContext);
-                              _pickAndUploadCustomImage(ImageSource.gallery);
-                            },
-                            icon: const Icon(Icons.photo_library),
-                            label: const Text('Gallery'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemCount: _profilePictures.length,
-                      itemBuilder: (context, index) {
-                        final path = _profilePictures[index];
-                        final isSelected = _selectedProfilePic == path;
-                        return GestureDetector(
-                          onTap: () {
-                            setSheetState(() {
-                              _selectedProfilePic = path;
-                            });
-                            setState(() {
-                              _selectedProfilePic = path;
-                              // Clean up previous Cloudinary upload if user switches back to asset
-                              if (_cloudinaryPublicId != null) {
-                                CloudinaryService.deleteMedia(_cloudinaryPublicId!);
-                                _cloudinaryPublicId = null;
-                              }
-                            });
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected ? colorScheme.primary : Colors.transparent,
-                                width: 4,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 40,
-                              backgroundImage: AssetImage(path),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(sheetContext);
-                        },
-                        child: const Text('Confirm Selection', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      ),
-                    ),
-                  ],
+        return Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurface.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            );
-          }
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Choose',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  if (_selectedProfilePic.isNotEmpty)
+                    IconButton(
+                      tooltip: 'Remove profile picture',
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _removeProfilePicture();
+                      },
+                      icon: const huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedDelete02,
+                        color: Colors.red,
+                        size: 22,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildChooseOptionItem(
+                    icon: huge.HugeIcons.strokeRoundedCamera01,
+                    label: 'Camera',
+                    color: colorScheme.primary,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _pickAndUploadCustomImage(ImageSource.camera);
+                    },
+                  ),
+                  _buildChooseOptionItem(
+                    icon: huge.HugeIcons.strokeRoundedImage01,
+                    label: 'Gallery',
+                    color: Colors.purple,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _pickAndUploadCustomImage(ImageSource.gallery);
+                    },
+                  ),
+                  _buildChooseOptionItem(
+                    icon: huge.HugeIcons.strokeRoundedFolder01,
+                    label: 'Other',
+                    color: Colors.orange,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _pickAndUploadCustomImage(ImageSource.gallery, isNativePicker: true);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );
@@ -322,151 +333,425 @@ class _SighuppageState extends State<Sighuppage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
+      body: Stack(
+        children: [
+          // Background Gradient
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: isDark
+                    ? const LinearGradient(
+                        colors: [Color(0xFF14142B), Color(0xFF0E0E1E), Color(0xFF1F122B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : const LinearGradient(
+                        colors: [Color(0xFFD9E2FF), Color(0xFFFFFFFF), Color(0xFFF9D8FF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+              ),
+            ),
+          ),
+          // Floating background animated conversation icons
+          const FloatingBackgroundBubbles(),
+
+          // Main Content
+          Center(
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: SizedBox(
-                  width: 300,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Sign Up',
-                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Brand Header
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0057C3).withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(height: 24),
-                      GestureDetector(
-                        onTap: _showProfilePicPicker,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: CircleAvatar(
-                                radius: 55,
-                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                backgroundImage: _selectedProfilePic.startsWith('http')
-                                    ? CachedNetworkImageProvider(_selectedProfilePic)
-                                    : AssetImage(_selectedProfilePic) as ImageProvider,
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 4,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
-                                ),
-                                child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
-                              ),
-                            ),
-                          ],
+                      child: Image.asset(
+                        'assets/icon/icon.png',
+                        height: 54,
+                        width: 54,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.chat_bubble_rounded,
+                          size: 40,
+                          color: Color(0xFF0057C3),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      TextField(
-                        controller: nameController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.person),
-                          labelText: "Name",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFF0057C3), Color(0xFF883CA6)],
+                      ).createShader(bounds),
+                      child: const Text(
+                        'Cuqter',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: usernameController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.alternate_email),
-                          labelText: "Username",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Create your new account',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.white70 : const Color(0xFF424754),
                       ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: emailController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.email),
-                          labelText: "Email",
-                          fillColor: const Color.fromARGB(255, 112, 111, 111),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Glassmorphic Card
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.5)
+                            : Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.white.withValues(alpha: 0.7),
+                          width: 1.5,
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: passwordController,
-                        obscureText: !isPasswordVisible,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                	isPasswordVisible = !isPasswordVisible;
-                              });
-                            },
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0057C3).withValues(alpha: 0.12),
+                            blurRadius: 25,
+                            offset: const Offset(0, 10),
                           ),
-                          labelText: "Password",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: signUpUser,
-                        child: const Text('Sign Up', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      padding: const EdgeInsets.all(28),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "I have an account? ",
-                            style: TextStyle(color: AppColors.grey),
+                          // Profile Picture Avatar Picker
+                          Center(
+                            child: GestureDetector(
+                              onTap: _showProfilePicPicker,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [Color(0xFF0057C3), Color(0xFF883CA6)],
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 46,
+                                      backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+                                      backgroundImage: _selectedProfilePic.isNotEmpty
+                                          ? (_selectedProfilePic.startsWith('http')
+                                              ? CachedNetworkImageProvider(_selectedProfilePic)
+                                              : AssetImage(_selectedProfilePic) as ImageProvider)
+                                          : const AssetImage('assets/icon/default_profile.png'),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0057C3),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                      child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text(
-                              "Login",
-                              style: TextStyle(color: AppColors.blueDefault),
+                          const SizedBox(height: 20),
+
+                          // Name
+                          const Text(
+                            'NAME',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.1,
+                              color: Color(0xFF424754),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: nameController,
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF727786)),
+                              hintText: "John Doe",
+                              hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey.shade400),
+                              filled: true,
+                              fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF3F3F6),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Username
+                          const Text(
+                            'USERNAME',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.1,
+                              color: Color(0xFF424754),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: usernameController,
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.alternate_email_rounded, color: Color(0xFF727786)),
+                              hintText: "johndoe",
+                              hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey.shade400),
+                              filled: true,
+                              fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF3F3F6),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Email
+                          const Text(
+                            'EMAIL',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.1,
+                              color: Color(0xFF424754),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: emailController,
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.mail_outline_rounded, color: Color(0xFF727786)),
+                              hintText: "hello@example.com",
+                              hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey.shade400),
+                              filled: true,
+                              fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF3F3F6),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Password
+                          const Text(
+                            'PASSWORD',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.1,
+                              color: Color(0xFF424754),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: passwordController,
+                            obscureText: !isPasswordVisible,
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF727786)),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  isPasswordVisible ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                  color: const Color(0xFF727786),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    isPasswordVisible = !isPasswordVisible;
+                                  });
+                                },
+                              ),
+                              hintText: "••••••••",
+                              hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey.shade400),
+                              filled: true,
+                              fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF3F3F6),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Action Sign Up Gradient Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF0057C3), Color(0xFF883CA6)],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF0057C3).withValues(alpha: 0.35),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                ),
+                                onPressed: _isLoading ? null : signUpUser,
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                                      )
+                                    : const Text(
+                                        'Sign Up',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Divider
+                          Row(
+                            children: [
+                              Expanded(child: Container(height: 1, color: isDark ? Colors.white12 : Colors.black12)),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  'OR CONTINUE WITH',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                    color: Color(0xFF727786),
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Container(height: 1, color: isDark ? Colors.white12 : Colors.black12)),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Google Sign Up
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                side: BorderSide(
+                                  color: isDark ? Colors.white24 : Colors.grey.shade300,
+                                ),
+                              ),
+                              onPressed: _isLoading ? null : signUpWithGoogle,
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  GoogleLogoIcon(size: 20),
+                                  SizedBox(width: 10),
+                                  Flexible(
+                                    child: Text(
+                                      'Continue with Google',
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Footer Link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Already have an account? ",
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : const Color(0xFF424754),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text(
+                            "Login",
+                            style: TextStyle(
+                              color: Color(0xFF0057C3),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
-    );
+          ),
+        ),
+      ],
+    ),
+  );
   }
 }

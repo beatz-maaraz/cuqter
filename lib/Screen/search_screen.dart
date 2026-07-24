@@ -265,8 +265,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                               backgroundColor: colorScheme
                                                   .primary
                                                   .withValues(alpha: 0.1),
-                                              backgroundImage:
-                                                  profilePic.isNotEmpty
+                                              backgroundImage: profilePic.isNotEmpty
                                                   ? (profilePic.startsWith(
                                                               'http',
                                                             )
@@ -277,15 +276,9 @@ class _SearchScreenState extends State<SearchScreen> {
                                                                 profilePic,
                                                               ))
                                                         as ImageProvider
-                                                  : null,
-                                              child: profilePic.isEmpty
-                                                  ? Icon(
-                                                      Icons.person,
-                                                      color:
-                                                          colorScheme.primary,
-                                                      size: 36,
-                                                    )
-                                                  : null,
+                                                  : const AssetImage(
+                                                      'assets/icon/default_profile.png',
+                                                    ),
                                             ),
                                           ),
                                           const SizedBox(height: 12),
@@ -383,6 +376,26 @@ class _SearchScreenState extends State<SearchScreen> {
                                                   'senderProfilePic': myPic,
                                                   'timestamp':
                                                       FieldValue.serverTimestamp(),
+                                                });
+
+                                            await _firestore
+                                                .collection('notifications')
+                                                .doc('friend_request_$requestId')
+                                                .set({
+                                                  'notificationId':
+                                                      'friend_request_$requestId',
+                                                  'type': 'friend_request',
+                                                  'requestId': requestId,
+                                                  'senderId': currentUserId,
+                                                  'receiverId': targetUserId,
+                                                  'senderName': myName,
+                                                  'senderProfilePic': myPic,
+                                                  'title': 'Friend Request',
+                                                  'body':
+                                                      '$myName sent you a friend request',
+                                                  'timestamp':
+                                                      FieldValue.serverTimestamp(),
+                                                  'isRead': false,
                                                 });
 
                                             if (context.mounted) {

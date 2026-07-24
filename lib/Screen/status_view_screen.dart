@@ -73,7 +73,6 @@ class _StatusViewScreenState extends State<StatusViewScreen>
     final oldController = _videoController;
     if (oldController != null) {
       _videoController = null;
-      // Delay disposal to prevent SurfaceView crashes when rapidly switching statuses
       Future.delayed(const Duration(milliseconds: 500), () {
         oldController.dispose();
       });
@@ -218,7 +217,6 @@ class _StatusViewScreenState extends State<StatusViewScreen>
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Reply sent')));
-    // Resume the status after sending a reply
     _resumeStatus();
   }
 
@@ -286,9 +284,289 @@ class _StatusViewScreenState extends State<StatusViewScreen>
     }
   }
 
+  bool _showHeartOverlay = false;
+
+  void _triggerHeartOverlay() {
+    setState(() {
+      _showHeartOverlay = true;
+    });
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() {
+          _showHeartOverlay = false;
+        });
+      }
+    });
+  }
+
+  void _toggleLike(Status status) async {
+    if (_currentUserId == null) return;
+    final isLiked = status.likes.any((l) => l.uid == _currentUserId);
+
+    if (!isLiked) {
+      _triggerHeartOverlay();
+    }
+
+    String currentUserName = 'User';
+    String currentUserPic = '';
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_currentUserId)
+          .get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        currentUserName = data['name'] ?? data['username'] ?? 'User';
+        currentUserPic = data['profilepic'] ?? '';
+      }
+    } catch (e) {
+      print('Error fetching user info for like: $e');
+    }
+
+    final liker = StatusLiker(
+      uid: _currentUserId!,
+      username: currentUserName,
+      profilePic: currentUserPic,
+      likedAt: DateTime.now(),
+    );
+
+    setState(() {
+      if (isLiked) {
+        status.likes.removeWhere((l) => l.uid == _currentUserId);
+      } else {
+        status.likes.removeWhere((l) => l.uid == _currentUserId);
+        status.likes.add(liker);
+      }
+    });
+
+    await _statusService.toggleLikeStatus(
+      statusId: status.statusId,
+      statusOwnerUid: status.uid,
+      liker: liker,
+      isLiking: !isLiked,
+    );
+  }
+
+  void _showStatusDetailsSheet(Status status, {int initialTabIndex = 0}) async {
+    _pauseStatus();
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return DefaultTabController(
+          length: 2,
+          initialIndex: initialTabIndex,
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.55,
+            padding: const EdgeInsets.only(top: 12),
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                TabBar(
+                  labelColor: Theme.of(context).colorScheme.primary,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedView, size: 18, color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 6),
+                          Text('Views (${status.viewers.map((v) => v.uid).toSet().length})'),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, size: 18, color: Colors.redAccent),
+                          const SizedBox(width: 6),
+                          Text('Likes (${status.likes.length})'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      // Viewers Tab
+                      _buildViewersTab(status),
+                      // Likes Tab
+                      _buildLikesTab(status),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (mounted) _resumeStatus();
+  }
+
+  Widget _buildViewersTab(Status status) {
+    final uniqueViewers = <String, StatusViewer>{};
+    for (var v in status.viewers) {
+      uniqueViewers.putIfAbsent(v.uid, () => v);
+    }
+    final viewersList = uniqueViewers.values.toList();
+
+    if (viewersList.isEmpty) {
+      return const Center(
+        child: Text('No views yet', style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: viewersList.length,
+      itemBuilder: (context, index) {
+        final viewer = viewersList[index];
+        final viewerLiked = status.likes.any((l) => l.uid == viewer.uid);
+
+        return FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance.collection('users').doc(viewer.uid).get(),
+          builder: (context, snapshot) {
+            String name = viewer.username != 'User' && viewer.username != 'Unknown User'
+                ? viewer.username
+                : 'Loading...';
+            String pic = viewer.profilePic;
+            String bio = '';
+            String username = viewer.username;
+
+            if (snapshot.hasData && snapshot.data!.exists) {
+              final data = snapshot.data!.data() as Map<String, dynamic>?;
+              if (data != null) {
+                name = data['name'] ?? data['username'] ?? 'User';
+                pic = data['profilepic'] ?? pic;
+                bio = data['bio'] ?? '';
+                username = data['username'] ?? username;
+              }
+            }
+
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundImage: pic.isNotEmpty
+                    ? (pic.startsWith('http')
+                        ? CachedNetworkImageProvider(pic)
+                        : AssetImage(pic)) as ImageProvider
+                    : const AssetImage('assets/icon/default_profile.png'),
+              ),
+              title: Row(
+                children: [
+                  Text(name),
+                  if (viewerLiked) ...[
+                    const SizedBox(width: 6),
+                    huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, size: 14, color: Colors.redAccent),
+                  ],
+                ],
+              ),
+              subtitle: Text(_formatTimeAgo(viewer.viewedAt)),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserProfilePage(
+                      userId: viewer.uid,
+                      name: name,
+                      username: username,
+                      bio: bio,
+                      profilepic: pic,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLikesTab(Status status) {
+    if (status.likes.isEmpty) {
+      return const Center(
+        child: Text('No likes yet', style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: status.likes.length,
+      itemBuilder: (context, index) {
+        final liker = status.likes[index];
+
+        return FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance.collection('users').doc(liker.uid).get(),
+          builder: (context, snapshot) {
+            String name = liker.username != 'User' && liker.username != 'Unknown User'
+                ? liker.username
+                : 'Loading...';
+            String pic = liker.profilePic;
+            String bio = '';
+            String username = liker.username;
+
+            if (snapshot.hasData && snapshot.data!.exists) {
+              final data = snapshot.data!.data() as Map<String, dynamic>?;
+              if (data != null) {
+                name = data['name'] ?? data['username'] ?? 'User';
+                pic = data['profilepic'] ?? pic;
+                bio = data['bio'] ?? '';
+                username = data['username'] ?? username;
+              }
+            }
+
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundImage: pic.isNotEmpty
+                    ? (pic.startsWith('http')
+                        ? CachedNetworkImageProvider(pic)
+                        : AssetImage(pic)) as ImageProvider
+                    : const AssetImage('assets/icon/default_profile.png'),
+              ),
+              title: Text(name),
+              subtitle: Text(_formatTimeAgo(liker.likedAt)),
+              trailing: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, color: Colors.redAccent, size: 20),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserProfilePage(
+                      userId: liker.uid,
+                      name: name,
+                      username: username,
+                      bio: bio,
+                      profilepic: pic,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_currentGroup.isEmpty) return const Scaffold();
+
+    final currentStatus = _currentGroup[_currentIndex];
+    final isLikedByMe = _currentUserId != null && currentStatus.likes.any((l) => l.uid == _currentUserId);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -465,7 +743,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                   ),
                   GestureDetector(
                     onTap: () async {
-                      _pauseStatus(); // Pause video before navigating
+                      _pauseStatus();
                       final doc = await FirebaseFirestore.instance
                           .collection('users')
                           .doc(_currentGroup[_currentIndex].uid)
@@ -499,7 +777,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                             ),
                           ),
                         );
-                        if (mounted) _resumeStatus(); // Resume when returning
+                        if (mounted) _resumeStatus();
                       }
                     },
                     child: Row(
@@ -510,21 +788,14 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                               ? (_currentGroup.last.profilePic.startsWith(
                                           'http',
                                         )
-                                        ? CachedNetworkImageProvider(
-                                            _currentGroup.last.profilePic,
-                                          )
-                                        : AssetImage(
-                                            _currentGroup.last.profilePic,
-                                          ))
-                                    as ImageProvider
-                              : null,
-                          child: _currentGroup.last.profilePic.isEmpty
-                              ? const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 24,
-                                )
-                              : null,
+                                         ? CachedNetworkImageProvider(
+                                             _currentGroup.last.profilePic,
+                                           )
+                                         : AssetImage(
+                                             _currentGroup.last.profilePic,
+                                           ))
+                                     as ImageProvider
+                              : const AssetImage('assets/icon/default_profile.png'),
                         ),
                         const SizedBox(width: 10),
                         Column(
@@ -555,7 +826,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                 ],
               ),
             ),
-            // Bottom Bar for current user
+            // Bottom Bar for current user (Status Owner)
             if (_currentUserId != null &&
                 _currentGroup[_currentIndex].uid == _currentUserId)
               Positioned(
@@ -569,127 +840,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       TextButton.icon(
-                        onPressed: () async {
-                          _pauseStatus();
-                          await showModalBottomSheet(
-                            context: context,
-                            builder: (context) {
-                              return SafeArea(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Padding(
-                                      padding: EdgeInsets.all(16.0),
-                                      child: Text(
-                                        'Viewed by',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    if (_currentGroup[_currentIndex]
-                                        .viewers
-                                        .isEmpty)
-                                      const Padding(
-                                        padding: EdgeInsets.all(16.0),
-                                        child: Text('No views yet'),
-                                      ),
-                                    ...(() {
-                                      final uniqueViewers =
-                                          <String, StatusViewer>{};
-                                      for (var v
-                                          in _currentGroup[_currentIndex]
-                                              .viewers) {
-                                        uniqueViewers.putIfAbsent(
-                                          v.uid,
-                                          () => v,
-                                        );
-                                      }
-                                      return uniqueViewers.values.toList();
-                                    })().map((viewer) {
-                                      return FutureBuilder<DocumentSnapshot>(
-                                        future: FirebaseFirestore.instance
-                                            .collection('users')
-                                            .doc(viewer.uid)
-                                            .get(),
-                                        builder: (context, snapshot) {
-                                          String name =
-                                              viewer.username != 'User' &&
-                                                  viewer.username !=
-                                                      'Unknown User'
-                                              ? viewer.username
-                                              : 'Loading...';
-                                          String pic = viewer.profilePic;
-
-                                          String bio = '';
-                                          String username = viewer.username;
-
-                                          if (snapshot.hasData &&
-                                              snapshot.data!.exists) {
-                                            final data =
-                                                snapshot.data!.data()
-                                                    as Map<String, dynamic>?;
-                                            if (data != null) {
-                                              name =
-                                                  data['name'] ??
-                                                  data['username'] ??
-                                                  'User';
-                                              pic = data['profilepic'] ?? pic;
-                                              bio = data['bio'] ?? '';
-                                              username =
-                                                  data['username'] ?? username;
-                                            }
-                                          }
-
-                                          return ListTile(
-                                            leading: CircleAvatar(
-                                              backgroundImage: pic.isNotEmpty
-                                                  ? (pic.startsWith('http')
-                                                            ? CachedNetworkImageProvider(
-                                                                pic,
-                                                              )
-                                                            : AssetImage(pic))
-                                                        as ImageProvider
-                                                  : null,
-                                              child: pic.isEmpty
-                                                  ? const Icon(
-                                                      Icons.person,
-                                                      color: Colors.white,
-                                                      size: 24,
-                                                    )
-                                                  : null,
-                                            ),
-                                            title: Text(name),
-                                            subtitle: Text(
-                                              _formatTimeAgo(viewer.viewedAt),
-                                            ),
-                                            onTap: () async {
-                                              await Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      UserProfilePage(
-                                                        userId: viewer.uid,
-                                                        name: name,
-                                                        username: username,
-                                                        bio: bio,
-                                                        profilepic: pic,
-                                                      ),
-                                                ),
-                                              );
-                                            },
-                                          );
-                                        },
-                                      );
-                                    }),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                          if (mounted) _resumeStatus();
-                        },
+                        onPressed: () => _showStatusDetailsSheet(_currentGroup[_currentIndex], initialTabIndex: 0),
                         icon: huge.HugeIcon(
                           icon: huge.HugeIcons.strokeRoundedView,
                           color: Colors.white,
@@ -697,6 +848,24 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                         ),
                         label: Text(
                           '${_currentGroup[_currentIndex].viewers.map((v) => v.uid).toSet().length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _showStatusDetailsSheet(_currentGroup[_currentIndex], initialTabIndex: 1),
+                        icon: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedFavourite,
+                          color: _currentGroup[_currentIndex].likes.isNotEmpty
+                              ? Colors.redAccent
+                              : Colors.white,
+                          size: 24,
+                        ),
+                        label: Text(
+                          '${_currentGroup[_currentIndex].likes.length}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -742,7 +911,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                 ),
               ),
 
-            // Reply field for other users
+            // Reply field & Like button for other users
             if (_currentUserId == null ||
                 _currentGroup[_currentIndex].uid != _currentUserId)
               Positioned(
@@ -792,16 +961,54 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(
-                            Icons.send,
+                          icon: huge.HugeIcon(
+                            icon: huge.HugeIcons.strokeRoundedSent,
                             color: Colors.blueAccent,
+                            size: 24,
                           ),
                           onPressed: () =>
                               _sendReply(_currentGroup[_currentIndex]),
                         ),
+                        IconButton(
+                          icon: TweenAnimationBuilder<double>(
+                            key: ValueKey(isLikedByMe),
+                            tween: Tween(begin: 0.7, end: 1.0),
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.elasticOut,
+                            builder: (context, scale, child) {
+                              return Transform.scale(
+                                scale: scale,
+                                child: huge.HugeIcon(
+                                  icon: huge.HugeIcons.strokeRoundedFavourite,
+                                  color: isLikedByMe ? Colors.redAccent : Colors.white,
+                                  size: 26,
+                                ),
+                              );
+                            },
+                          ),
+                          onPressed: () => _toggleLike(currentStatus),
+                        ),
                       ],
                     ),
                   ),
+                ),
+              ),
+            if (_showHeartOverlay)
+              Center(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.3, end: 1.2),
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.elasticOut,
+                  builder: (context, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedFavourite,
+                        color: Colors.redAccent,
+                        size: 100,
+                      ),
+                    );
+                  },
                 ),
               ),
             // Navigation Arrows for Web/Windows
@@ -862,7 +1069,6 @@ class _StatusViewScreenState extends State<StatusViewScreen>
         ),
       );
     } else {
-      final status = _currentGroup[_currentIndex];
       return LayoutBuilder(
         builder: (context, constraints) {
           return Container(

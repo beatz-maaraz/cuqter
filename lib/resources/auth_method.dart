@@ -3,6 +3,8 @@ import 'package:cuqter/modules/user.dart' as model;
 // import 'package:cuqter/resources/storage_method.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class AuthMethod {
@@ -168,7 +170,122 @@ class AuthMethod {
     return res;
   }
 
+  Future<String> signInWithGoogle() async {
+    String res = "Some error occurred";
+    try {
+      UserCredential cred;
+
+      if (kIsWeb) {
+        GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        cred = await _auth.signInWithPopup(googleProvider);
+      } else {
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+          serverClientId: '921725231252-gtmrmn6jmlt4m9p64n9n2m8th5ue6sqg.apps.googleusercontent.com',
+        );
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+        if (googleUser == null) {
+          return "cancelled";
+        }
+
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        cred = await _auth.signInWithCredential(credential);
+      }
+
+      User? user = cred.user;
+
+      if (user != null) {
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+        String name = user.displayName ?? "User";
+        String email = user.email ?? "";
+        String profilePic = user.photoURL ?? "";
+
+        if (!userDoc.exists) {
+          // Generate unique username from email prefix or name
+          String baseUsername = email.contains('@')
+              ? email.split('@')[0].replaceAll(RegExp(r'[^a-zA-Z0-9._]'), '')
+              : name.replaceAll(' ', '').toLowerCase();
+          if (baseUsername.isEmpty) {
+            baseUsername = "user_${user.uid.substring(0, 5)}";
+          }
+
+          String username = baseUsername.toLowerCase();
+          int count = 1;
+          while (true) {
+            final QuerySnapshot usernameCheck = await _firestore
+                .collection('users')
+                .where('username', isEqualTo: username)
+                .get();
+            if (usernameCheck.docs.isEmpty) break;
+            username = "${baseUsername}_$count";
+            count++;
+          }
+
+          model.user newUser = model.user(
+            name: name,
+            email: email.toLowerCase(),
+            password: "",
+            uid: user.uid,
+            username: username,
+            profilepic: profilePic,
+          );
+
+          await _firestore.collection('users').doc(user.uid).set(newUser.toJson());
+
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('cached_profile_name', name);
+            await prefs.setString('cached_profile_username', username);
+            await prefs.setString('cached_profile_bio', '');
+            await prefs.setString('cached_profile_pic', profilePic);
+          } catch (e) {
+            if (kDebugMode) print('Error caching details: $e');
+          }
+        } else {
+          Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
+          if (data != null) {
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('cached_profile_name', data['name'] ?? name);
+              await prefs.setString('cached_profile_username', data['username'] ?? '');
+              await prefs.setString('cached_profile_bio', data['bio'] ?? '');
+              await prefs.setString('cached_profile_pic', data['profilepic'] ?? profilePic);
+            } catch (e) {
+              if (kDebugMode) print('Error caching details: $e');
+            }
+          }
+        }
+        res = "success";
+      }
+    } on FirebaseAuthException catch (err) {
+      if (err.code == 'popup-closed-by-user') {
+        return "cancelled";
+      }
+      res = err.message ?? "An error occurred";
+      if (kDebugMode) {
+        print(err.toString());
+      }
+    } catch (err) {
+      res = err.toString();
+      if (kDebugMode) {
+        print(err.toString());
+      }
+    }
+    return res;
+  }
+
   Future<void> signOut() async {
+    try {
+      if (!kIsWeb) {
+        await GoogleSignIn().signOut();
+      }
+    } catch (_) {}
     await _auth.signOut();
   }
 

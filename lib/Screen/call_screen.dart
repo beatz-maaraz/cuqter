@@ -144,6 +144,7 @@ class _CallScreenState extends State<CallScreen> {
           if (currentUser != null) {
             // Fetch caller's real name from Firestore (displayName is often null)
             String callerName = currentUser.displayName ?? 'Unknown';
+            String callerPic = '';
             try {
               final userDoc = await FirebaseFirestore.instance
                   .collection('users')
@@ -154,6 +155,7 @@ class _CallScreenState extends State<CallScreen> {
                     userDoc.data()!['username'] ??
                     currentUser.displayName ??
                     'Unknown';
+                callerPic = userDoc.data()!['profilepic'] ?? '';
               }
             } catch (e) {
               debugPrint('Error fetching caller name: $e');
@@ -164,6 +166,7 @@ class _CallScreenState extends State<CallScreen> {
               'roomId': _roomId,
               'callerId': currentUser.uid,
               'callerName': callerName,
+              'callerPic': callerPic,
               'isVideo': widget.isVideoCall,
               'timestamp': ServerValue.timestamp,
             });
@@ -171,11 +174,11 @@ class _CallScreenState extends State<CallScreen> {
           }
         }
 
-        // Start 1 minute timer to end call if not connected
-        _ringTimer = Timer(const Duration(minutes: 1), () async {
+        // Start 35 second timer to end call if unanswered
+        _ringTimer = Timer(const Duration(seconds: 35), () async {
           if (!_isConnected && mounted && !_isHangingUp && !_isDisposed) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Call ended: No answer')),
+              const SnackBar(content: Text('Call ended: No answer (35s timeout)')),
             );
             await _hangUp();
           }
@@ -289,22 +292,30 @@ class _CallScreenState extends State<CallScreen> {
 
   void _toggleMic() {
     if (signaling.localStream != null) {
-      bool enabled = signaling.localStream!.getAudioTracks()[0].enabled;
-      signaling.localStream!.getAudioTracks()[0].enabled = !enabled;
-      setState(() {
-        _isMicMuted = enabled;
-      });
+      final audioTracks = signaling.localStream!.getAudioTracks();
+      if (audioTracks.isNotEmpty) {
+        final currentlyEnabled = audioTracks[0].enabled;
+        for (var track in audioTracks) {
+          track.enabled = !currentlyEnabled;
+        }
+        setState(() {
+          _isMicMuted = currentlyEnabled;
+        });
+      }
     }
   }
 
   void _toggleSpeaker() {
+    final nextSpeakerState = !_isSpeakerOn;
     setState(() {
-      _isSpeakerOn = !_isSpeakerOn;
+      _isSpeakerOn = nextSpeakerState;
     });
-    try {
-      Helper.setSpeakerphoneOn(_isSpeakerOn);
-    } catch (e) {
-      debugPrint('Error toggling speaker: $e');
+    if (!kIsWeb) {
+      try {
+        Helper.setSpeakerphoneOn(nextSpeakerState);
+      } catch (e) {
+        debugPrint('Error toggling speaker: $e');
+      }
     }
   }
 
@@ -400,10 +411,7 @@ class _CallScreenState extends State<CallScreen> {
                                 backgroundColor: Colors.white.withValues(alpha: 0.1),
                                 backgroundImage: profilePic != null && profilePic.isNotEmpty
                                     ? NetworkImage(profilePic)
-                                    : null,
-                                child: profilePic == null || profilePic.isEmpty
-                                    ? const Icon(Icons.person, size: 64, color: Colors.white)
-                                    : null,
+                                    : const AssetImage('assets/icon/default_profile.png') as ImageProvider,
                               ),
                             );
                           },
@@ -413,7 +421,7 @@ class _CallScreenState extends State<CallScreen> {
                           child: CircleAvatar(
                             radius: 64,
                             backgroundColor: Colors.white.withValues(alpha: 0.1),
-                            child: const Icon(Icons.person, size: 64, color: Colors.white),
+                            backgroundImage: const AssetImage('assets/icon/default_profile.png'),
                           ),
                         ),
                     ],

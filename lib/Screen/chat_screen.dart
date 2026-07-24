@@ -26,6 +26,7 @@ import 'call_screen.dart';
 import '../services/cloudinary_service.dart';
 import '../services/local_storage_service.dart';
 import '../media.dart';
+import '../modules/wallpaper.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -81,14 +82,6 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     } catch (_) {}
   }
-
-  final List<Color> _wallpapers = [
-    Colors.white,
-    Colors.amber[50]!,
-    Colors.blue[50]!,
-    Colors.green[50]!,
-    Colors.purple[50]!,
-  ];
 
   String _formatDateDivider(DateTime date) {
     DateTime now = DateTime.now();
@@ -455,7 +448,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Solid Colors',
+                'Wallpapers',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -464,11 +457,12 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               const SizedBox(height: 12),
               SizedBox(
-                height: 70,
+                height: 80,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _wallpapers.length,
+                  itemCount: ChatWallpaper.defaultWallpapers.length,
                   itemBuilder: (context, index) {
+                    final wp = ChatWallpaper.defaultWallpapers[index];
                     bool isSelected =
                         _wallpaperIndex == index && _customWallpaperUrl == null;
                     return GestureDetector(
@@ -482,10 +476,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        width: 70,
+                        width: 60,
                         margin: const EdgeInsets.only(right: 12),
                         decoration: BoxDecoration(
-                          color: _wallpapers[index],
+                          color: wp.type == WallpaperType.color ? wp.color : Colors.grey[200],
+                          image: wp.type == WallpaperType.asset 
+                            ? DecorationImage(image: AssetImage(wp.path!), fit: BoxFit.cover)
+                            : null,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isSelected
@@ -837,19 +834,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                               data['profilepic'].toString(),
                                             )
                                             as ImageProvider)
-                                : null,
-                            child:
-                                data == null ||
-                                    data['profilepic'] == null ||
-                                    data['profilepic'].toString().isEmpty
-                                ? Text(
-                                    widget.receiverName[0].toUpperCase(),
-                                    style: TextStyle(
-                                      color: colorScheme.onPrimaryContainer,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )
-                                : null,
+                                : const AssetImage('assets/icon/default_profile.png'),
                           ),
                         ),
                         if (data != null && data['isOnline'] == true)
@@ -1003,9 +988,12 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color: _customWallpaperUrl == null
-                      ? (_wallpaperIndex == 0
-                            ? colorScheme.surface
-                            : _wallpapers[_wallpaperIndex])
+                      ? (() {
+                          int index = _wallpaperIndex;
+                          if (index < 0 || index >= ChatWallpaper.defaultWallpapers.length) index = 0;
+                          final wp = ChatWallpaper.defaultWallpapers[index];
+                          return wp.type == WallpaperType.color ? wp.color : colorScheme.surface;
+                        })()
                       : null,
                   image: _customWallpaperUrl != null
                       ? DecorationImage(
@@ -1015,7 +1003,17 @@ class _ChatScreenState extends State<ChatScreen> {
                                     as ImageProvider,
                           fit: BoxFit.cover,
                         )
-                      : null,
+                      : (() {
+                          int index = _wallpaperIndex;
+                          if (index < 0 || index >= ChatWallpaper.defaultWallpapers.length) index = 0;
+                          final wp = ChatWallpaper.defaultWallpapers[index];
+                          return wp.type == WallpaperType.asset
+                              ? DecorationImage(
+                                  image: AssetImage(wp.path!),
+                                  fit: wp.fit,
+                                )
+                              : null;
+                        })(),
                 ),
                 child: Column(
                   children: [

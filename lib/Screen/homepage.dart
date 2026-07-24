@@ -443,7 +443,7 @@ class _HomepageState extends State<Homepage> {
       backgroundColor: colorScheme.surface,
       body: SafeArea(
         top: !widget.isDesktop,
-        bottom: !widget.isDesktop,
+        bottom: false,
         child: Column(
           children: [
             if (_isLoading) const LinearProgressIndicator(),
@@ -865,6 +865,7 @@ class _HomepageState extends State<Homepage> {
 
                       return Scrollbar(
                         child: ListView.builder(
+                          padding: const EdgeInsets.only(top: 8, bottom: 90),
                           cacheExtent: 1000.0,
                           physics: const BouncingScrollPhysics(),
                           itemCount: users.length,
@@ -1098,24 +1099,9 @@ class _HomepageState extends State<Homepage> {
                                                                     .toString(),
                                                               )
                                                               as ImageProvider)
-                                                  : null,
-                                              child:
-                                                  userData['profilepic'] ==
-                                                          null ||
-                                                      userData['profilepic']
-                                                          .toString()
-                                                          .isEmpty
-                                                  ? Text(
-                                                      userName[0].toUpperCase(),
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 18,
-                                                        color: colorScheme
-                                                            .onPrimaryContainer,
-                                                      ),
-                                                    )
-                                                  : null,
+                                                  : const AssetImage(
+                                                      'assets/icon/default_profile.png',
+                                                    ),
                                             ),
                                           ),
                                         ),
@@ -1286,77 +1272,80 @@ class _HomepageState extends State<Homepage> {
       ),
       floatingActionButton: widget.isDesktop
           ? null
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FloatingActionButton.small(
-                  heroTag: 'add_status_fab',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            const CreateStatusScreen(),
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              );
-                            },
-                        transitionDuration: const Duration(milliseconds: 250),
-                      ),
-                    );
-                  },
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  child: huge.HugeIcon(
-                    icon: huge.HugeIcons.strokeRoundedCamera01,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FloatingActionButton(
-                  heroTag: 'contacts_fab',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            const ContactScreen(),
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                              return SlideTransition(
-                                position:
-                                    Tween<Offset>(
-                                      begin: const Offset(1.0, 0.0),
-                                      end: Offset.zero,
-                                    ).animate(
-                                      CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOutCubic,
-                                      ),
-                                    ),
-                                child: FadeTransition(
+          : Padding(
+              padding: const EdgeInsets.only(bottom: 75),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FloatingActionButton.small(
+                    heroTag: 'add_status_fab',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              const CreateStatusScreen(),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                                return FadeTransition(
                                   opacity: animation,
                                   child: child,
-                                ),
-                              );
-                            },
-                        transitionDuration: const Duration(milliseconds: 250),
-                      ),
-                    );
-                  },
-                  backgroundColor: colorScheme.primaryContainer,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                                );
+                              },
+                          transitionDuration: const Duration(milliseconds: 250),
+                        ),
+                      );
+                    },
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    child: huge.HugeIcon(
+                      icon: huge.HugeIcons.strokeRoundedCamera01,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
-                  child: huge.HugeIcon(
-                    icon: huge.HugeIcons.strokeRoundedContactBook,
-                    color: colorScheme.onPrimaryContainer,
-                    size: 28,
+                  const SizedBox(height: 16),
+                  FloatingActionButton(
+                    heroTag: 'contacts_fab',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              const ContactScreen(),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                                return SlideTransition(
+                                  position:
+                                      Tween<Offset>(
+                                        begin: const Offset(1.0, 0.0),
+                                        end: Offset.zero,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutCubic,
+                                        ),
+                                      ),
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                          transitionDuration: const Duration(milliseconds: 250),
+                        ),
+                      );
+                    },
+                    backgroundColor: colorScheme.primaryContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: huge.HugeIcon(
+                      icon: huge.HugeIcons.strokeRoundedContactBook,
+                      color: colorScheme.onPrimaryContainer,
+                      size: 28,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
     );
   }
@@ -1503,14 +1492,7 @@ class _HomepageState extends State<Homepage> {
                                       ? CachedNetworkImageProvider(profilePic)
                                       : AssetImage(profilePic))
                                   as ImageProvider
-                            : null,
-                        child: profilePic.isEmpty
-                            ? Icon(
-                                Icons.person,
-                                color: colorScheme.onSurface,
-                                size: 24,
-                              )
-                            : null,
+                            : const AssetImage('assets/icon/default_profile.png'),
                       ),
                     ),
                     if (myStatuses.isEmpty)
@@ -1600,10 +1582,7 @@ class _HomepageState extends State<Homepage> {
                                 )
                               : AssetImage(latestStatus.profilePic))
                           as ImageProvider
-                    : null,
-                child: latestStatus.profilePic.isEmpty
-                    ? Icon(Icons.person, color: colorScheme.onSurface, size: 24)
-                    : null,
+                    : const AssetImage('assets/icon/default_profile.png'),
               ),
             ),
             const SizedBox(height: 4),
@@ -1673,23 +1652,39 @@ class _AnimatedNotificationBellState extends State<AnimatedNotificationBell>
 
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore
-          .collection('friend_requests')
+          .collection('notifications')
           .where('receiverId', isEqualTo: currentUser.uid)
-          .where('status', isEqualTo: 'pending')
           .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-          if (!_hasNotifications) {
-            _hasNotifications = true;
-            _controller.repeat(); // Loop cleanly without reversing
-          }
-        } else {
-          _hasNotifications = false;
-          _controller.stop();
-          _controller.reset();
-        }
+      builder: (context, notifSnapshot) {
+        return StreamBuilder<QuerySnapshot>(
+          stream: _firestore
+              .collection('friend_requests')
+              .where('receiverId', isEqualTo: currentUser.uid)
+              .where('status', isEqualTo: 'pending')
+              .snapshots(),
+          builder: (context, freqSnapshot) {
+            bool hasAny = false;
+            if (notifSnapshot.hasData && notifSnapshot.data!.docs.isNotEmpty) {
+              hasAny = true;
+            }
+            if (freqSnapshot.hasData && freqSnapshot.data!.docs.isNotEmpty) {
+              hasAny = true;
+            }
 
-        return _buildIcon(hasDot: _hasNotifications);
+            if (hasAny) {
+              if (!_hasNotifications) {
+                _hasNotifications = true;
+                _controller.repeat(); // Loop cleanly without reversing
+              }
+            } else {
+              _hasNotifications = false;
+              _controller.stop();
+              _controller.reset();
+            }
+
+            return _buildIcon(hasDot: _hasNotifications);
+          },
+        );
       },
     );
   }

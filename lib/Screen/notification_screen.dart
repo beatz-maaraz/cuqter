@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuqter/Screen/userprofile.dart';
+
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
@@ -14,6 +15,23 @@ class NotificationScreen extends StatefulWidget {
 class _NotificationScreenState extends State<NotificationScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  String _formatTimestamp(dynamic timestamp) {
+    if (timestamp == null) return '';
+    DateTime dt;
+    if (timestamp is Timestamp) {
+      dt = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      dt = timestamp;
+    } else {
+      return '';
+    }
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'Just now';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,53 +66,139 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ? const Center(child: Text("Not logged in"))
           : StreamBuilder<QuerySnapshot>(
               stream: _firestore
-                  .collection('friend_requests')
+                  .collection('notifications')
                   .where('receiverId', isEqualTo: currentUser.uid)
-                  .where('status', isEqualTo: 'pending')
                   .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+              builder: (context, notifSnapshot) {
+                return StreamBuilder<QuerySnapshot>(
+                  stream: _firestore
+                      .collection('friend_requests')
+                      .where('receiverId', isEqualTo: currentUser.uid)
+                      .where('status', isEqualTo: 'pending')
+                      .snapshots(),
+                  builder: (context, freqSnapshot) {
+                    if (notifSnapshot.connectionState == ConnectionState.waiting &&
+                        freqSnapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No new notifications',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    // Map notifications by unique key to combine both collections safely
+                    final Map<String, Map<String, dynamic>> combinedNotifications = {};
+
+                    // 1. Process notifications collection
+                    if (notifSnapshot.hasData) {
+                      for (var doc in notifSnapshot.data!.docs) {
+                        var data = Map<String, dynamic>.from(doc.data() as Map);
+                        data['docId'] = doc.id;
+                        data['source'] = 'notifications';
+                        combinedNotifications[doc.id] = data;
+                      }
+                    }
+
+                    // 2. Process friend_requests collection (legacy / fallback support)
+                    if (freqSnapshot.hasData) {
+                      for (var doc in freqSnapshot.data!.docs) {
+                        var data = Map<String, dynamic>.from(doc.data() as Map);
+                        String notifKey = 'friend_request_${doc.id}';
+                        if (!combinedNotifications.containsKey(notifKey)) {
+                          combinedNotifications[notifKey] = {
+                            'docId': doc.id,
+                            'notificationId': notifKey,
+                            'type': 'friend_request',
+                            'requestId': doc.id,
+                            'senderId': data['senderId'] ?? '',
+                            'receiverId': data['receiverId'] ?? currentUser.uid,
+                            'senderName': data['senderName'] ?? 'Someone',
+                            'senderProfilePic': data['senderProfilePic'] ?? '',
+                            'title': 'Friend Request',
+                            'body': '${data['senderName'] ?? 'Someone'} sent you a friend request',
+                            'timestamp': data['timestamp'],
+                            'source': 'friend_requests',
+                          };
+                        }
+                      }
+                    }
+
+                    if (combinedNotifications.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No new notifications',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      );
+                    }
+
+                    // Sort notifications by timestamp descending
+                    final items = combinedNotifications.values.toList();
+                    items.sort((a, b) {
+                      final tA = a['timestamp'];
+                      final tB = b['timestamp'];
+                      if (tA == null && tB == null) return 0;
+                      if (tA == null) return 1;
+                      if (tB == null) return -1;
+                      final dA = tA is Timestamp ? tA.toDate() : (tA as DateTime);
+                      final dB = tB is Timestamp ? tB.toDate() : (tB as DateTime);
+                      return dB.compareTo(dA);
+                    });
+
+                    final friendRequests = items.where((i) => i['type'] == 'friend_request').toList();
+                    final statusLikes = items.where((i) => i['type'] == 'status_like').toList();
+                    final otherNotifs = items.where((i) => i['type'] != 'friend_request' && i['type'] != 'status_like').toList();
+
+                    return SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (friendRequests.isNotEmpty) ...[
+                            _buildSectionHeader('Friend Requests', colorScheme),
+                            const SizedBox(height: 12),
+                            _buildNotificationCard(
+                              context,
+                              notifications: friendRequests.map((item) {
+                                return _buildFriendRequestItem(
+                                  context,
+                                  item: item,
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                          if (statusLikes.isNotEmpty) ...[
+                            _buildSectionHeader('Status Likes', colorScheme),
+                            const SizedBox(height: 12),
+                            _buildNotificationCard(
+                              context,
+                              notifications: statusLikes.map((item) {
+                                return _buildStatusLikeItem(
+                                  context,
+                                  item: item,
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                          if (otherNotifs.isNotEmpty) ...[
+                            _buildSectionHeader('Other Activity', colorScheme),
+                            const SizedBox(height: 12),
+                            _buildNotificationCard(
+                              context,
+                              notifications: otherNotifs.map((item) {
+                                return _buildGenericItem(
+                                  context,
+                                  item: item,
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-                  );
-                }
-
-                final requests = snapshot.data!.docs;
-
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader('Friend Requests', colorScheme),
-                      const SizedBox(height: 12),
-                      _buildNotificationCard(
-                        context,
-                        notifications: requests.map((doc) {
-                          var data = doc.data() as Map<String, dynamic>;
-                          return _buildNotificationItem(
-                            context,
-                            requestId: doc.id,
-                            senderId: data['senderId'] ?? '',
-                            name: data['senderName'] ?? 'Someone',
-                            action: 'Sent you a friend request',
-                            imageUrl: data['senderProfilePic'] ?? '',
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -133,40 +237,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  Widget _buildNotificationItem(
+  Widget _buildFriendRequestItem(
     BuildContext context, {
-    required String requestId,
-    required String senderId,
-    required String name,
-    required String action,
-    required String imageUrl,
+    required Map<String, dynamic> item,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
+    final senderId = item['senderId'] ?? '';
+    final name = item['senderName'] ?? 'Someone';
+    final imageUrl = item['senderProfilePic'] ?? '';
+    final requestId = item['requestId'] ?? item['docId'] ?? '';
+    final notifDocId = item['source'] == 'notifications' ? item['docId'] : 'friend_request_$requestId';
+
     return InkWell(
-      onTap: () async {
-        try {
-          final userDoc = await _firestore.collection('users').doc(senderId).get();
-          if (userDoc.exists) {
-            final userData = userDoc.data() as Map<String, dynamic>;
-            if (context.mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserProfilePage(
-                    userId: senderId,
-                    name: userData['name'] ?? name,
-                    username: userData['username'] ?? '',
-                    bio: userData['bio'] ?? '',
-                    profilepic: userData['profilepic'] ?? imageUrl,
-                  ),
-                ),
-              );
-            }
-          }
-        } catch (e) {
-          debugPrint('Error fetching user for profile: $e');
-        }
-      },
+      onTap: () => _navigateToProfile(senderId, name, imageUrl),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
         child: Row(
@@ -196,12 +279,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    action,
+                    'Sent you a friend request',
                     style: TextStyle(
                       fontSize: 14,
                       color: colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
+                  if (item['timestamp'] != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatTimestamp(item['timestamp']),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -212,10 +305,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   icon: huge.HugeIcons.strokeRoundedCancel01,
                   color: colorScheme.error,
                   onTap: () async {
-                    await _firestore
-                        .collection('friend_requests')
-                        .doc(requestId)
-                        .delete();
+                    // Delete from friend_requests
+                    await _firestore.collection('friend_requests').doc(requestId).delete().catchError((_) {});
+                    // Delete from notifications
+                    await _firestore.collection('notifications').doc(notifDocId).delete().catchError((_) {});
                   },
                 ),
                 const SizedBox(width: 8),
@@ -227,21 +320,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     final currentUserId = _auth.currentUser?.uid;
                     if (currentUserId == null) return;
 
-                    // Delete request
-                    await _firestore
-                        .collection('friend_requests')
-                        .doc(requestId)
-                        .delete();
+                    // Delete request and notification
+                    await _firestore.collection('friend_requests').doc(requestId).delete().catchError((_) {});
+                    await _firestore.collection('notifications').doc(notifDocId).delete().catchError((_) {});
 
-                    // Add to receiver's contacts
-                    await _firestore
-                        .collection('users')
-                        .doc(currentUserId)
-                        .update({
-                          'contacts': FieldValue.arrayUnion([senderId]),
-                        });
-
-                    // Add to sender's contacts
+                    // Add to contacts
+                    await _firestore.collection('users').doc(currentUserId).update({
+                      'contacts': FieldValue.arrayUnion([senderId]),
+                    });
                     await _firestore.collection('users').doc(senderId).update({
                       'contacts': FieldValue.arrayUnion([currentUserId]),
                     });
@@ -253,6 +339,206 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildStatusLikeItem(
+    BuildContext context, {
+    required Map<String, dynamic> item,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final senderId = item['senderId'] ?? '';
+    final name = item['senderName'] ?? 'Someone';
+    final imageUrl = item['senderProfilePic'] ?? '';
+    final docId = item['docId'] ?? '';
+
+    return InkWell(
+      onTap: () => _navigateToProfile(senderId, name, imageUrl),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundImage: imageUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(imageUrl) as ImageProvider
+                      : null,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  child: imageUrl.isEmpty
+                      ? huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedUser, color: colorScheme.onSurfaceVariant, size: 22)
+                      : null,
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, size: 10, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Liked your status',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  if (item['timestamp'] != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatTimestamp(item['timestamp']),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            _buildActionButton(
+              context,
+              icon: huge.HugeIcons.strokeRoundedDelete02,
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
+              onTap: () async {
+                if (docId.isNotEmpty) {
+                  await _firestore.collection('notifications').doc(docId).delete();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenericItem(
+    BuildContext context, {
+    required Map<String, dynamic> item,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final senderId = item['senderId'] ?? '';
+    final name = item['senderName'] ?? item['title'] ?? 'Notification';
+    final body = item['body'] ?? '';
+    final imageUrl = item['senderProfilePic'] ?? '';
+    final docId = item['docId'] ?? '';
+
+    return InkWell(
+      onTap: () {
+        if (senderId.isNotEmpty) {
+          _navigateToProfile(senderId, name, imageUrl);
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundImage: imageUrl.isNotEmpty
+                  ? CachedNetworkImageProvider(imageUrl) as ImageProvider
+                  : null,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              child: imageUrl.isEmpty
+                  ? huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedNotification01, color: colorScheme.onSurfaceVariant, size: 22)
+                  : null,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      body,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                  if (item['timestamp'] != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatTimestamp(item['timestamp']),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            _buildActionButton(
+              context,
+              icon: huge.HugeIcons.strokeRoundedDelete02,
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
+              onTap: () async {
+                if (docId.isNotEmpty) {
+                  await _firestore.collection('notifications').doc(docId).delete();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToProfile(String senderId, String fallbackName, String fallbackPic) async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(senderId).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UserProfilePage(
+                userId: senderId,
+                name: userData['name'] ?? fallbackName,
+                username: userData['username'] ?? '',
+                bio: userData['bio'] ?? '',
+                profilepic: userData['profilepic'] ?? fallbackPic,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error navigating to user profile: $e');
+    }
   }
 
   Widget _buildActionButton(

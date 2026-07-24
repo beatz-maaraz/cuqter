@@ -482,15 +482,35 @@ class NotificationService {
     required String roomId,
     required String callerId,
     required bool isVideoCall,
+    String? callerPic,
   }) async {
     if (kIsWeb) return;
-    
+
+    String finalCallerName = callerName;
+    String? finalAvatarUrl = callerPic;
+
+    // Fetch exact user details from Firestore to guarantee actual user photo & name
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(callerId).get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        if (data['name'] != null && (data['name'] as String).isNotEmpty) {
+          finalCallerName = data['name'];
+        }
+        if (data['profilepic'] != null && (data['profilepic'] as String).isNotEmpty) {
+          finalAvatarUrl = data['profilepic'];
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching caller notification info: $e');
+    }
+
     final params = CallKitParams(
       id: roomId,
-      nameCaller: callerName,
+      nameCaller: finalCallerName,
       appName: 'Cuqter',
-      avatar: 'https://i.pravatar.cc/100', // optional
-      handle: isVideoCall ? 'Video Call' : 'Voice Call',
+      avatar: (finalAvatarUrl != null && finalAvatarUrl.isNotEmpty) ? finalAvatarUrl : null,
+      handle: isVideoCall ? 'Incoming Video Call' : 'Incoming Voice Call',
       type: isVideoCall ? 1 : 0,
       duration: 30000,
       missedCallNotification: const NotificationParams(
@@ -502,7 +522,7 @@ class NotificationService {
       extra: <String, dynamic>{
         'roomId': roomId,
         'callerId': callerId,
-        'callerName': callerName,
+        'callerName': finalCallerName,
         'isVideoCall': isVideoCall,
       },
       headers: <String, dynamic>{'apiKey': 'v1.0', 'platform': 'flutter'},
@@ -511,7 +531,6 @@ class NotificationService {
         isShowLogo: false,
         ringtonePath: 'system_ringtone_default',
         backgroundColor: '#0955fa',
-        backgroundUrl: 'assets/test.png',
         actionColor: '#4CAF50',
       ),
       ios: const IOSParams(
@@ -531,6 +550,19 @@ class NotificationService {
         ringtonePath: 'system_ringtone_default',
       ),
     );
+
+    // Trigger native ConnectionService implementation
+    try {
+      const platform = MethodChannel('com.example.cuqter/telecom');
+      await platform.invokeMethod('showIncomingCall', {
+        'name': finalCallerName,
+        'number': isVideoCall ? 'Video Call' : 'Voice Call',
+        'avatar': finalAvatarUrl,
+      });
+    } catch (e) {
+      debugPrint('Error triggering native calling: $e');
+    }
+
     await FlutterCallkitIncoming.showCallkitIncoming(params);
 
     // Show heads-up local notification with Accept and Decline actions
