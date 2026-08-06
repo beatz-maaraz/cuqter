@@ -204,6 +204,53 @@ class CloudinaryService {
     var bytes = utf8.encode(stringToSign);
     return sha1.convert(bytes).toString();
   }
+
+  /// Extract public ID from Cloudinary URL
+  static String? extractPublicId(String url) {
+    try {
+      // Find the folder marker
+      int index = url.indexOf('cuqter_media/');
+      if (index == -1) {
+        index = url.indexOf('profile/');
+      }
+      
+      if (index != -1) {
+        String sub = url.substring(index);
+        final lastDot = sub.lastIndexOf('.');
+        if (lastDot != -1) {
+          sub = sub.substring(0, lastDot);
+        }
+        return Uri.decodeFull(sub);
+      }
+      
+      // Fallback to original parsing if folder markers are not found
+      final uploadIndex = url.indexOf('/upload/');
+      if (uploadIndex != -1) {
+        String sub = url.substring(uploadIndex + 8);
+        // Skip options like q_auto,f_auto
+        List<String> segments = sub.split('/');
+        int skipCount = 0;
+        for (var segment in segments) {
+          if (segment.contains(',') || segment.contains('=') || RegExp(r'^v\d+$').hasMatch(segment)) {
+            skipCount++;
+          } else {
+            break;
+          }
+        }
+        if (skipCount < segments.length) {
+          sub = segments.sublist(skipCount).join('/');
+          final lastDot = sub.lastIndexOf('.');
+          if (lastDot != -1) {
+            sub = sub.substring(0, lastDot);
+          }
+          return Uri.decodeFull(sub);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error extracting public ID: $e');
+    }
+    return null;
+  }
 }
 
 class MultipartRequestWithProgress extends http.MultipartRequest {

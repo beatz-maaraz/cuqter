@@ -122,7 +122,7 @@ void notificationTapBackground(NotificationResponse response) async {
 
           if (roomId != null) {
             await FlutterCallkitIncoming.endCall(roomId);
-            await NotificationService.localNotifications.cancel(id: roomId.hashCode);
+            await NotificationService.localNotifications.cancel(id: roomId.hashCode & 0x7FFFFFFF);
           }
 
           if (response.actionId == 'decline_call') {
@@ -193,10 +193,37 @@ Future<void> showMessageNotification(RemoteMessage message) async {
       if (kDebugMode) {
         print('Web message received: ${message.notification?.title} - ${message.notification?.body}');
       }
+      // Show a visual notification using a SnackBar since local_notifications isn't supported on web
+      if (navigatorKey.currentContext != null) {
+        final title = message.notification?.title ?? message.data['title'] ?? 'New Message';
+        final bodyText = message.notification?.body ?? message.data['body'] ?? '';
+        
+        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                if (bodyText.isNotEmpty) Text(bodyText),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () {
+                // You can add navigation logic here if needed based on message.data
+              },
+            ),
+          ),
+        );
+      }
       return;
     }
-    await Firebase.initializeApp();
-
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp();
+    }
     final data = message.data;
 
     // Resolve title and body from the notification block if available, fallback to data payload
@@ -228,7 +255,7 @@ Future<void> showMessageNotification(RemoteMessage message) async {
         categoryIdentifier: 'friend_requests_category',
       );
       await NotificationService.localNotifications.show(
-        id: data['senderId'].hashCode,
+        id: data['senderId'].hashCode & 0x7FFFFFFF,
         title: title,
         body: body,
         notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
@@ -349,7 +376,7 @@ Future<void> showMessageNotification(RemoteMessage message) async {
 
     // Present the Notification
     await NotificationService.localNotifications.show(
-      id: message.messageId.hashCode,
+      id: message.messageId.hashCode & 0x7FFFFFFF,
       title: title,
       body: body,
       notificationDetails: NotificationDetails(
@@ -448,7 +475,7 @@ class NotificationService {
 
           if (roomId != null) {
             await FlutterCallkitIncoming.endCall(roomId);
-            await localNotifications.cancel(id: roomId.hashCode);
+            await localNotifications.cancel(id: roomId.hashCode & 0x7FFFFFFF);
           }
 
           if (response.actionId == 'decline_call') {
@@ -615,7 +642,7 @@ class NotificationService {
     );
 
     await localNotifications.show(
-      id: roomId.hashCode,
+      id: roomId.hashCode & 0x7FFFFFFF,
       title: callerName,
       body: 'Incoming ${isVideoCall ? "Video" : "Voice"} Call',
       notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
@@ -626,7 +653,7 @@ class NotificationService {
   static Future<void> cancelCallNotification(String roomId) async {
     if (kIsWeb) return;
     await FlutterCallkitIncoming.endCall(roomId);
-    await localNotifications.cancel(id: roomId.hashCode);
+    await localNotifications.cancel(id: roomId.hashCode & 0x7FFFFFFF);
   }
 
   static Future<void> initializeLocalNotifications() async {
@@ -748,7 +775,7 @@ class NotificationService {
         }
 
         if (roomId.isNotEmpty) {
-          localNotifications.cancel(id: roomId.hashCode);
+          localNotifications.cancel(id: roomId.hashCode & 0x7FFFFFFF);
         }
 
         // Ensure CallScreen can push properly
@@ -776,7 +803,7 @@ class NotificationService {
         final String roomId = params?.id ?? '';
         if (roomId.isNotEmpty) {
           FirebaseDatabase.instance.ref('calls/$roomId').remove();
-          localNotifications.cancel(id: roomId.hashCode);
+          localNotifications.cancel(id: roomId.hashCode & 0x7FFFFFFF);
         }
       }
     });
@@ -880,30 +907,29 @@ class NotificationService {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
     
+    bool isFirstFriendRequestQuery = true;
     FirebaseFirestore.instance
         .collection('friend_requests')
         .where('receiverId', isEqualTo: currentUser.uid)
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .listen((snapshot) {
+      if (isFirstFriendRequestQuery) {
+        isFirstFriendRequestQuery = false;
+        return; // Ignore existing requests on startup
+      }
       for (var change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data();
           if (data != null) {
-             final timestamp = data['timestamp'] as Timestamp?;
-             if (timestamp != null) {
-               final diff = DateTime.now().difference(timestamp.toDate());
-               if (diff.inMinutes < 2) { // Only notify if it was created recently
-                 showMessageNotification(RemoteMessage(
-                   data: {
-                     'type': 'friend_request',
-                     'senderId': data['senderId'],
-                     'title': 'New Friend Request',
-                     'body': '${data['senderName'] ?? 'Someone'} sent you a friend request',
-                   }
-                 ));
-               }
-             }
+            showMessageNotification(RemoteMessage(
+              data: {
+                'type': 'friend_request',
+                'senderId': data['senderId'],
+                'title': 'New Friend Request',
+                'body': '${data['senderName'] ?? 'Someone'} sent you a friend request',
+              }
+            ));
           }
         }
       }
@@ -925,7 +951,13 @@ class NotificationService {
       if (!kIsWeb && Platform.isIOS) {
         token = await _fcm.getAPNSToken();
       }
-      token = await _fcm.getToken();
+      if (kIsWeb) {
+        // NOTE: For web, a vapidKey is highly recommended/required. 
+        // Replace this placeholder with your actual VAPID key from the Firebase Console (Project Settings -> Cloud Messaging -> Web configuration)
+        token = await _fcm.getToken(vapidKey: "BF8MsbUwKvQ6TuATaIWu3j5V_g8vnZ5OjrRYvcHDmBlZaRvC6lqpqw0Q5At0Rj0WLq9mUjTXVfmbZbOhFPUliGg");
+      } else {
+        token = await _fcm.getToken();
+      }
 
       if (token != null) {
         await _updateTokenInFirestore(token);

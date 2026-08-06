@@ -8,12 +8,13 @@ import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
 import 'package:cuqter/Screen/camera_screen.dart';
 import 'package:cuqter/media.dart';
 import 'package:cuqter/Screen/contact_screen.dart';
+import 'package:cuqter/Account/login.dart';
+import 'package:cuqter/Screen/settings_page.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -498,39 +499,277 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
-
   Future<void> _deleteUserAccount() async {
     setState(() {
       isLoading = true;
     });
+    
+    // Capture Navigator and ScaffoldMessenger state *before* performing any asynchronous operations
+    // that could result in the widget being unmounted/disposed.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     try {
       String userId = _auth.currentUser!.uid;
 
-      // Delete user data from Firestore
+      // 1. Fetch user data (contacts, profile picture public ID)
+      DocumentSnapshot userSnap = await _firestore.collection('users').doc(userId).get();
+      Map<String, dynamic>? userData = userSnap.data() as Map<String, dynamic>?;
+
+      // 2. Delete user's profile picture from Cloudinary
+      try {
+        String? oldPublicId = userData?['cloudinary_public_id'] ?? _currentCloudinaryPublicId;
+        if (oldPublicId != null && oldPublicId.isNotEmpty) {
+          await CloudinaryService.deleteMedia(oldPublicId);
+        }
+      } catch (e) {
+        debugPrint('Error deleting user profile picture: $e');
+      }
+
+      // 3. Delete user's statuses and status media from Cloudinary
+      try {
+        final statusesSnapshot = await _firestore
+            .collection('statuses')
+            .where('uid', isEqualTo: userId)
+            .get();
+        for (var doc in statusesSnapshot.docs) {
+          try {
+            final data = doc.data();
+            final mediaUrl = data['mediaUrl'] as String?;
+            final mediaType = data['mediaType'] as String?;
+            if (mediaUrl != null && mediaUrl.isNotEmpty && mediaType != 'text') {
+              final publicId = CloudinaryService.extractPublicId(mediaUrl);
+              if (publicId != null) {
+                await CloudinaryService.deleteMedia(publicId, resourceType: mediaType ?? 'image');
+              }
+            }
+          } catch (e) {
+            debugPrint('Error deleting status media: $e');
+          }
+          
+          try {
+            // Delete related notifications
+            final statusId = doc.id;
+            final notifSnapshot = await _firestore
+                .collection('notifications')
+                .where('statusId', isEqualTo: statusId)
+                .get();
+            for (var notifDoc in notifSnapshot.docs) {
+              await notifDoc.reference.delete();
+            }
+          } catch (e) {
+            debugPrint('Error deleting status notifications: $e');
+          }
+
+          try {
+            await doc.reference.delete();
+          } catch (e) {
+            debugPrint('Error deleting status doc: $e');
+          }
+        }
+      } catch (e) {
+        debugPrint('Error querying/deleting statuses: $e');
+      }
+
+      // 3.5. Delete user likes and views on other statuses
+      try {
+        final allStatuses = await _firestore.collection('statuses').get();
+        for (var statusDoc in allStatuses.docs) {
+          final data = statusDoc.data();
+          final List<dynamic>? viewersRaw = data['viewers'] as List<dynamic>?;
+          final List<dynamic>? likesRaw = data['likes'] as List<dynamic>?;
+          
+          bool needsUpdate = false;
+          List<Map<String, dynamic>> newViewers = [];
+          List<Map<String, dynamic>> newLikes = [];
+          
+          if (viewersRaw != null) {
+            for (var v in viewersRaw) {
+              if (v is Map && v['uid'] != userId) {
+                newViewers.add(Map<String, dynamic>.from(v));
+              } else if (v is String && v != userId) {
+                newViewers.add({'uid': v, 'username': 'User', 'profilePic': '', 'viewedAt': Timestamp.now()});
+              } else if (v is Map && v['uid'] == userId) {
+                needsUpdate = true;
+              } else if (v is String && v == userId) {
+                needsUpdate = true;
+              }
+            }
+          }
+          
+          if (likesRaw != null) {
+            for (var l in likesRaw) {
+              if (l is Map && l['uid'] != userId) {
+                newLikes.add(Map<String, dynamic>.from(l));
+              } else if (l is String && l != userId) {
+                newLikes.add({'uid': l, 'username': 'User', 'profilePic': '', 'likedAt': Timestamp.now()});
+              } else if (l is Map && l['uid'] == userId) {
+                needsUpdate = true;
+              } else if (l is String && l == userId) {
+                needsUpdate = true;
+              }
+            }
+          }
+          
+          if (needsUpdate) {
+            await statusDoc.reference.update({
+              if (viewersRaw != null) 'viewers': newViewers,
+              if (likesRaw != null) 'likes': newLikes,
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint('Error cleaning up likes/views from other statuses: $e');
+      }
+
+      // 4. Remove user from other users' contacts
+      try {
+        List<dynamic> contacts = userData?['contacts'] as List<dynamic>? ?? [];
+        for (var contactId in contacts) {
+          if (contactId is String) {
+            await _firestore.collection('users').doc(contactId).update({
+              'contacts': FieldValue.arrayRemove([userId])
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint('Error removing from contacts lists: $e');
+      }
+
+      // 5. Delete friend requests sent/received by this user
+      try {
+        final sentRequests = await _firestore
+            .collection('friend_requests')
+            .where('senderId', isEqualTo: userId)
+            .get();
+        for (var doc in sentRequests.docs) {
+          await doc.reference.delete();
+        }
+
+        final receivedRequests = await _firestore
+            .collection('friend_requests')
+            .where('receiverId', isEqualTo: userId)
+            .get();
+        for (var doc in receivedRequests.docs) {
+          await doc.reference.delete();
+        }
+      } catch (e) {
+        debugPrint('Error deleting friend requests: $e');
+      }
+
+      // 6. Delete notifications sent/received by this user
+      try {
+        final sentNotifs = await _firestore
+            .collection('notifications')
+            .where('senderId', isEqualTo: userId)
+            .get();
+        for (var doc in sentNotifs.docs) {
+          await doc.reference.delete();
+        }
+
+        final receivedNotifs = await _firestore
+            .collection('notifications')
+            .where('receiverId', isEqualTo: userId)
+            .get();
+        for (var doc in receivedNotifs.docs) {
+          await doc.reference.delete();
+        }
+      } catch (e) {
+        debugPrint('Error deleting notifications: $e');
+      }
+
+      // 7. Delete chat rooms and messages containing this user, and delete message media from Cloudinary
+      try {
+        final chatsSnapshot = await _firestore.collection('chats').get();
+        for (var chatDoc in chatsSnapshot.docs) {
+          final chatId = chatDoc.id;
+          if (chatId.contains(userId)) {
+            // Get all messages under chats/chatId/messages
+            final messagesSnapshot = await chatDoc.reference.collection('messages').get();
+            for (var messageDoc in messagesSnapshot.docs) {
+              try {
+                final msgData = messageDoc.data();
+                final senderId = msgData['senderId'] as String?;
+                final type = msgData['type'] as String?;
+                final text = msgData['text'] as String?;
+                
+                // Delete media from Cloudinary if it was sent by this user and is media
+                if (senderId == userId && type != null && type != 'text' && text != null && text.isNotEmpty) {
+                  final url = text.split('|').first;
+                  final publicId = CloudinaryService.extractPublicId(url);
+                  if (publicId != null) {
+                    await CloudinaryService.deleteMedia(publicId, resourceType: type);
+                  }
+                }
+              } catch (e) {
+                debugPrint('Error deleting message media from Cloudinary: $e');
+              }
+              try {
+                await messageDoc.reference.delete();
+              } catch (e) {
+                debugPrint('Error deleting message doc: $e');
+              }
+            }
+            try {
+              await chatDoc.reference.delete();
+            } catch (e) {
+              debugPrint('Error deleting chat doc: $e');
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Error deleting chats and messages: $e');
+      }
+
+      // 8. Delete user call history subcollection
+      try {
+        final callHistorySnapshot = await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('call_history')
+            .get();
+        for (var doc in callHistorySnapshot.docs) {
+          await doc.reference.delete();
+        }
+      } catch (e) {
+        debugPrint('Error deleting call history: $e');
+      }
+
+      // 9. Clear local SharedPreferences cache
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+      } catch (e) {
+        debugPrint('Error clearing SharedPreferences cache: $e');
+      }
+
+      // 10. Delete main user document in Firestore
       await _firestore.collection('users').doc(userId).delete();
 
-      // Delete user authentication account
+      // 11. Delete Firebase Auth user
       await _auth.currentUser!.delete();
 
-      if (mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Account deleted successfully! Redirecting to login...',
-            ),
-            duration: Duration(seconds: 2),
+      // Show success message using captured messenger context
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Account deleted successfully! Redirecting to login...',
           ),
-        );
+          duration: Duration(seconds: 2),
+        ),
+      );
 
-        // Wait for 2 seconds before navigation
-        await Future.delayed(const Duration(seconds: 2));
+      // Wait for 2 seconds before navigation
+      await Future.delayed(const Duration(seconds: 2));
 
-        // Pop back to root route
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        // Sign out explicitly
-        await _auth.signOut();
-      }
+      // Explicitly redirect to Loginpage and clear the routing stack
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const Loginpage()),
+        (route) => false,
+      );
+
+      // Sign out explicitly
+      await _auth.signOut();
     } catch (e) {
       setState(() {
         isLoading = false;
@@ -557,7 +796,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final user = _auth.currentUser;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -568,6 +806,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const SettingsPage(),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    );
+                  },
+                ),
+              );
+            },
+            icon: huge.HugeIcon(
+              icon: huge.HugeIcons.strokeRoundedSettings01,
+              color: colorScheme.onSurface,
+              size: 24,
+            ),
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -844,130 +1107,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoItem(BuildContext context, String label, String value) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface.withValues(alpha: 0.5),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildColabFeatureItem(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'NEW FEATURE',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface.withValues(alpha: 0.5),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                colorScheme.primary.withValues(alpha: 0.15),
-                colorScheme.primary.withValues(alpha: 0.03),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: colorScheme.primary.withValues(alpha: 0.2),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.favorite_rounded,
-                  color: colorScheme.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Luv Colab',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Collab with other creators & matches',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Text(
-                  'Soon',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   void _showEditDialog() {
     String dialogSelectedPic = _selectedProfilePic;
     bool isChecking = false;
@@ -979,8 +1118,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          final colorScheme = Theme.of(context).colorScheme;
-
           final bool isSaveDisabled =
               isChecking ||
               usernameErrorText != null ||

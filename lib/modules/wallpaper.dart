@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum WallpaperType { color, asset, network }
+enum WallpaperType { theme, color, asset, network }
 
 class ChatWallpaper {
   final WallpaperType type;
@@ -16,11 +16,7 @@ class ChatWallpaper {
   });
 
   static List<ChatWallpaper> defaultWallpapers = [
-    ChatWallpaper(type: WallpaperType.color, color: Colors.white),
+    ChatWallpaper(type: WallpaperType.theme), // Automatically adapts to light/dark mode
     ChatWallpaper(type: WallpaperType.asset, path: 'assets/Wallpaper/1.png'),
-    ChatWallpaper(type: WallpaperType.color, color: const Color(0xFFFEF3C7)), // Amber 50
-    ChatWallpaper(type: WallpaperType.color, color: const Color(0xFFEFF6FF)), // Blue 50
-    ChatWallpaper(type: WallpaperType.color, color: const Color(0xFFF0FDF4)), // Green 50
-    ChatWallpaper(type: WallpaperType.color, color: const Color(0xFFFAF5FF)), // Purple 50
   ];
 }

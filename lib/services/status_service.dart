@@ -51,7 +51,7 @@ class StatusService {
   Future<void> deleteStatus(Status status) async {
     try {
       if (status.mediaUrl.isNotEmpty && status.mediaType != 'text') {
-        String? publicId = _extractPublicId(status.mediaUrl);
+        String? publicId = CloudinaryService.extractPublicId(status.mediaUrl);
         if (publicId != null) {
           await CloudinaryService.deleteMedia(publicId, resourceType: status.mediaType);
         }
@@ -74,7 +74,7 @@ class StatusService {
       for (var doc in snapshot.docs) {
         final status = Status.fromMap(doc.data());
         if (status.mediaUrl.isNotEmpty && status.mediaType != 'text') {
-          String? publicId = _extractPublicId(status.mediaUrl);
+          String? publicId = CloudinaryService.extractPublicId(status.mediaUrl);
           if (publicId != null) {
             await CloudinaryService.deleteMedia(publicId, resourceType: status.mediaType);
           }
@@ -99,26 +99,6 @@ class StatusService {
     } catch (e) {
       print('Error deleting notifications for status $statusId: $e');
     }
-  }
-
-  String? _extractPublicId(String url) {
-    try {
-      final uploadIndex = url.indexOf('/upload/');
-      if (uploadIndex != -1) {
-        String sub = url.substring(uploadIndex + 8);
-        if (sub.startsWith('v') && sub.contains('/')) {
-          sub = sub.substring(sub.indexOf('/') + 1);
-        }
-        final lastDot = sub.lastIndexOf('.');
-        if (lastDot != -1) {
-          sub = sub.substring(0, lastDot);
-        }
-        return Uri.decodeFull(sub);
-      }
-    } catch (e) {
-      print('Error extracting public ID: $e');
-    }
-    return null;
   }
 
   /// Mark status as seen

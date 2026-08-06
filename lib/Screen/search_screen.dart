@@ -141,15 +141,21 @@ class _SearchScreenState extends State<SearchScreen> {
                                 if (myContacts.contains(doc.id))
                                   return false; // Filter out existing friends
 
+                                var data =
+                                    doc.data() as Map<String, dynamic>?;
+                                String username = (data?['username'] ?? '')
+                                    .toString()
+                                    .toLowerCase();
+                                String name = (data?['name'] ?? '')
+                                    .toString()
+                                    .toLowerCase();
+
+                                // Exclude users without a valid name or username (e.g., deleted accounts)
+                                if (name.isEmpty || username.isEmpty) {
+                                  return false;
+                                }
+
                                 if (_searchQuery.isNotEmpty) {
-                                  var data =
-                                      doc.data() as Map<String, dynamic>?;
-                                  String username = (data?['username'] ?? '')
-                                      .toString()
-                                      .toLowerCase();
-                                  String name = (data?['name'] ?? '')
-                                      .toString()
-                                      .toLowerCase();
                                   return username.contains(_searchQuery) ||
                                       name.contains(_searchQuery);
                                 }

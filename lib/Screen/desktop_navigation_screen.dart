@@ -15,7 +15,7 @@ import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuqter/Screen/incoming_call_screen.dart';
 import 'package:cuqter/widgets/resizable_sidebar.dart';
-
+import 'package:cuqter/services/notification_service.dart';
 class DesktopNavigationScreen extends StatefulWidget {
   const DesktopNavigationScreen({super.key});
 
@@ -44,6 +44,7 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    NotificationService().initialize();
     _statusesStream = _statusService.getActiveStatuses();
     
     final currentUser = FirebaseAuth.instance.currentUser;

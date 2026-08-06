@@ -13,6 +13,7 @@ import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/widgets/floating_background_bubbles.dart';
 import 'package:cuqter/widgets/google_logo_icon.dart';
 
+
 class Sighuppage extends StatefulWidget {
   const Sighuppage({super.key});
 

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:cuqter/widgets/floating_background_bubbles.dart';
 import 'package:cuqter/widgets/google_logo_icon.dart';
 
+
 class Loginpage extends StatefulWidget {
   const Loginpage({super.key});
 

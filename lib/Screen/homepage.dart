@@ -20,6 +20,7 @@ import 'package:cuqter/Screen/search_screen.dart';
 import 'package:cuqter/Screen/contact_screen.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:cuqter/Screen/share_intent_screen.dart';
 
 class Homepage extends StatefulWidget {
   final bool isDesktop;
@@ -92,91 +93,17 @@ class _HomepageState extends State<Homepage> {
   }
 
   void _handleIncomingSharing(List<SharedMediaFile> value) {
+    if (value.isEmpty) return;
     ReceiveSharingIntent.instance.reset(); // Reset to avoid duplicate handling
-    _showShareBottomSheet(value);
-  }
-
-  void _showShareBottomSheet(List<SharedMediaFile> files) {
-    if (files.isEmpty) return;
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ShareIntentScreen(sharedFiles: value),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Share to...',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  child: Icon(
-                    Icons.history_edu,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                title: const Text('My Status'),
-                onTap: () {
-                  Navigator.pop(context);
-                  final media = files.first;
-                  final path = media.path;
-                  final isVideo = media.type == SharedMediaType.video;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CreateStatusScreen(
-                        sharedMediaPath: path,
-                        isSharedMediaVideo: isVideo,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.secondaryContainer,
-                  child: Icon(
-                    Icons.chat_bubble,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                ),
-                title: const Text('A Chat'),
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _sharedFiles = files;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Received ${files.length} file(s). Select a chat below to share.',
-                      ),
-                      duration: const Duration(seconds: 4),
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
     );
   }
+
+
 
   Stream<int> _getUnreadCountStream(String chatId, String currentUserId) {
     return _unreadCountStreams.putIfAbsent(
@@ -566,117 +493,7 @@ class _HomepageState extends State<Homepage> {
                                 size: 24,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            // More vert popup menu
-                            PopupMenuButton<String>(
-                              onSelected: (value) {
-                                if (value == 'settings') {
-                                  if (widget.isDesktop) {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => Dialog(
-                                        clipBehavior: Clip.antiAlias,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            24,
-                                          ),
-                                        ),
-                                        child: SizedBox(
-                                          width: 500,
-                                          height: 650,
-                                          child: Navigator(
-                                            onGenerateRoute: (settings) =>
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      const SettingsPage(
-                                                        isDialog: true,
-                                                      ),
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    Navigator.push(
-                                      context,
-                                      PageRouteBuilder(
-                                        pageBuilder:
-                                            (
-                                              context,
-                                              animation,
-                                              secondaryAnimation,
-                                            ) => const SettingsPage(),
-                                        transitionsBuilder:
-                                            (
-                                              context,
-                                              animation,
-                                              secondaryAnimation,
-                                              child,
-                                            ) {
-                                              return FadeTransition(
-                                                opacity: animation,
-                                                child: child,
-                                              );
-                                            },
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              color: colorScheme.surfaceContainerHighest,
-                              elevation: 8,
-                              shadowColor: Colors.black.withValues(alpha: 0.2),
-                              offset: const Offset(0, 44),
-                              icon: huge.HugeIcon(
-                                icon: huge.HugeIcons.strokeRoundedMoreVertical,
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.7,
-                                ),
-                                size: 24,
-                              ),
-                              itemBuilder: (context) => [
-                                PopupMenuItem<String>(
-                                  value: 'settings',
-                                  height: 56,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.secondary
-                                              .withValues(alpha: 0.12),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: huge.HugeIcon(
-                                          icon: huge
-                                              .HugeIcons
-                                              .strokeRoundedSettings01,
-                                          color: colorScheme.secondary,
-                                          size: 22,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 14),
-                                      Text(
-                                        'Settings',
-                                        style: TextStyle(
-                                          color: colorScheme.onSurface,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+
                           ],
                         ),
                       ],
@@ -1674,7 +1491,7 @@ class _AnimatedNotificationBellState extends State<AnimatedNotificationBell>
             if (hasAny) {
               if (!_hasNotifications) {
                 _hasNotifications = true;
-                _controller.repeat(); // Loop cleanly without reversing
+                _controller.forward(from: 0.0); // Play animation only once
               }
             } else {
               _hasNotifications = false;
