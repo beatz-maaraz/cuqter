@@ -1,6 +1,6 @@
 import 'package:cuqter/Account/login.dart';
-import 'package:cuqter/Screen/navigation_screen.dart';
-import 'package:cuqter/Screen/desktop_navigation_screen.dart';
+import 'package:cuqter/Screen/home/navigation_screen.dart';
+import 'package:cuqter/Screen/home/desktop_navigation_screen.dart';
 import 'package:cuqter/responsive/responsive_layout.dart';
 import 'package:cuqter/providers/chat_provider.dart';
 import 'package:cuqter/providers/theme_provider.dart';
@@ -10,6 +10,8 @@ import 'package:cuqter/services/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cuqter/services/biometric_service.dart';
+import 'package:cuqter/Screen/settings/app_lock_screen.dart';
 import 'firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,11 +30,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Optimize RAM usage by setting maximum image cache bounds
+  PaintingBinding.instance.imageCache.maximumSize = 100;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50 MB
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await BiometricService.isAppLockEnabled();
   }
   runApp(
     MultiProvider(
@@ -121,24 +129,95 @@ class MainApp extends StatelessWidget {
           ),
         );
       },
-      home: StreamBuilder(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.active) {
-            if (snapshot.hasData) {
+      home: AppLockWrapper(
+        child: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          initialData: FirebaseAuth.instance.currentUser,
+          builder: (context, snapshot) {
+            if (snapshot.hasData || FirebaseAuth.instance.currentUser != null) {
               return const ResponsiveLayout(
                 mobileLayout: NavigationScreen(),
                 desktopLayout: DesktopNavigationScreen(),
               );
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox.shrink();
             }
             return const Loginpage();
-          }
-          return const _StartupSplashScreen();
-        },
+          },
+        ),
       ),
     );
+  }
+}
+
+class AppLockWrapper extends StatefulWidget {
+  final Widget child;
+  const AppLockWrapper({super.key, required this.child});
+
+  @override
+  State<AppLockWrapper> createState() => _AppLockWrapperState();
+}
+
+class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObserver {
+  late bool _isLocked;
+  bool _isPaused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _isLocked = BiometricService.appLockEnabled && FirebaseAuth.instance.currentUser != null;
+    _checkAppLock();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _isPaused = true;
+    } else if (state == AppLifecycleState.resumed) {
+      if (_isPaused && !_isLocked) {
+        _isPaused = false;
+        _checkAppLock();
+      }
+    }
+  }
+
+  Future<void> _checkAppLock() async {
+    if (BiometricService.isAuthenticating) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final isLockEnabled = await BiometricService.isAppLockEnabled();
+    if (mounted) {
+      setState(() {
+        _isLocked = isLockEnabled;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLocked) {
+      return AppLockScreen(
+        onUnlocked: () {
+          if (mounted) {
+            setState(() {
+              _isLocked = false;
+              _isPaused = false;
+            });
+          }
+        },
+      );
+    }
+    return widget.child;
   }
 }
 
@@ -201,15 +280,6 @@ class _StartupSplashScreen extends StatelessWidget {
                     color: Colors.white,
                     letterSpacing: -0.5,
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Color(0xFF0057C3),
                 ),
               ),
             ],

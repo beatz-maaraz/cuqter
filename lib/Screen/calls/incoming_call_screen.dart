@@ -6,9 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hugeicons/hugeicons.dart' as huge;
-import 'call_screen.dart';
-import 'chat_screen.dart';
-import '../services/message_service.dart';
+import 'package:cuqter/Screen/calls/call_screen.dart';
+import 'package:cuqter/Screen/chat/chat_screen.dart';
+import 'package:cuqter/services/message_service.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final String callerName;

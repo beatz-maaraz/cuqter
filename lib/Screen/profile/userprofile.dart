@@ -3,7 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../widgets/full_screen_profile_pic_page.dart';
+import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;

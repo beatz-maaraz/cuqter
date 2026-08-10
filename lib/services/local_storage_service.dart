@@ -161,24 +161,18 @@ class LocalStorageService {
       final file = File(localPath);
       final sink = file.openWrite();
 
-      await response.stream.listen(
-        (chunk) {
-          downloaded += chunk.length;
-          if (total > 0) {
-            onProgress(downloaded / total);
-          }
-          sink.add(chunk);
-        },
-        onDone: () async {
-          await sink.flush();
-          await sink.close();
-          debugPrint('File downloaded and saved at: $localPath');
-        },
-        onError: (e) {
-          debugPrint('Stream error in download: $e');
-        },
-        cancelOnError: true,
-      ).asFuture();
+      await for (final chunk in response.stream) {
+        downloaded += chunk.length;
+        if (total > 0) {
+          onProgress(downloaded / total);
+        }
+        sink.add(chunk);
+      }
+      await sink.flush();
+      await sink.close();
+      client.close();
+
+      debugPrint('File downloaded and saved at: $localPath');
 
       // Check if file was written successfully
       if (await file.exists() && await file.length() > 0) {

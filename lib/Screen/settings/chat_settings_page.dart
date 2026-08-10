@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
-import '../widgets/chat_message_text.dart';
-import '../modules/wallpaper.dart';
+import 'package:cuqter/widgets/chat_message_text.dart';
+import 'package:cuqter/modules/wallpaper.dart';
 
 class ChatSettingsPage extends StatefulWidget {
   const ChatSettingsPage({super.key});
@@ -24,6 +24,61 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
     _loadPreferences();
   }
 
+  String _getDensityLabel(double size) {
+    if (size <= 14.5) return 'Small';
+    if (size <= 18.5) return 'Medium';
+    return 'Large';
+  }
+
+  Widget _buildDensityOption(String label, double size) {
+    final colorScheme = Theme.of(context).colorScheme;
+    bool isSelected = (_fontSize - size).abs() < 1.5;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _fontSize = size;
+          });
+          _savePreference('chat_font_size', size);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.onSurface.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.onSurface.withValues(alpha: 0.1),
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: label == 'Small'
+                      ? 12
+                      : label == 'Medium'
+                          ? 14
+                          : 16,
+                  color: isSelected
+                      ? Colors.white
+                      : colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _loadPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -31,7 +86,7 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
         _wallpaperIndex = prefs.getInt('global_wallpaper_index') ?? 0;
         _enterIsSend = prefs.getBool('chat_enter_is_send') ?? false;
         _saveToGallery = prefs.getBool('chat_save_to_gallery') ?? false;
-        _fontSize = prefs.getDouble('chat_font_size') ?? 20.0;
+        _fontSize = prefs.getDouble('chat_font_size') ?? 17.0;
         _isLoading = false;
       });
     } catch (e) {
@@ -184,7 +239,7 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                _buildSectionLabel('TEXT SIZE'),
+                _buildSectionLabel('TEXT DENSITY'),
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
@@ -260,14 +315,14 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Chat Font Size',
+                            'Chat Text Density',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: colorScheme.onSurface,
                             ),
                           ),
                           Text(
-                            '${_fontSize.toInt()} px',
+                            _getDensityLabel(_fontSize),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.primary,
@@ -275,27 +330,14 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
-                          Text('A', style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withValues(alpha: 0.5))),
-                          Expanded(
-                            child: Slider(
-                              value: _fontSize,
-                              min: 12.0,
-                              max: 30.0,
-                              divisions: 18,
-                              label: '${_fontSize.toInt()}',
-                              activeColor: colorScheme.primary,
-                              onChanged: (val) {
-                                setState(() {
-                                  _fontSize = val;
-                                });
-                                _savePreference('chat_font_size', val);
-                              },
-                            ),
-                          ),
-                          Text('A', style: TextStyle(fontSize: 24, color: colorScheme.onSurface.withValues(alpha: 0.8), fontWeight: FontWeight.bold)),
+                          _buildDensityOption('Small', 14.0),
+                          const SizedBox(width: 8),
+                          _buildDensityOption('Medium', 17.0),
+                          const SizedBox(width: 8),
+                          _buildDensityOption('Large', 20.0),
                         ],
                       ),
                     ],

@@ -1,3 +1,4 @@
+import 'package:cuqter/Screen/profile/profilemanage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cuqter/providers/theme_provider.dart';
@@ -5,9 +6,11 @@ import 'package:cuqter/resources/auth_method.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cuqter/Screen/profile_screen.dart';
-import 'package:cuqter/Screen/chat_settings_page.dart';
-import 'package:cuqter/Screen/about_page.dart';
+import 'package:cuqter/Screen/profile/profile_screen.dart';
+import 'package:cuqter/Screen/settings/chat_settings_page.dart';
+import 'package:cuqter/Screen/settings/security_settings_page.dart';
+import 'package:cuqter/Screen/settings/notification_settings_page.dart';
+import 'package:cuqter/Screen/settings/about_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 
@@ -136,22 +139,36 @@ class _SettingsPageState extends State<SettingsPage> {
                 _buildGroupedSection(children: [
                    _buildSettingsTile(
                     icon: huge.HugeIcons.strokeRoundedUser,
-                    title: 'Profile',
-                    subtitle: 'Manage your public identity',
-                    onTap: () {},
+                    title: 'Profile Manage',
+                    subtitle: 'Identity, privacy & blocked friends',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileManage()),
+                      ).then((_) => _loadUserData());
+                    },
                   ),
                   _buildSettingsTile(
                     icon: huge.HugeIcons.strokeRoundedNotification01,
                     title: 'Notifications',
                     subtitle: 'Tone and frequency control',
-                    trailing: _buildBadge(context, '3 Active'),
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const NotificationSettingsPage()),
+                      );
+                    },
                   ),
                    _buildSettingsTile(
                      icon: huge.HugeIcons.strokeRoundedSecurityValidation,
                      title: 'Security',
                      subtitle: 'Authentication and privacy',
-                     onTap: () {},
+                     onTap: () {
+                       Navigator.push(
+                         context,
+                         MaterialPageRoute(builder: (context) => const SecuritySettingsPage()),
+                       );
+                     },
                    ),
                    _buildSettingsTile(
                      icon: huge.HugeIcons.strokeRoundedBubbleChat,

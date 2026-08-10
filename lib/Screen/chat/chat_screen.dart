@@ -20,20 +20,20 @@ import 'package:file_picker/file_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'camera_screen.dart';
-import '../widgets/animated_send_button.dart';
-import '../widgets/chat_message_text.dart';
-import '../widgets/inline_audio_player.dart';
-import '../widgets/full_screen_profile_pic_page.dart';
+import 'package:cuqter/Screen/media/camera_screen.dart';
+import 'package:cuqter/widgets/animated_send_button.dart';
+import 'package:cuqter/widgets/chat_message_text.dart';
+import 'package:cuqter/widgets/inline_audio_player.dart';
+import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'full_screen_video_page.dart';
-import 'userprofile.dart';
-import '../services/message_service.dart';
-import 'call_screen.dart';
-import '../services/cloudinary_service.dart';
-import '../services/local_storage_service.dart';
-import '../media.dart';
-import '../modules/wallpaper.dart';
+import 'package:cuqter/Screen/media/full_screen_video_page.dart';
+import 'package:cuqter/Screen/profile/userprofile.dart';
+import 'package:cuqter/services/message_service.dart';
+import 'package:cuqter/Screen/calls/call_screen.dart';
+import 'package:cuqter/services/cloudinary_service.dart';
+import 'package:cuqter/services/local_storage_service.dart';
+import 'package:cuqter/media.dart';
+import 'package:cuqter/modules/wallpaper.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -67,7 +67,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _enterIsSend = false;
   bool _hasText = false;
-  double _fontSize = 20.0;
+  double _fontSize = 17.0;
   bool _isAttachmentMenuOpen = false;
   bool _isUploading = false;
   bool _uploadCancelled = false;
@@ -92,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
         _enterIsSend = prefs.getBool('chat_enter_is_send') ?? false;
-        _fontSize = prefs.getDouble('chat_font_size') ?? 20.0;
+        _fontSize = prefs.getDouble('chat_font_size') ?? 17.0;
       });
     } catch (_) {}
   }
@@ -1031,12 +1031,16 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ? (data['profilepic'].toString().startsWith(
                                         'http',
                                       )
-                                      ? CachedNetworkImageProvider(
-                                          data['profilepic'].toString(),
+                                      ? ResizeImage(
+                                          CachedNetworkImageProvider(
+                                            data['profilepic'].toString(),
+                                          ),
+                                          width: 160,
+                                          height: 160,
                                         )
                                       : AssetImage(
-                                              data['profilepic'].toString(),
-                                            )
+                                          data['profilepic'].toString(),
+                                        )
                                             as ImageProvider)
                                 : const AssetImage('assets/icon/default_profile.png'),
                           ),

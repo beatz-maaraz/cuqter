@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:cuqter/Screen/chat_screen.dart';
-import 'package:cuqter/Screen/create_status_screen.dart';
+import 'package:cuqter/Screen/chat/chat_screen.dart';
+import 'package:cuqter/Screen/status/create_status_screen.dart';
 
 class ShareIntentScreen extends StatefulWidget {
   final List<SharedMediaFile> sharedFiles;
@@ -28,6 +28,7 @@ class _ShareIntentScreenState extends State<ShareIntentScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final currentUserId = _auth.currentUser?.uid;
 
     return Scaffold(
       appBar: AppBar(
@@ -40,25 +41,44 @@ class _ShareIntentScreenState extends State<ShareIntentScreen> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _usersStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: currentUserId != null
+                  ? _firestore.collection('users').doc(currentUserId).snapshots()
+                  : null,
+              builder: (context, userSnapshot) {
+                if (userSnapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No users found'));
+                List<dynamic> myContacts = [];
+                if (userSnapshot.hasData && userSnapshot.data?.exists == true) {
+                  var myData =
+                      userSnapshot.data!.data() as Map<String, dynamic>?;
+                  if (myData != null) {
+                    myContacts = myData['contacts'] as List<dynamic>? ?? [];
+                  }
                 }
 
-                var users = snapshot.data!.docs.where((doc) {
-                  if (_auth.currentUser == null) return false;
-                  return doc.id != _auth.currentUser!.uid;
-                }).toList();
+                return StreamBuilder<QuerySnapshot>(
+                  stream: _usersStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                if (users.isEmpty) {
-                  return const Center(child: Text('No other users found'));
-                }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(child: Text('No friends found'));
+                    }
+
+                    var users = snapshot.data!.docs.where((doc) {
+                      if (_auth.currentUser == null) return false;
+                      if (doc.id == _auth.currentUser!.uid) return false;
+                      return myContacts.contains(doc.id);
+                    }).toList();
+
+                    if (users.isEmpty) {
+                      return const Center(child: Text('No friends found'));
+                    }
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(16.0),
@@ -121,8 +141,10 @@ class _ShareIntentScreenState extends State<ShareIntentScreen> {
                   },
                 );
               },
-            ),
-          ),
+            );
+          },
+        ),
+      ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: SizedBox(

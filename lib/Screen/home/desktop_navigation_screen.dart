@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cuqter/Screen/chat_screen.dart';
-import 'package:cuqter/Screen/chatai.dart';
-import 'package:cuqter/Screen/create_status_screen.dart';
-import 'package:cuqter/Screen/homepage.dart';
-import 'package:cuqter/Screen/profile_screen.dart';
-import 'package:cuqter/Screen/status_view_screen.dart';
-import 'package:cuqter/Screen/calls_history_page.dart';
+import 'package:cuqter/Screen/chat/chat_screen.dart';
+import 'package:cuqter/Screen/chat/chatai.dart';
+import 'package:cuqter/Screen/status/create_status_screen.dart';
+import 'package:cuqter/Screen/home/homepage.dart';
+import 'package:cuqter/Screen/profile/profile_screen.dart';
+import 'package:cuqter/Screen/status/status_view_screen.dart';
+import 'package:cuqter/Screen/calls/calls_history_page.dart';
 import 'package:cuqter/modules/status.dart';
 import 'package:cuqter/services/status_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,7 +13,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cuqter/Screen/incoming_call_screen.dart';
+import 'package:cuqter/Screen/calls/incoming_call_screen.dart';
 import 'package:cuqter/widgets/resizable_sidebar.dart';
 import 'package:cuqter/services/notification_service.dart';
 class DesktopNavigationScreen extends StatefulWidget {

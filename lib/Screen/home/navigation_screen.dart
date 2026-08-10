@@ -1,16 +1,16 @@
-import 'package:cuqter/Screen/profile_screen.dart';
+import 'package:cuqter/Screen/profile/profile_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuqter/services/update_service.dart';
 import 'package:cuqter/services/notification_service.dart';
 import 'package:cuqter/widgets/update_dialog.dart';
-import 'package:cuqter/Screen/calls_history_page.dart';
+import 'package:cuqter/Screen/calls/calls_history_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:cuqter/Screen/homepage.dart';
-import 'package:cuqter/Screen/incoming_call_screen.dart';
+import 'package:cuqter/Screen/home/homepage.dart';
+import 'package:cuqter/Screen/calls/incoming_call_screen.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/services/web_lifecycle.dart';
 
@@ -310,7 +310,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
                               colorScheme.primary.withValues(alpha: 0.1),
                           backgroundImage: profilePic.isNotEmpty
                               ? (profilePic.startsWith('http')
-                                  ? CachedNetworkImageProvider(profilePic)
+                                  ? ResizeImage(
+                                      CachedNetworkImageProvider(profilePic),
+                                      width: 120,
+                                      height: 120,
+                                    )
                                   : AssetImage(profilePic) as ImageProvider)
                               : const AssetImage(
                                   'assets/icon/default_profile.png'),

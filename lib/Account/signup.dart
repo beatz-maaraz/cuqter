@@ -6,7 +6,7 @@ import 'package:cuqter/utils/picker.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cuqter/Screen/camera_screen.dart';
+import 'package:cuqter/Screen/media/camera_screen.dart';
 import 'package:cuqter/media.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;

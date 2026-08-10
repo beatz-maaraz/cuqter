@@ -11,7 +11,7 @@ import 'package:cuqter/services/status_service.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/media.dart';
-import 'package:cuqter/Screen/camera_screen.dart';
+import 'package:cuqter/Screen/media/camera_screen.dart';
 
 class CreateStatusScreen extends StatefulWidget {
   final String? sharedMediaPath;

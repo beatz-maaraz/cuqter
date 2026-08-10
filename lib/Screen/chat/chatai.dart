@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/providers/chat_provider.dart';
-import '../widgets/animated_send_button.dart';
-import '../widgets/chat_message_text.dart';
+import 'package:cuqter/widgets/animated_send_button.dart';
+import 'package:cuqter/widgets/chat_message_text.dart';
 
 class AIChatScreen extends StatefulWidget {
   final bool isDesktop;

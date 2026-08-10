@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
-import 'package:cuqter/Screen/userprofile.dart';
+import 'package:cuqter/Screen/profile/userprofile.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -275,8 +275,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                                   ? (profilePic.startsWith(
                                                               'http',
                                                             )
-                                                            ? CachedNetworkImageProvider(
-                                                                profilePic,
+                                                            ? ResizeImage(
+                                                                CachedNetworkImageProvider(
+                                                                  profilePic,
+                                                                ),
+                                                                width: 160,
+                                                                height: 160,
                                                               )
                                                             : AssetImage(
                                                                 profilePic,

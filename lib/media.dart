@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/services/local_storage_service.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
-import 'package:cuqter/Screen/camera_screen.dart';
+import 'package:cuqter/Screen/media/camera_screen.dart';
 
 // Model for assets matching Figma prototype
 class AppAsset {

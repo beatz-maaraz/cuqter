@@ -8,7 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cuqter/services/status_service.dart';
 import 'package:cuqter/services/message_service.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cuqter/Screen/userprofile.dart';
+import 'package:cuqter/Screen/profile/userprofile.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cached_network_image/cached_network_image.dart';

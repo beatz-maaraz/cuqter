@@ -8,7 +8,7 @@ import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
-import '../services/signaling_service.dart';
+import 'package:cuqter/services/signaling_service.dart';
 
 class CallScreen extends StatefulWidget {
   final String? roomId;

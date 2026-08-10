@@ -3,7 +3,7 @@ import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cuqter/Screen/userprofile.dart';
+import 'package:cuqter/Screen/profile/userprofile.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -15,6 +15,42 @@ class NotificationScreen extends StatefulWidget {
 class _NotificationScreenState extends State<NotificationScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _markNotificationsAsRead();
+  }
+
+  Future<void> _markNotificationsAsRead() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+    try {
+      final unreadNotifs = await _firestore
+          .collection('notifications')
+          .where('receiverId', isEqualTo: currentUser.uid)
+          .get();
+
+      final batch = _firestore.batch();
+      bool needsBatch = false;
+      for (var doc in unreadNotifs.docs) {
+        final data = doc.data();
+        if (data['isRead'] != true) {
+          batch.update(doc.reference, {'isRead': true});
+          needsBatch = true;
+        }
+      }
+      if (needsBatch) {
+        await batch.commit();
+      }
+
+      await _firestore.collection('users').doc(currentUser.uid).set({
+        'lastNotificationSeen': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error marking notifications as read: $e');
+    }
+  }
 
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return '';

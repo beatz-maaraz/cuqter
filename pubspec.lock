@@ -526,38 +526,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_background_service:
-    dependency: "direct main"
-    description:
-      name: flutter_background_service
-      sha256: "70a1c185b1fa1a44f8f14ecd6c86f6e50366e3562f00b2fa5a54df39b3324d3d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.1.0"
-  flutter_background_service_android:
-    dependency: "direct main"
-    description:
-      name: flutter_background_service_android
-      sha256: ca0793d4cd19f1e194a130918401a3d0b1076c81236f7273458ae96987944a87
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.3.1"
-  flutter_background_service_ios:
-    dependency: transitive
-    description:
-      name: flutter_background_service_ios
-      sha256: "6037ffd45c4d019dab0975c7feb1d31012dd697e25edc05505a4a9b0c7dc9fba"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.0.3"
-  flutter_background_service_platform_interface:
-    dependency: transitive
-    description:
-      name: flutter_background_service_platform_interface
-      sha256: ca74aa95789a8304f4d3f57f07ba404faa86bed6e415f83e8edea6ad8b904a41
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.1.2"
   flutter_cache_manager:
     dependency: transitive
     description:
@@ -984,6 +952,46 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  local_auth:
+    dependency: "direct main"
+    description:
+      name: local_auth
+      sha256: ecf24edf2283c509ecd217e3595f6f71034b68888d28ad1dae6bfa0857b816ac
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
+  local_auth_android:
+    dependency: transitive
+    description:
+      name: local_auth_android
+      sha256: fdb936d59ab945c7af297defd67bd1ed87b11b6db1bc16d01e94677a8f1c38ec
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.9"
+  local_auth_darwin:
+    dependency: transitive
+    description:
+      name: local_auth_darwin
+      sha256: a8c3d4e17454111f7fd31ff72a31222359f6059f7fe956c2dcfe0f88f49826d4
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
+  local_auth_platform_interface:
+    dependency: transitive
+    description:
+      name: local_auth_platform_interface
+      sha256: f98b8e388588583d3f781f6806e4f4c9f9e189d898d27f0c249b93a1973dd122
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
+  local_auth_windows:
+    dependency: transitive
+    description:
+      name: local_auth_windows
+      sha256: be12c5b8ba5e64896983123655c5f67d2484ecfcc95e367952ad6e3bff94cb16
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   logger:
     dependency: transitive
     description:
