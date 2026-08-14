@@ -1,7 +1,7 @@
 name: cuqter
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.4.21+6
+version: 1.4.22+7
 
 environment:
   sdk: ^3.11.1

@@ -25,7 +25,7 @@ import 'package:cuqter/Screen/chat/share_intent_screen.dart';
 class Homepage extends StatefulWidget {
   final bool isDesktop;
   final String? selectedUserId;
-  final Function(String userId, String userName)? onChatSelected;
+  final Function(String userId, String userName, String? profilePic, bool? isOnline)? onChatSelected;
 
   const Homepage({
     super.key,
@@ -734,7 +734,12 @@ class _HomepageState extends State<Homepage> {
                                 } else {
                                   if (widget.isDesktop &&
                                       widget.onChatSelected != null) {
-                                    widget.onChatSelected!(userId, userName);
+                                    widget.onChatSelected!(
+                                      userId,
+                                      userName,
+                                      userData['profilepic']?.toString(),
+                                      isOnline,
+                                    );
                                   } else {
                                     Navigator.push(
                                       context,
@@ -761,6 +766,8 @@ class _HomepageState extends State<Homepage> {
                                               return ChatScreen(
                                                 receiverId: userId,
                                                 receiverName: userName,
+                                                receiverProfilePic: userData['profilepic']?.toString(),
+                                                receiverIsOnline: isOnline,
                                                 sharedMedia:
                                                     currentShared.isNotEmpty
                                                     ? currentShared

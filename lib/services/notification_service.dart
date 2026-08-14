@@ -445,6 +445,7 @@ class NotificationService {
               builder: (context) => ChatScreen(
                 receiverId: senderId,
                 receiverName: senderName,
+                receiverProfilePic: data['profilePic'] ?? data['profilepic'],
               ),
             ),
           );

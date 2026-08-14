@@ -402,6 +402,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                 ),
                 Expanded(
                   child: TabBarView(
+                    physics: const NeverScrollableScrollPhysics(),
                     children: [
                       // Viewers Tab
                       _buildViewersTab(status),

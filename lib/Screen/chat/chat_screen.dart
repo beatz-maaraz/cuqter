@@ -40,6 +40,8 @@ class ChatScreen extends StatefulWidget {
   final String receiverName;
   final bool isDesktop;
   final List<SharedMediaFile>? sharedMedia;
+  final String? receiverProfilePic;
+  final bool? receiverIsOnline;
 
   const ChatScreen({
     Key? key,
@@ -47,6 +49,8 @@ class ChatScreen extends StatefulWidget {
     required this.receiverName,
     this.isDesktop = false,
     this.sharedMedia,
+    this.receiverProfilePic,
+    this.receiverIsOnline,
   }) : super(key: key);
 
   @override
@@ -65,7 +69,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Stream<DocumentSnapshot>? _receiverStream;
   bool _showEmojiPicker = false;
   final FocusNode _focusNode = FocusNode();
-  bool _enterIsSend = false;
+  bool _alwaysShowSend = false;
   bool _hasText = false;
   double _fontSize = 17.0;
   bool _isAttachmentMenuOpen = false;
@@ -91,7 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
-        _enterIsSend = prefs.getBool('chat_enter_is_send') ?? false;
+        _alwaysShowSend = prefs.getBool('chat_always_show_send') ?? false;
         _fontSize = prefs.getDouble('chat_font_size') ?? 17.0;
       });
     } catch (_) {}
@@ -928,7 +932,7 @@ class _ChatScreenState extends State<ChatScreen> {
         title: StreamBuilder<DocumentSnapshot>(
           stream: _receiverStream,
           builder: (context, snapshot) {
-            String status = 'Offline';
+            String status = (widget.receiverIsOnline ?? false) ? 'Active Now' : 'Offline';
             Map<String, dynamic>? data;
             if (snapshot.hasData && snapshot.data!.exists) {
               data = snapshot.data!.data() as Map<String, dynamic>?;
@@ -958,7 +962,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           name: widget.receiverName,
                           username: data?['username']?.toString() ?? '',
                           bio: data?['bio']?.toString() ?? '',
-                          profilepic: data?['profilepic']?.toString() ?? '',
+                          profilepic: data?['profilepic']?.toString() ?? widget.receiverProfilePic ?? '',
                         ),
                       ),
                     ),
@@ -972,7 +976,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         name: widget.receiverName,
                         username: data?['username']?.toString() ?? '',
                         bio: data?['bio']?.toString() ?? '',
-                        profilepic: data?['profilepic']?.toString() ?? '',
+                        profilepic: data?['profilepic']?.toString() ?? widget.receiverProfilePic ?? '',
                       ),
                     ),
                   );
@@ -983,7 +987,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      final pic = data?['profilepic']?.toString() ?? '';
+                      final pic = data?['profilepic']?.toString() ?? widget.receiverProfilePic ?? '';
                       if (pic.isNotEmpty) {
                         if (widget.isDesktop) {
                           showDialog(
@@ -1025,27 +1029,37 @@ class _ChatScreenState extends State<ChatScreen> {
                           child: CircleAvatar(
                             backgroundColor: colorScheme.primaryContainer,
                             backgroundImage:
-                                data != null &&
-                                    data['profilepic'] != null &&
-                                    data['profilepic'].toString().isNotEmpty
-                                ? (data['profilepic'].toString().startsWith(
-                                        'http',
-                                      )
-                                      ? ResizeImage(
-                                          CachedNetworkImageProvider(
+                                (data != null &&
+                                        data['profilepic'] != null &&
+                                        data['profilepic'].toString().isNotEmpty)
+                                    ? (data['profilepic'].toString().startsWith('http')
+                                        ? ResizeImage(
+                                            CachedNetworkImageProvider(
+                                              data['profilepic'].toString(),
+                                            ),
+                                            width: 160,
+                                            height: 160,
+                                          )
+                                        : AssetImage(
                                             data['profilepic'].toString(),
-                                          ),
-                                          width: 160,
-                                          height: 160,
-                                        )
-                                      : AssetImage(
-                                          data['profilepic'].toString(),
-                                        )
-                                            as ImageProvider)
-                                : const AssetImage('assets/icon/default_profile.png'),
+                                          ) as ImageProvider)
+                                    : (widget.receiverProfilePic != null &&
+                                            widget.receiverProfilePic!.isNotEmpty)
+                                        ? (widget.receiverProfilePic!.startsWith('http')
+                                            ? ResizeImage(
+                                                CachedNetworkImageProvider(
+                                                  widget.receiverProfilePic!,
+                                                ),
+                                                width: 160,
+                                                height: 160,
+                                              )
+                                            : AssetImage(
+                                                widget.receiverProfilePic!,
+                                              ) as ImageProvider)
+                                        : const AssetImage('assets/icon/default_profile.png'),
                           ),
                         ),
-                        if (data != null && data['isOnline'] == true)
+                        if (data != null ? data['isOnline'] == true : (widget.receiverIsOnline == true))
                           Positioned(
                             bottom: 0,
                             right: 0,
@@ -2011,7 +2025,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               controller: _messageController,
                               style: TextStyle(color: colorScheme.onSurface),
                               onSubmitted: (value) {
-                                if (_enterIsSend) {
+                                if (value.trim().isNotEmpty) {
                                   sendMessage();
                                 }
                               },
@@ -2122,7 +2136,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ValueListenableBuilder<TextEditingValue>(
                       valueListenable: _messageController,
                       builder: (context, value, child) {
-                        final hasText = value.text.trim().isNotEmpty;
+                        final showSend = _alwaysShowSend || value.text.trim().isNotEmpty;
                         return AnimatedSwitcher(
                           duration: const Duration(milliseconds: 400),
                           switchOutCurve: Curves.easeIn,
@@ -2147,7 +2161,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               ),
                             );
                           },
-                          child: hasText
+                          child: showSend
                               ? Row(
                                   key: const ValueKey('send_btn'),
                                   children: [

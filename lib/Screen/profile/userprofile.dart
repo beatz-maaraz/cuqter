@@ -30,6 +30,122 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
+  void _confirmAndBlockUser(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: huge.HugeIcon(
+                  icon: huge.HugeIcons.strokeRoundedUserBlock01,
+                  color: colorScheme.error,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Block ${widget.name}?',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Blocked users will not be able to call you, send you messages, or see your profile. They will also be removed from your friends list.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.error,
+                    foregroundColor: colorScheme.onError,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(dialogContext); // Close the dialog
+                    if (_currentUserId != null) {
+                      try {
+                        // 1. Add to blocked_users collection
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(_currentUserId)
+                            .collection('blocked_users')
+                            .doc(widget.userId)
+                            .set({
+                          'peerId': widget.userId,
+                          'blockedAt': FieldValue.serverTimestamp(),
+                        });
+
+                        // 2. Remove from contacts list (unfriend)
+                        await FirebaseFirestore.instance.collection('users').doc(_currentUserId).update({
+                          'contacts': FieldValue.arrayRemove([widget.userId])
+                        });
+                        await FirebaseFirestore.instance.collection('users').doc(widget.userId).update({
+                          'contacts': FieldValue.arrayRemove([_currentUserId])
+                        });
+
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${widget.name} has been blocked'),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to block user: $e'),
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: const Text('Block', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    foregroundColor: colorScheme.onSurface,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showCallComingSoon(BuildContext context, {required bool isVideo}) {
     final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
@@ -571,6 +687,43 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(content: Text('Failed to remove friend')),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                              onBlock: () => _confirmAndBlockUser(context),
+                              onFavorite: () async {
+                                if (_currentUserId != null) {
+                                  try {
+                                    final myDoc = await FirebaseFirestore.instance.collection('users').doc(_currentUserId).get();
+                                    final myData = myDoc.data();
+                                    final List<dynamic> favorites = myData?['favorite_contacts'] ?? [];
+                                    final isFav = favorites.contains(widget.userId);
+
+                                    if (isFav) {
+                                      await FirebaseFirestore.instance.collection('users').doc(_currentUserId).update({
+                                        'favorite_contacts': FieldValue.arrayRemove([widget.userId])
+                                      });
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Removed ${widget.name} from favorites')),
+                                        );
+                                      }
+                                    } else {
+                                      await FirebaseFirestore.instance.collection('users').doc(_currentUserId).update({
+                                        'favorite_contacts': FieldValue.arrayUnion([widget.userId])
+                                      });
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Added ${widget.name} to favorites')),
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Failed to update favorites: $e')),
                                       );
                                     }
                                   }

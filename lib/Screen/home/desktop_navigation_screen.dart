@@ -27,6 +27,8 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
   int _selectedIndex = 0;
   String? _selectedUserId;
   String? _selectedUserName;
+  String? _selectedUserProfilePic;
+  bool? _selectedUserIsOnline;
 
   final StatusService _statusService = StatusService();
   Stream<List<Status>>? _statusesStream;
@@ -275,154 +277,152 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
   }
 
   Widget _buildMainContent(BuildContext context, ColorScheme colorScheme) {
-    Widget child;
-    if (_selectedIndex == 1) {
-      child = Padding(
-        key: const ValueKey('AIChatPane'),
-        padding: const EdgeInsets.all(12.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withValues(alpha: 0.05),
-                blurRadius: 15,
-                offset: const Offset(0, 4),
+    return IndexedStack(
+      index: _selectedIndex,
+      children: [
+        // Index 0: Chats view (Pane 2 + Pane 3 + Pane 4)
+        Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              // Pane 2: Chat List (Resizable Sidebar)
+              ResizableSidebar(
+                initialWidth: 320.0,
+                minWidth: 260.0,
+                maxWidth: 480.0,
+                child: RepaintBoundary(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.shadow.withValues(alpha: 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Homepage(
+                      isDesktop: true,
+                      selectedUserId: _selectedUserId,
+                      onChatSelected: (userId, userName, profilePic, isOnline) {
+                        setState(() {
+                          _selectedUserId = userId;
+                          _selectedUserName = userName;
+                          _selectedUserProfilePic = profilePic;
+                          _selectedUserIsOnline = isOnline;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              // Pane 3: Active Chat
+              Expanded(
+                flex: 7,
+                child: RepaintBoundary(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.shadow.withValues(alpha: 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: _selectedUserId != null && _selectedUserName != null
+                    ? ChatScreen(
+                        key: ValueKey(_selectedUserId),
+                        receiverId: _selectedUserId!,
+                        receiverName: _selectedUserName!,
+                        receiverProfilePic: _selectedUserProfilePic,
+                        receiverIsOnline: _selectedUserIsOnline,
+                        isDesktop: true,
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            huge.HugeIcon(
+                              icon: huge.HugeIcons.strokeRoundedBubbleChat,
+                              color: colorScheme.onSurface.withValues(alpha: 0.2),
+                              size: 64,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Select a chat to start messaging',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // Pane 4: Statuses
+              RepaintBoundary(
+                child: Container(
+                  width: 120,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withValues(alpha: 0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: _buildStatusSidebar(context),
+                ),
               ),
             ],
           ),
-          clipBehavior: Clip.antiAlias,
-          child: const AIChatScreen(isDesktop: true),
         ),
-      );
-    } else if (_selectedIndex == 2) {
-      child = Container(
-        key: const ValueKey('CallsPane'),
-        child: const CallsHistoryPage(isActive: true),
-      );
-    } else {
-      // Chats view: Pane 2 (Chat List) + Pane 3 (Active Chat) + Pane 4 (Statuses)
-      child = Padding(
-        key: const ValueKey('ChatsPane'),
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            // Pane 2: Chat List (Resizable Sidebar)
-            ResizableSidebar(
-              initialWidth: 320.0,
-              minWidth: 260.0,
-              maxWidth: 480.0,
-              child: RepaintBoundary(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.shadow.withValues(alpha: 0.05),
-                        blurRadius: 15,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Homepage(
-                    isDesktop: true,
-                    selectedUserId: _selectedUserId,
-                    onChatSelected: (userId, userName) {
-                      setState(() {
-                        _selectedUserId = userId;
-                        _selectedUserName = userName;
-                      });
-                    },
-                  ),
-                ),
-              ),
-            ),
 
-            // Pane 3: Active Chat
-            Expanded(
-              flex: 7,
-              child: RepaintBoundary(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.shadow.withValues(alpha: 0.05),
-                        blurRadius: 15,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: _selectedUserId != null && _selectedUserName != null
-                  ? ChatScreen(
-                      key: ValueKey(_selectedUserId),
-                      receiverId: _selectedUserId!,
-                      receiverName: _selectedUserName!,
-                      isDesktop: true,
-                    )
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          huge.HugeIcon(
-                            icon: huge.HugeIcons.strokeRoundedBubbleChat,
-                            color: colorScheme.onSurface.withValues(alpha: 0.2),
-                            size: 64,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Select a chat to start messaging',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: colorScheme.onSurface.withValues(alpha: 0.5),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+        // Index 1: AI Bot pane
+        Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.shadow.withValues(alpha: 0.05),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
                 ),
-              ),
+              ],
             ),
-
-            const SizedBox(width: 16),
-
-            // Pane 4: Statuses
-            RepaintBoundary(
-              child: Container(
-                width: 120,
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.shadow.withValues(alpha: 0.05),
-                      blurRadius: 15,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: _buildStatusSidebar(context),
-              ),
-            ),
-          ],
+            clipBehavior: Clip.antiAlias,
+            child: const AIChatScreen(isDesktop: true),
+          ),
         ),
-      );
-    }
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeOut,
-      switchOutCurve: Curves.easeIn,
-      child: child,
+        // Index 2: Calls pane
+        Container(
+          child: CallsHistoryPage(isActive: _selectedIndex == 2),
+        ),
+      ],
     );
   }
 

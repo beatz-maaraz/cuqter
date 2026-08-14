@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:cuqter/Screen/settings/faq_page.dart';
+import 'package:cuqter/Screen/settings/report_problem_page.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -22,10 +25,7 @@ class AboutPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'About Cuqter',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -33,26 +33,27 @@ class AboutPage extends StatelessWidget {
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 10),
-            // Logo / Header with Glowing Gradients
+            // Logo / Header with Glowing Gradients (3D look)
             Center(
               child: Stack(
                 alignment: Alignment.center,
                 children: [
+                  // Outer glowing 3D-styled ring
                   Container(
-                    width: 130,
-                    height: 130,
+                    width: 140,
+                    height: 140,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: [
                           colorScheme.primary,
-                          colorScheme.secondary,
-                          colorScheme.tertiary,
+                          colorScheme.primary.withValues(alpha: 0.5),
+                          colorScheme.primaryContainer,
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -60,27 +61,37 @@ class AboutPage extends StatelessWidget {
                       boxShadow: [
                         BoxShadow(
                           color: colorScheme.primary.withValues(alpha: 0.3),
-                          blurRadius: 30,
-                          spreadRadius: 5,
+                          blurRadius: 25,
+                          offset: const Offset(0, 12),
+                          spreadRadius: 2,
                         ),
                       ],
                     ),
                   ),
+                  // Inner container showing official brand icon cleanly clipped
                   Container(
-                    width: 110,
-                    height: 110,
+                    width: 116,
+                    height: 116,
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'C',
-                      style: TextStyle(
-                        fontSize: 56,
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.primary,
-                        letterSpacing: -2,
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/icon/icon.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.chat_bubble_rounded,
+                          size: 56,
+                          color: colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -98,27 +109,35 @@ class AboutPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Version 1.3.20',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.primary,
-                ),
-              ),
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final versionText = snapshot.hasData
+                    ? 'Version ${snapshot.data!.version} (${snapshot.data!.buildNumber})'
+                    : 'Version 1.4.21'; // Fallback
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    versionText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 24),
             Text(
               'Cuqter is a next-generation messaging platform built to prioritize your privacy, comfort, and interactive styling. Connect seamlessly with friends, personalize your chat experience, and explore built-in AI generators.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 14,
                 height: 1.6,
                 color: colorScheme.onSurface.withValues(alpha: 0.65),
               ),
@@ -131,7 +150,7 @@ class AboutPage extends StatelessWidget {
               child: Text(
                 'CORE FEATURES',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
                   color: colorScheme.onSurface.withValues(alpha: 0.4),
@@ -161,24 +180,78 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 36),
 
-            // Legal & Open Source Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            // Support, Legal & Policy links
+            Table(
+              columnWidths: const {
+                0: FlexColumnWidth(1),
+                1: FixedColumnWidth(16),
+                2: FlexColumnWidth(1),
+              },
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
               children: [
-                TextButton(
-                  onPressed: () => _launchUrl('https://cuqter.com/terms'),
-                  child: Text(
-                    'Terms of Service',
-                    style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
-                  ),
+                TableRow(
+                  children: [
+                    Align(
+                      alignment: Alignment.center,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const FaqPage()),
+                          );
+                        },
+                        child: Text(
+                          'FAQ',
+                          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Container(width: 1, height: 16, color: colorScheme.onSurface.withValues(alpha: 0.2)),
+                    ),
+                    Align(
+                      alignment: Alignment.center,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ReportProblemPage()),
+                          );
+                        },
+                        child: Text(
+                          'Send Feedback',
+                          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                Container(width: 1, height: 16, color: colorScheme.onSurface.withValues(alpha: 0.2)),
-                TextButton(
-                  onPressed: () => _launchUrl('https://cuqter.com/privacy'),
-                  child: Text(
-                    'Privacy Policy',
-                    style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
-                  ),
+                TableRow(
+                  children: [
+                    Align(
+                      alignment: Alignment.center,
+                      child: TextButton(
+                        onPressed: () => _launchUrl('https://cuqter.com/terms'),
+                        child: Text(
+                          'Terms of Service',
+                          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Container(width: 1, height: 16, color: colorScheme.onSurface.withValues(alpha: 0.2)),
+                    ),
+                    Align(
+                      alignment: Alignment.center,
+                      child: TextButton(
+                        onPressed: () => _launchUrl('https://cuqter.com/privacy'),
+                        child: Text(
+                          'Privacy Policy',
+                          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

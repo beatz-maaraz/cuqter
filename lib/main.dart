@@ -75,14 +75,14 @@ class MainApp extends StatelessWidget {
       themeMode: themeProvider.themeMode,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
+          seedColor: themeProvider.primaryColor,
           brightness: Brightness.light,
         ).copyWith(
-          primary: AppColors.primary,
-          secondary: AppColors.secondary,
+          primary: themeProvider.primaryColor,
+          secondary: themeProvider.primaryColor.withValues(alpha: 0.2),
           surface: Colors.white,
           onSurface: AppColors.text,
-          primaryContainer: AppColors.secondary,
+          primaryContainer: themeProvider.primaryColor.withValues(alpha: 0.2),
           onPrimaryContainer: AppColors.text,
           surfaceContainerHighest: AppColors.card,
           onSurfaceVariant: AppColors.text,
@@ -94,9 +94,10 @@ class MainApp extends StatelessWidget {
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
+          seedColor: themeProvider.primaryColor,
           brightness: Brightness.dark,
         ).copyWith(
+          primary: themeProvider.primaryColor,
           surface: Colors.black,
         ),
         scaffoldBackgroundColor: Colors.black,

@@ -11,8 +11,13 @@ import 'package:cuqter/Screen/settings/chat_settings_page.dart';
 import 'package:cuqter/Screen/settings/security_settings_page.dart';
 import 'package:cuqter/Screen/settings/notification_settings_page.dart';
 import 'package:cuqter/Screen/settings/about_page.dart';
+import 'package:cuqter/Screen/settings/storage_settings_page.dart';
+import 'package:cuqter/Screen/settings/appearance_settings_page.dart';
+import 'package:cuqter/Screen/settings/network_usage_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:share_plus/share_plus.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDialog;
@@ -101,7 +106,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -181,37 +185,90 @@ class _SettingsPageState extends State<SettingsPage> {
                        );
                      },
                    ),
-                   _buildAppearanceTile(themeProvider, colorScheme),
-                ]),
-                 const SizedBox(height: 30),
-                 _buildSectionLabel(context, 'ABOUT'),
-                 const SizedBox(height: 10),
-                 _buildGroupedSection(children: [
-                   _buildSettingsTile(
-                     icon: huge.HugeIcons.strokeRoundedHelpCircle,
-                     title: 'About Cuqter',
-                     subtitle: 'Team, version, and details',
-                     onTap: () {
-                       Navigator.push(
-                         context,
-                         MaterialPageRoute(builder: (context) => const AboutPage()),
-                       );
-                     },
-                   ),
+                    _buildSettingsTile(
+                      icon: huge.HugeIcons.strokeRoundedPaintBoard,
+                      title: 'Appearance',
+                      subtitle: 'Dark mode, custom colors, text size',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AppearanceSettingsPage()),
+                        );
+                      },
+                    ),
                  ]),
+                  const SizedBox(height: 30),
+                  _buildSectionLabel(context, 'STORAGE & DATA'),
+                  const SizedBox(height: 10),
+                  _buildGroupedSection(children: [
+                    _buildSettingsTile(
+                      icon: huge.HugeIcons.strokeRoundedHardDrive,
+                      title: 'Storage & Data',
+                      subtitle: 'Network usage, cache and downloads',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const StorageSettingsPage()),
+                        );
+                      },
+                    ),
+                    _buildSettingsTile(
+                      icon: huge.HugeIcons.strokeRoundedUpload01,
+                      title: 'Network Usage',
+                      subtitle: 'Detailed messaging and calling statistics',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const NetworkUsagePage()),
+                        );
+                      },
+                    ),
+                  ]),
+                  const SizedBox(height: 30),
+                  _buildSectionLabel(context, 'ABOUT'),
+                  const SizedBox(height: 10),
+                  _buildGroupedSection(children: [
+                    _buildSettingsTile(
+                      icon: huge.HugeIcons.strokeRoundedHelpCircle,
+                      title: 'About Cuqter',
+                      subtitle: 'Help, FAQ, and app details',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AboutPage()),
+                        );
+                      },
+                    ),
+                    _buildSettingsTile(
+                      icon: huge.HugeIcons.strokeRoundedShare01,
+                      title: 'Share Cuqter',
+                      subtitle: 'Invite friends to chat on Cuqter',
+                      onTap: () {
+                        Share.share(
+                          'Hey! I am using Cuqter to chat and share media securely. Download it now to connect with me! https://cuqter.com',
+                        );
+                      },
+                    ),
+                  ]),
                  const SizedBox(height: 40),
                 _buildSignOutButton(context, colorScheme),
                 const SizedBox(height: 20),
-                Center(
-                  child: Text(
-                    'VERSION 1.3.17 • CUQTER UI',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: colorScheme.onSurface.withValues(alpha: 0.4),
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
+                 Center(
+                   child: FutureBuilder<PackageInfo>(
+                     future: PackageInfo.fromPlatform(),
+                     builder: (context, snapshot) {
+                       final version = snapshot.hasData ? snapshot.data!.version : '1.4.21';
+                       return Text(
+                         'VERSION $version • CUQTER UI',
+                         style: TextStyle(
+                           fontSize: 10,
+                           color: colorScheme.onSurface.withValues(alpha: 0.4),
+                           letterSpacing: 1.2,
+                         ),
+                       );
+                     },
+                   ),
+                 ),
                 const SizedBox(height: 20),
               ],
             ),
@@ -379,216 +436,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       trailing: trailing ?? huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedArrowRight01, size: 20, color: colorScheme.onSurface.withValues(alpha: 0.3)),
-    );
-  }
-
-  Widget _buildAppearanceTile(ThemeProvider themeProvider, ColorScheme colorScheme) {
-    String themeText;
-    List<List<dynamic>> themeIcon;
-    switch (themeProvider.themeMode) {
-      case ThemeMode.dark:
-        themeText = 'On';
-        themeIcon = huge.HugeIcons.strokeRoundedMoon02;
-        break;
-      case ThemeMode.light:
-        themeText = 'Off';
-        themeIcon = huge.HugeIcons.strokeRoundedSun02;
-        break;
-      case ThemeMode.system:
-        themeText = 'System';
-        themeIcon = huge.HugeIcons.strokeRoundedSettings02;
-        break;
-    }
-
-    return _buildSettingsTile(
-      icon: themeIcon,
-      title: 'Dark Mode',
-      subtitle: themeText,
-      iconColor: colorScheme.primary,
-      onTap: () => _showThemePicker(themeProvider, colorScheme),
-    );
-  }
-
-  void _showThemePicker(ThemeProvider themeProvider, ColorScheme colorScheme) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) => Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Appearance',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Customize how the interface looks and feels on your device.',
-              style: TextStyle(
-                color: colorScheme.onSurface.withValues(alpha: 0.6),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.onSurface.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Column(
-                children: [
-                  _buildThemeOption(
-                    sheetContext,
-                    themeProvider, 
-                    ThemeMode.light, 
-                    'Off', 
-                    'Classic light theme', 
-                    huge.HugeIcons.strokeRoundedSun02,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildThemeOption(
-                    sheetContext,
-                    themeProvider, 
-                    ThemeMode.dark, 
-                    'On', 
-                    'Easy on the eyes', 
-                    huge.HugeIcons.strokeRoundedMoon02,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildThemeOption(
-                    sheetContext,
-                    themeProvider, 
-                    ThemeMode.system, 
-                    'Use System', 
-                    'Sync with device settings', 
-                    huge.HugeIcons.strokeRoundedSettings02,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildThemeOption(BuildContext sheetContext, ThemeProvider themeProvider, ThemeMode mode, String title, String subtitle, List<List<dynamic>> icon) {
-    bool isSelected = themeProvider.themeMode == mode;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(sheetContext);
-        themeProvider.setThemeMode(mode);
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ] : null,
-        ),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Selection Indicator
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 4,
-                margin: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: isSelected ? colorScheme.primary : Colors.transparent,
-                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Icon
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 16),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withValues(alpha: 0.05),
-                  shape: BoxShape.circle,
-                ),
-                child: huge.HugeIcon(icon: icon, size: 24, color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.7)),
-              ),
-              const SizedBox(width: 16),
-              // Content
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Radio
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.2),
-                      width: 2,
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(3),
-                  child: isSelected 
-                    ? Container(
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      )
-                    : null,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

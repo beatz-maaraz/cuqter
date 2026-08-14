@@ -104,6 +104,8 @@ class _ShareIntentScreenState extends State<ShareIntentScreen> {
                             builder: (context) => ChatScreen(
                               receiverId: userId,
                               receiverName: userName,
+                              receiverProfilePic: profilePic,
+                              receiverIsOnline: userData['isOnline'] as bool?,
                               sharedMedia: widget.sharedFiles,
                             ),
                           ),

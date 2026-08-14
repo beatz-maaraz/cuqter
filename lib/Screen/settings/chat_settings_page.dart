@@ -13,7 +13,7 @@ class ChatSettingsPage extends StatefulWidget {
 
 class _ChatSettingsPageState extends State<ChatSettingsPage> {
   int _wallpaperIndex = 0;
-  bool _enterIsSend = false;
+  bool _alwaysShowSend = false;
   bool _saveToGallery = false;
   double _fontSize = 20.0;
   bool _isLoading = true;
@@ -84,7 +84,7 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
         _wallpaperIndex = prefs.getInt('global_wallpaper_index') ?? 0;
-        _enterIsSend = prefs.getBool('chat_enter_is_send') ?? false;
+        _alwaysShowSend = prefs.getBool('chat_always_show_send') ?? false;
         _saveToGallery = prefs.getBool('chat_save_to_gallery') ?? false;
         _fontSize = prefs.getDouble('chat_font_size') ?? 17.0;
         _isLoading = false;
@@ -356,12 +356,12 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                     children: [
                       _buildSwitchTile(
                         icon: huge.HugeIcons.strokeRoundedSent,
-                        title: 'Enter is Send',
-                        subtitle: 'Keyboard enter key will send messages',
-                        value: _enterIsSend,
+                        title: 'Show Send Button',
+                        subtitle: 'Always show the send button in chats',
+                        value: _alwaysShowSend,
                         onChanged: (val) {
-                          setState(() => _enterIsSend = val);
-                          _savePreference('chat_enter_is_send', val);
+                          setState(() => _alwaysShowSend = val);
+                          _savePreference('chat_always_show_send', val);
                         },
                       ),
                       const Divider(height: 1, indent: 56),

@@ -233,6 +233,8 @@ class _ContactScreenState extends State<ContactScreen> {
                                           builder: (context) => ChatScreen(
                                             receiverId: userId,
                                             receiverName: name,
+                                            receiverProfilePic: profilePic,
+                                            receiverIsOnline: data['isOnline'] as bool?,
                                           ),
                                         ),
                                       );
