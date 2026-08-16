@@ -84,6 +84,19 @@ class _ChatScreenState extends State<ChatScreen> {
   final Set<String> _checkingFiles = {};
   Map<String, dynamic>? _replyMessage;
 
+  // ── Search ──────────────────────────────────────────────
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  // ── Mute / Block ─────────────────────────────────────────
+  bool _isMuted = false;
+  bool _isBlocked = false;
+
+  // ── Multi-select ─────────────────────────────────────────
+  bool _isSelecting = false;
+  final Set<String> _selectedMessageIds = {};
+
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
   bool _isRecordingPaused = false;
@@ -94,10 +107,24 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _loadChatPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
       setState(() {
         _alwaysShowSend = prefs.getBool('chat_always_show_send') ?? false;
         _fontSize = prefs.getDouble('chat_font_size') ?? 17.0;
+        _isMuted = prefs.getBool('muted_$chatId') ?? false;
       });
+      // Load block status from Firestore
+      final blockDoc = await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('blocked')
+          .doc(widget.receiverId)
+          .get();
+      if (mounted) {
+        setState(() {
+          _isBlocked = blockDoc.exists;
+        });
+      }
     } catch (_) {}
   }
 
@@ -157,67 +184,333 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _showDropMenu(
+  // ── Message Long-Press Context Menu ─────────────────────────────────────────
+  void _showMessageContextMenu(
     BuildContext context,
-    Offset position,
+    Map<String, dynamic> message,
     String docId,
-  ) async {
-    final RenderBox overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RelativeRect positionRect = RelativeRect.fromRect(
-      Rect.fromPoints(position, position),
-      Offset.zero & overlay.size,
-    );
+    bool isMe,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final String text = message['text']?.toString() ?? '';
+    final String type = message['type']?.toString() ?? 'text';
+    HapticFeedback.mediumImpact();
 
-    final result = await showMenu(
+    showModalBottomSheet(
       context: context,
-      position: positionRect,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      color: colorScheme.surface,
-      elevation: 8,
-      items: [
-        PopupMenuItem(
-          value: 'drop',
-          child: Row(
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // ── Drag handle
               Container(
-                padding: const EdgeInsets.all(6),
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.delete_sweep,
-                  color: Colors.redAccent,
-                  size: 20,
+                  color: colorScheme.onSurface.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 12),
-              const Text(
-                'Drop Message',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.bold,
+              // ── Emoji reaction bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: ['👍', '❤️', '😂', '😮', '😢', '🙏'].map((emoji) {
+                    return GestureDetector(
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await _sendReaction(docId, emoji);
+                      },
+                      child: AnimatedScale(
+                        scale: 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.4)),
+              // ── Action items
+              _contextMenuItem(
+                ctx: ctx,
+                icon: Icons.copy_rounded,
+                label: 'Copy',
+                color: colorScheme.primary,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Clipboard.setData(ClipboardData(text: text));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Message copied'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+              _contextMenuItem(
+                ctx: ctx,
+                icon: Icons.reply_rounded,
+                label: 'Reply',
+                color: colorScheme.secondary,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _replyMessage = {'id': docId, ...message};
+                  });
+                  _focusNode.requestFocus();
+                },
+              ),
+              _contextMenuItem(
+                ctx: ctx,
+                icon: Icons.forward_rounded,
+                label: 'Forward',
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showForwardSheet(text, type);
+                },
+              ),
+              _contextMenuItem(
+                ctx: ctx,
+                icon: Icons.check_circle_outline_rounded,
+                label: 'Select',
+                color: Colors.teal,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _isSelecting = true;
+                    _selectedMessageIds.add(docId);
+                  });
+                },
+              ),
+              if (isMe) ...
+                [
+                  Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.4)),
+                  _contextMenuItem(
+                    ctx: ctx,
+                    icon: Icons.delete_outline_rounded,
+                    label: 'Delete',
+                    color: colorScheme.error,
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await _deleteSingleMessage(docId);
+                    },
+                  ),
+                ],
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _contextMenuItem({
+    required BuildContext ctx,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(ctx).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _sendReaction(String docId, String emoji) async {
+    final chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+    final uid = _auth.currentUser!.uid;
+    await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .doc(docId)
+        .set({
+          'reactions': {uid: emoji},
+        }, SetOptions(merge: true));
+  }
+
+  Future<void> _deleteSingleMessage(String docId) async {
+    final chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+    await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .doc(docId)
+        .delete();
+  }
+
+  void _showForwardSheet(String text, String type) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurface.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Forward to...',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _firestore
+                      .collection('users')
+                      .doc(_auth.currentUser!.uid)
+                      .collection('contacts')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    // Fallback: load from users contacts array
+                    return StreamBuilder<DocumentSnapshot>(
+                      stream: _firestore
+                          .collection('users')
+                          .doc(_auth.currentUser!.uid)
+                          .snapshots(),
+                      builder: (context, userSnap) {
+                        List<String> contactIds = [];
+                        if (userSnap.hasData && userSnap.data!.exists) {
+                          final data = userSnap.data!.data() as Map<String, dynamic>?;
+                          if (data != null && data['contacts'] is List) {
+                            contactIds = List<String>.from(data['contacts']);
+                          }
+                        }
+                        if (contactIds.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'No contacts found',
+                              style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
+                            ),
+                          );
+                        }
+                        return ListView.builder(
+                          itemCount: contactIds.length,
+                          itemBuilder: (context, i) {
+                            final cid = contactIds[i];
+                            if (cid == _auth.currentUser!.uid) return const SizedBox.shrink();
+                            return FutureBuilder<DocumentSnapshot>(
+                              future: _firestore.collection('users').doc(cid).get(),
+                              builder: (context, snap) {
+                                if (!snap.hasData) return const SizedBox.shrink();
+                                final cdata = snap.data!.data() as Map<String, dynamic>?;
+                                final name = cdata?['name']?.toString() ?? 'Unknown';
+                                final pic = cdata?['profilepic']?.toString() ?? '';
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundImage: pic.isNotEmpty
+                                        ? CachedNetworkImageProvider(pic) as ImageProvider
+                                        : const AssetImage('assets/icon/default_profile.png'),
+                                  ),
+                                  title: Text(name),
+                                  onTap: () async {
+                                    Navigator.pop(ctx);
+                                    final fwdChatId = getChatId(_auth.currentUser!.uid, cid);
+                                    await _messageService.sendMessage(
+                                      chatId: fwdChatId,
+                                      senderId: _auth.currentUser!.uid,
+                                      receiverId: cid,
+                                      text: text,
+                                      type: type,
+                                    );
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Forwarded to $name'),
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],
           ),
-        ),
-      ],
+        );
+      },
     );
-
-    if (result == 'drop') {
-      String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
-      await _firestore
-          .collection('chats')
-          .doc(chatId)
-          .collection('messages')
-          .doc(docId)
-          .delete();
-    }
   }
+
 
   String _formatLastSeen(Timestamp? timestamp) {
     if (timestamp == null) return 'Offline';
@@ -274,7 +567,7 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete All Chat?'),
+          title: const Text('Drop Chat?'),
           content: Text(
             'Are you sure you want to delete all messages in this chat? This action cannot be undone.',
             style: TextStyle(
@@ -305,6 +598,159 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         );
       },
+    );
+  }
+
+  // ── CLEAR CHAT (local only — keeps the chat, deletes messages) ──────────────
+  Future<void> _clearChat() async {
+    String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+    try {
+      final snapshot = await _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .get();
+      final batch = _firestore.batch();
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Chat cleared'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) _showErrorSnackBar('Error clearing chat');
+    }
+  }
+
+  void _showClearChatConfirmation() {
+    final colorScheme = Theme.of(context).colorScheme;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Clear Chat?'),
+        content: Text(
+          'This will delete all messages in this chat. This action cannot be undone.',
+          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _clearChat();
+            },
+            child: const Text(
+              'Clear',
+              style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── MUTE NOTIFICATIONS ───────────────────────────────────────────────────────
+  Future<void> _toggleMute() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
+      final newMuted = !_isMuted;
+      await prefs.setBool('muted_$chatId', newMuted);
+      if (mounted) {
+        setState(() => _isMuted = newMuted);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newMuted
+                ? 'Notifications muted for this chat'
+                : 'Notifications unmuted'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) _showErrorSnackBar('Failed to update mute setting');
+    }
+  }
+
+  // ── BLOCK USER ───────────────────────────────────────────────────────────────
+  Future<void> _toggleBlock() async {
+    try {
+      final blockRef = _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('blocked')
+          .doc(widget.receiverId);
+      if (_isBlocked) {
+        await blockRef.delete();
+        if (mounted) {
+          setState(() => _isBlocked = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${widget.receiverName} unblocked'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        await blockRef.set({'blockedAt': FieldValue.serverTimestamp()});
+        if (mounted) {
+          setState(() => _isBlocked = true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${widget.receiverName} blocked'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) _showErrorSnackBar('Failed to update block status');
+    }
+  }
+
+  void _showBlockConfirmation() {
+    final colorScheme = Theme.of(context).colorScheme;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(_isBlocked ? 'Unblock User?' : 'Block User?'),
+        content: Text(
+          _isBlocked
+              ? 'Unblock ${widget.receiverName}? They will be able to send you messages again.'
+              : 'Block ${widget.receiverName}? They will not be able to send you messages.',
+          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _toggleBlock();
+            },
+            child: Text(
+              _isBlocked ? 'Unblock' : 'Block',
+              style: TextStyle(
+                color: _isBlocked ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -916,6 +1362,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _audioRecorder.dispose();
     _recordingTimer?.cancel();
     _messageController.dispose();
+    _searchController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -929,7 +1376,22 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: !widget.isDesktop,
-        title: StreamBuilder<DocumentSnapshot>(
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: TextStyle(color: colorScheme.onPrimary),
+                cursorColor: colorScheme.onPrimary,
+                decoration: InputDecoration(
+                  hintText: 'Search messages...',
+                  hintStyle: TextStyle(
+                    color: colorScheme.onPrimary.withValues(alpha: 0.6),
+                  ),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value.trim().toLowerCase()),
+              )
+            : StreamBuilder<DocumentSnapshot>(
           stream: _receiverStream,
           builder: (context, snapshot) {
             String status = (widget.receiverIsOnline ?? false) ? 'Active Now' : 'Offline';
@@ -1112,87 +1574,201 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         backgroundColor: colorScheme.primary,
         iconTheme: IconThemeData(color: colorScheme.onPrimary),
+        leading: _isSearching
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: colorScheme.onPrimary),
+                onPressed: () => setState(() {
+                  _isSearching = false;
+                  _searchQuery = '';
+                  _searchController.clear();
+                }),
+              )
+            : null,
         actions: [
-          IconButton(
-            icon: huge.HugeIcon(
-              icon: huge.HugeIcons.strokeRoundedCall,
-              color: colorScheme.onPrimary,
-              size: 22,
+          if (_isSearching) ...[
+            IconButton(
+              icon: Icon(Icons.close_rounded, color: colorScheme.onPrimary),
+              tooltip: 'Cancel Search',
+              onPressed: () => setState(() {
+                _isSearching = false;
+                _searchQuery = '';
+                _searchController.clear();
+              }),
             ),
-            tooltip: 'Voice Call',
-            onPressed: () => _startCall(context, isVideo: false),
-          ),
-          IconButton(
-            icon: huge.HugeIcon(
-              icon: huge.HugeIcons.strokeRoundedVideo01,
-              color: colorScheme.onPrimary,
-              size: 22,
+          ] else ...[
+            IconButton(
+              icon: Icon(Icons.search_rounded, color: colorScheme.onPrimary),
+              tooltip: 'Search Messages',
+              onPressed: () => setState(() {
+                _isSearching = true;
+                _searchQuery = '';
+                _searchController.clear();
+              }),
             ),
-            tooltip: 'Video Call',
-            onPressed: () => _startCall(context, isVideo: true),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'wallpaper') {
-                _showWallpaperOptions();
-              } else if (value == 'deleteAll') {
-                _showDeleteConfirmation();
-              }
-            },
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<String>(
-                value: 'wallpaper',
-                child: Row(
-                  children: [
-                    huge.HugeIcon(
-                      icon: huge.HugeIcons.strokeRoundedImage01,
-                      color: colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Change Wallpaper',
-                      style: TextStyle(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
+            IconButton(
+              icon: huge.HugeIcon(
+                icon: huge.HugeIcons.strokeRoundedCall,
+                color: colorScheme.onPrimary,
+                size: 22,
               ),
-              const PopupMenuDivider(),
-              PopupMenuItem<String>(
-                value: 'deleteAll',
-                child: Row(
-                  children: [
-                    huge.HugeIcon(
-                      icon: huge.HugeIcons.strokeRoundedDelete01,
-                      color: colorScheme.error,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Drop Chat',
-                      style: TextStyle(
+              tooltip: 'Voice Call',
+              onPressed: () => _startCall(context, isVideo: false),
+            ),
+            IconButton(
+              icon: huge.HugeIcon(
+                icon: huge.HugeIcons.strokeRoundedVideo01,
+                color: colorScheme.onPrimary,
+                size: 22,
+              ),
+              tooltip: 'Video Call',
+              onPressed: () => _startCall(context, isVideo: true),
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'wallpaper':
+                    _showWallpaperOptions();
+                    break;
+                  case 'mute':
+                    _toggleMute();
+                    break;
+                  case 'block':
+                    _showBlockConfirmation();
+                    break;
+                  case 'clearChat':
+                    _showClearChatConfirmation();
+                    break;
+                  case 'deleteAll':
+                    _showDeleteConfirmation();
+                    break;
+                }
+              },
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              itemBuilder: (BuildContext context) => [
+                // ── Change Wallpaper
+                PopupMenuItem<String>(
+                  value: 'wallpaper',
+                  child: Row(
+                    children: [
+                      huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedImage01,
+                        color: colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Change Wallpaper',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                // ── Mute Notifications
+                PopupMenuItem<String>(
+                  value: 'mute',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isMuted
+                            ? Icons.notifications_active_rounded
+                            : Icons.notifications_off_rounded,
+                        color: _isMuted ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _isMuted ? 'Unmute Notifications' : 'Mute Notifications',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // ── Block User
+                PopupMenuItem<String>(
+                  value: 'block',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isBlocked ? Icons.lock_open_rounded : Icons.block_rounded,
+                        color: _isBlocked ? Colors.green : Colors.orange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _isBlocked ? 'Unblock User' : 'Block User',
+                        style: TextStyle(
+                          color: _isBlocked ? Colors.green : Colors.orange,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                // ── Clear Chat
+                PopupMenuItem<String>(
+                  value: 'clearChat',
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.cleaning_services_rounded,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Clear Chat',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // ── Drop Chat (delete all)
+                PopupMenuItem<String>(
+                  value: 'deleteAll',
+                  child: Row(
+                    children: [
+                      huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedDelete01,
                         color: colorScheme.error,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        size: 20,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Text(
+                        'Drop Chat',
+                        style: TextStyle(
+                          color: colorScheme.error,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              ],
+              icon: huge.HugeIcon(
+                icon: huge.HugeIcons.strokeRoundedMore03,
+                color: colorScheme.onPrimary,
+                size: 22,
               ),
-            ],
-            icon: huge.HugeIcon(
-              icon: huge.HugeIcons.strokeRoundedMore03,
-              color: colorScheme.onPrimary,
-              size: 22,
             ),
-          ),
+          ],
         ],
       ),
       body: _isLoadingWallpaper
@@ -1271,7 +1847,15 @@ class _ChatScreenState extends State<ChatScreen> {
                             );
                           }
 
-                          var messages = snapshot.data!.docs;
+                          var allMessages = snapshot.data!.docs;
+                          // Apply search filter
+                          var messages = _searchQuery.isEmpty
+                              ? allMessages
+                              : allMessages.where((doc) {
+                                  final data = doc.data() as Map<String, dynamic>;
+                                  final text = (data['text'] ?? '').toString().toLowerCase();
+                                  return text.contains(_searchQuery);
+                                }).toList();
 
                           // Mark received messages as read in a single batch if there are any unread ones
                           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1508,6 +2092,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
                                     Widget messageWidget = SwipeToReply(
                                       onReply: () {
+                                        if (_isSelecting) return;
                                         setState(() {
                                           _replyMessage = {
                                             'id': docId,
@@ -1521,12 +2106,21 @@ class _ChatScreenState extends State<ChatScreen> {
                                             ? Alignment.centerRight
                                             : Alignment.centerLeft,
                                         child: GestureDetector(
-                                          onLongPressStart: isMe
-                                              ? (details) => _showDropMenu(
-                                                  context,
-                                                  details.globalPosition,
-                                                  docId,
-                                                )
+                                          onLongPress: () => _showMessageContextMenu(
+                                            context,
+                                            message,
+                                            docId,
+                                            isMe,
+                                          ),
+                                          onTap: _isSelecting
+                                              ? () => setState(() {
+                                                  if (_selectedMessageIds.contains(docId)) {
+                                                    _selectedMessageIds.remove(docId);
+                                                    if (_selectedMessageIds.isEmpty) _isSelecting = false;
+                                                  } else {
+                                                    _selectedMessageIds.add(docId);
+                                                  }
+                                                })
                                               : null,
                                           child: ConstrainedBox(
                                             constraints: BoxConstraints(
@@ -1557,11 +2151,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                                           horizontal: 12,
                                                         ),
                                                   decoration: BoxDecoration(
-                                                    color: isMe
-                                                        ? colorScheme
-                                                              .primaryContainer
-                                                        : colorScheme
-                                                              .surfaceContainerHighest,
+                                                    color: _selectedMessageIds.contains(docId)
+                                                        ? colorScheme.primary.withValues(alpha: 0.15)
+                                                        : (isMe
+                                                            ? colorScheme.primaryContainer
+                                                            : colorScheme.surfaceContainerHighest),
                                                     borderRadius: BorderRadius.only(
                                                       topLeft:
                                                           const Radius.circular(20),
@@ -1580,6 +2174,12 @@ class _ChatScreenState extends State<ChatScreen> {
                                                               20,
                                                             ),
                                                     ),
+                                                    border: _selectedMessageIds.contains(docId)
+                                                        ? Border.all(
+                                                            color: colorScheme.primary,
+                                                            width: 2,
+                                                          )
+                                                        : null,
                                                     boxShadow: [
                                                       BoxShadow(
                                                         color: Colors.black
@@ -1591,12 +2191,22 @@ class _ChatScreenState extends State<ChatScreen> {
                                                       ),
                                                     ],
                                                   ),
-                                                  child: _buildRawMessageBubbleBody(
-                                                    message: message,
-                                                    isMe: isMe,
-                                                    colorScheme: colorScheme,
-                                                    timeText: timeText,
-                                                    isRead: isRead,
+                                                  child: Column(
+                                                    crossAxisAlignment: isMe
+                                                        ? CrossAxisAlignment.end
+                                                        : CrossAxisAlignment.start,
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      _buildRawMessageBubbleBody(
+                                                        message: message,
+                                                        isMe: isMe,
+                                                        colorScheme: colorScheme,
+                                                        timeText: timeText,
+                                                        isRead: isRead,
+                                                      ),
+                                                      if ((message['reactions'] as Map?)?.isNotEmpty == true)
+                                                        _buildReactionsRow(message['reactions'] as Map, isMe, colorScheme),
+                                                    ],
                                                   ),
                                                 ),
                                               ],

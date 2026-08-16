@@ -1,7 +1,5 @@
 import 'package:cuqter/Screen/profile/profilemanage.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:cuqter/providers/theme_provider.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,6 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String _name = 'User';
   String _email = '';
   String _profilepic = '';
+  String _username = '';
   bool _isLoading = false;
 
   @override
@@ -76,6 +75,7 @@ class _SettingsPageState extends State<SettingsPage> {
             if (doc.exists) {
               _name = doc.data()?['name'] ?? 'User';
               _profilepic = doc.data()?['profilepic'] ?? '';
+              _username = doc.data()?['username'] ?? '';
             }
             _email = user.email ?? '';
           });
@@ -244,8 +244,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       title: 'Share Cuqter',
                       subtitle: 'Invite friends to chat on Cuqter',
                       onTap: () {
-                        Share.share(
-                          'Hey! I am using Cuqter to chat and share media securely. Download it now to connect with me! https://cuqter.com',
+                        SharePlus.instance.share(
+                          ShareParams(text: 'Hey! I am using Cuqter to chat and share media securely. Download it now to connect with me! https://cuqter.com'),
                         );
                       },
                     ),
@@ -366,7 +366,198 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
+            const SizedBox(width: 12),
+            IconButton(
+              icon: huge.HugeIcon(
+                icon: huge.HugeIcons.strokeRoundedQrCode01,
+                color: colorScheme.primary,
+                size: 28,
+              ),
+              onPressed: () {
+                _showQrCodeDialog(context, colorScheme);
+              },
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showQrCodeDialog(BuildContext context, ColorScheme colorScheme) {
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid ?? 'unknown';
+    // Use username-based URL if available, fallback to uid
+    final profileSlug = _username.isNotEmpty ? _username : uid;
+    final qrData = 'https://cuqter.com/$profileSlug';
+    final String hexColor = colorScheme.primary.toARGB32().toRadixString(16).padLeft(8, '0');
+    final String rgbHex = hexColor.length >= 8 ? hexColor.substring(2) : hexColor;
+    final qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(qrData)}&color=$rgbHex';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'My QR Code',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Scan this code to add me on Cuqter',
+                style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+              ),
+              const SizedBox(height: 24),
+              // QR Code container
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: CachedNetworkImage(
+                    imageUrl: qrUrl,
+                    width: 200,
+                    height: 200,
+                    placeholder: (context, url) => Container(
+                      width: 200,
+                      height: 200,
+                      color: Colors.grey.shade100,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      width: 200,
+                      height: 200,
+                      color: Colors.grey.shade100,
+                      child: const Icon(Icons.qr_code_rounded, size: 64, color: Colors.grey),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Profile link
+              GestureDetector(
+                onTap: () {
+                  SharePlus.instance.share(ShareParams(text: 'Add me on Cuqter! $qrData'));
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedLink01,
+                        color: colorScheme.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        qrData.replaceFirst('https://', ''),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Profile summary
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: colorScheme.primaryContainer,
+                    backgroundImage: _profilepic.isNotEmpty
+                        ? (_profilepic.startsWith('http')
+                            ? CachedNetworkImageProvider(_profilepic)
+                            : AssetImage(_profilepic) as ImageProvider)
+                        : null,
+                    child: _profilepic.isEmpty ? Text(
+                      _name.isNotEmpty ? _name[0].toUpperCase() : '?',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
+                    ) : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _name,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      if (_username.isNotEmpty)
+                        Text(
+                          '@$_username',
+                          style: TextStyle(fontSize: 12, color: colorScheme.primary, fontWeight: FontWeight.w500),
+                        )
+                      else
+                        Text(
+                          _email,
+                          style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, size: 16),
+                      label: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        SharePlus.instance.share(ShareParams(text: 'Add me on Cuqter! $qrData'));
+                      },
+                      icon: const Icon(Icons.share_rounded, size: 16),
+                      label: const Text('Share', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

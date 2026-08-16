@@ -7,6 +7,7 @@ import 'package:cuqter/providers/theme_provider.dart';
 import 'package:cuqter/utils/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/services/notification_service.dart';
+import 'package:cuqter/services/deep_link_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -41,6 +42,8 @@ Future<void> main() async {
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await BiometricService.isAppLockEnabled();
+    // Start listening for cuqter.com deep links
+    DeepLinkService().init(navigatorKey);
   }
   runApp(
     MultiProvider(

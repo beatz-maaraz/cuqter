@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/Screen/chat/chat_screen.dart';
+import 'package:cuqter/Screen/profile/qr_scanner_page.dart';
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
@@ -59,7 +60,22 @@ class _ContactScreenState extends State<ContactScreen> {
             letterSpacing: -0.5,
           ),
         ),
-        centerTitle: false,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: huge.HugeIcon(
+              icon: huge.HugeIcons.strokeRoundedQrCodeScan,
+              color: colorScheme.onSurface,
+              size: 24,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const QrScannerPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
