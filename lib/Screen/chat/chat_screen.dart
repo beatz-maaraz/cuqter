@@ -200,135 +200,134 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true,
       builder: (ctx) {
-        return Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Drag handle
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              // ── Emoji reaction bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: ['👍', '❤️', '😂', '😮', '😢', '🙏'].map((emoji) {
-                    return GestureDetector(
-                      onTap: () async {
-                        Navigator.pop(ctx);
-                        await _sendReaction(docId, emoji);
-                      },
-                      child: AnimatedScale(
-                        scale: 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(emoji, style: const TextStyle(fontSize: 22)),
-                        ),
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Material(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(28),
+              elevation: 8,
+              shadowColor: Colors.black.withValues(alpha: 0.3),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Drag handle
+                  Padding(
+                    padding: const EdgeInsets.only(top: 14, bottom: 6),
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colorScheme.onSurface.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.4)),
-              // ── Action items
-              _contextMenuItem(
-                ctx: ctx,
-                icon: Icons.copy_rounded,
-                label: 'Copy',
-                color: colorScheme.primary,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Clipboard.setData(ClipboardData(text: text));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Message copied'),
-                      duration: Duration(seconds: 1),
                     ),
-                  );
-                },
-              ),
-              _contextMenuItem(
-                ctx: ctx,
-                icon: Icons.reply_rounded,
-                label: 'Reply',
-                color: colorScheme.secondary,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  setState(() {
-                    _replyMessage = {'id': docId, ...message};
-                  });
-                  _focusNode.requestFocus();
-                },
-              ),
-              _contextMenuItem(
-                ctx: ctx,
-                icon: Icons.forward_rounded,
-                label: 'Forward',
-                color: Colors.blue,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showForwardSheet(text, type);
-                },
-              ),
-              _contextMenuItem(
-                ctx: ctx,
-                icon: Icons.check_circle_outline_rounded,
-                label: 'Select',
-                color: Colors.teal,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  setState(() {
-                    _isSelecting = true;
-                    _selectedMessageIds.add(docId);
-                  });
-                },
-              ),
-              if (isMe) ...
-                [
-                  Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.4)),
+                  ),
+                  // ── Emoji reaction bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: ['👍', '❤️', '😂', '😮', '😢', '🙏'].map((emoji) {
+                        return GestureDetector(
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            await _sendReaction(docId, emoji);
+                          },
+                          child: Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(emoji, style: const TextStyle(fontSize: 26)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  Divider(height: 1, thickness: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
+                  const SizedBox(height: 4),
+                  // ── Action items
                   _contextMenuItem(
                     ctx: ctx,
-                    icon: Icons.delete_outline_rounded,
-                    label: 'Delete',
-                    color: colorScheme.error,
-                    onTap: () async {
+                    icon: Icons.copy_rounded,
+                    label: 'Copy',
+                    color: colorScheme.primary,
+                    onTap: () {
                       Navigator.pop(ctx);
-                      await _deleteSingleMessage(docId);
+                      Clipboard.setData(ClipboardData(text: text));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Message copied'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
                     },
                   ),
+                  _contextMenuItem(
+                    ctx: ctx,
+                    icon: Icons.reply_rounded,
+                    label: 'Reply',
+                    color: colorScheme.secondary,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() {
+                        _replyMessage = {'id': docId, ...message};
+                      });
+                      _focusNode.requestFocus();
+                    },
+                  ),
+                  _contextMenuItem(
+                    ctx: ctx,
+                    icon: Icons.forward_rounded,
+                    label: 'Forward',
+                    color: Colors.blue,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showForwardSheet(text, type);
+                    },
+                  ),
+                  _contextMenuItem(
+                    ctx: ctx,
+                    icon: Icons.check_circle_outline_rounded,
+                    label: 'Select',
+                    color: Colors.teal,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() {
+                        _isSelecting = true;
+                        _selectedMessageIds.add(docId);
+                      });
+                    },
+                  ),
+                  if (isMe) ...[
+                    Divider(height: 1, thickness: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
+                    _contextMenuItem(
+                      ctx: ctx,
+                      icon: Icons.delete_outline_rounded,
+                      label: 'Delete',
+                      color: colorScheme.error,
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        await _deleteSingleMessage(docId);
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 12),
                 ],
-              const SizedBox(height: 8),
-            ],
+              ),
+            ),
           ),
         );
       },
     );
   }
+
 
   Widget _contextMenuItem({
     required BuildContext ctx,
@@ -340,24 +339,25 @@ class _ChatScreenState extends State<ChatScreen> {
     final colorScheme = Theme.of(ctx).colorScheme;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 20),
+              alignment: Alignment.center,
+              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 18),
             Text(
               label,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: colorScheme.onSurface,
               ),
@@ -367,6 +367,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
+
 
   Future<void> _sendReaction(String docId, String emoji) async {
     final chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
@@ -754,7 +755,43 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _buildReactionsRow(Map reactions, bool isMe, ColorScheme colorScheme) {
+    // Aggregate: count per emoji
+    final Map<String, int> counts = {};
+    for (final emoji in reactions.values) {
+      counts[emoji.toString()] = (counts[emoji.toString()] ?? 0) + 1;
+    }
+    return Padding(
+      padding: EdgeInsets.only(
+        left: isMe ? 0 : 4,
+        right: isMe ? 4 : 0,
+        bottom: 4,
+        top: 2,
+      ),
+      child: Wrap(
+        spacing: 4,
+        children: counts.entries.map((e) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Text(
+              e.value > 1 ? '${e.key} ${e.value}' : e.key,
+              style: const TextStyle(fontSize: 13),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Future<void> _loadWallpaperPreference() async {
+
     try {
       String chatId = getChatId(_auth.currentUser!.uid, widget.receiverId);
       final prefs = await SharedPreferences.getInstance();
@@ -1771,7 +1808,86 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ],
       ),
+      bottomNavigationBar: _isSelecting
+          ? SafeArea(
+              child: Container(
+                color: Theme.of(context).colorScheme.surface,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      tooltip: 'Cancel Selection',
+                      onPressed: () => setState(() {
+                        _isSelecting = false;
+                        _selectedMessageIds.clear();
+                      }),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_selectedMessageIds.length} selected',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.copy_rounded),
+                      tooltip: 'Copy',
+                      onPressed: _selectedMessageIds.isEmpty
+                          ? null
+                          : () {
+                              // Copy first selected message text (simplistic)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Copied selected message(s)'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                              setState(() {
+                                _isSelecting = false;
+                                _selectedMessageIds.clear();
+                              });
+                            },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      tooltip: 'Delete Selected',
+                      color: Theme.of(context).colorScheme.error,
+                      onPressed: _selectedMessageIds.isEmpty
+                          ? null
+                          : () async {
+                              final ids = Set<String>.from(_selectedMessageIds);
+                              setState(() {
+                                _isSelecting = false;
+                                _selectedMessageIds.clear();
+                              });
+                              final chatId = getChatId(
+                                _auth.currentUser!.uid,
+                                widget.receiverId,
+                              );
+                              final batch = _firestore.batch();
+                              for (final id in ids) {
+                                batch.delete(
+                                  _firestore
+                                      .collection('chats')
+                                      .doc(chatId)
+                                      .collection('messages')
+                                      .doc(id),
+                                );
+                              }
+                              await batch.commit();
+                            },
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : null,
       body: _isLoadingWallpaper
+
           ? const Center(child: CircularProgressIndicator())
           : PopScope(
               canPop: !_showEmojiPicker,
@@ -2106,12 +2222,21 @@ class _ChatScreenState extends State<ChatScreen> {
                                             ? Alignment.centerRight
                                             : Alignment.centerLeft,
                                         child: GestureDetector(
-                                          onLongPress: () => _showMessageContextMenu(
-                                            context,
-                                            message,
-                                            docId,
-                                            isMe,
-                                          ),
+                                          onLongPress: () {
+                                            if (_isSelecting) {
+                                              // Already selecting — just toggle this message
+                                              setState(() {
+                                                if (_selectedMessageIds.contains(docId)) {
+                                                  _selectedMessageIds.remove(docId);
+                                                  if (_selectedMessageIds.isEmpty) _isSelecting = false;
+                                                } else {
+                                                  _selectedMessageIds.add(docId);
+                                                }
+                                              });
+                                            } else {
+                                              _showMessageContextMenu(context, message, docId, isMe);
+                                            }
+                                          },
                                           onTap: _isSelecting
                                               ? () => setState(() {
                                                   if (_selectedMessageIds.contains(docId)) {
@@ -2122,6 +2247,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                   }
                                                 })
                                               : null,
+
                                           child: ConstrainedBox(
                                             constraints: BoxConstraints(
                                               maxWidth:
