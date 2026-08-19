@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/providers/theme_provider.dart';
+import 'package:cuqter/widgets/adaptive/adaptive.dart';
 
 class AppearanceSettingsPage extends StatefulWidget {
   const AppearanceSettingsPage({super.key});
@@ -14,6 +16,8 @@ class AppearanceSettingsPage extends StatefulWidget {
 class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
   int _selectedIconIndex = 0;
   bool _isLoading = true;
+  bool _demoSwitchVal = true;
+  final TextEditingController _demoTextController = TextEditingController(text: 'Adaptive Text Field');
 
   final List<Map<String, dynamic>> _accentColors = [
     {'name': 'Violet', 'color': const Color(0xFF7C3AED)},
@@ -59,6 +63,12 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     _loadAppIconPreference();
   }
 
+  @override
+  void dispose() {
+    _demoTextController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadAppIconPreference() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -100,11 +110,15 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AdaptiveProgressIndicator())
           : ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               children: [
                 _buildLivePreview(colorScheme, themeProvider),
+                const SizedBox(height: 30),
+                _buildSectionLabel('DESIGN STYLE'),
+                const SizedBox(height: 12),
+                _buildDesignStyleSelector(themeProvider, colorScheme),
                 const SizedBox(height: 30),
                 _buildSectionLabel('THEME MODE'),
                 const SizedBox(height: 12),
@@ -113,6 +127,10 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                 _buildSectionLabel('ACCENT COLOR'),
                 const SizedBox(height: 12),
                 _buildAccentColorPicker(themeProvider, colorScheme),
+                const SizedBox(height: 30),
+                _buildSectionLabel('LIVE ADAPTIVE SHOWCASE'),
+                const SizedBox(height: 12),
+                _buildAdaptiveShowcase(themeProvider, colorScheme),
                 const SizedBox(height: 30),
                 _buildSectionLabel('APP ICON STYLE'),
                 const SizedBox(height: 12),
@@ -142,145 +160,131 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     );
   }
 
-  Widget _buildLiquidEffectToggle(ThemeProvider themeProvider, ColorScheme colorScheme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
-      ),
-      child: ListTile(
-        title: const Text(
-          'Liquid Glass Settings',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          'Show floating glassmorphism blobs behind screens',
-          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 12),
-        ),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.water_drop_outlined,
-            color: colorScheme.primary,
-            size: 20,
-          ),
-        ),
-        trailing: Icon(Icons.chevron_right, color: colorScheme.onSurface.withValues(alpha: 0.5)),
-        onTap: () => _showLiquidSettingsSheet(context, themeProvider, colorScheme),
-      ),
-    );
-  }
+  Widget _buildDesignStyleSelector(ThemeProvider themeProvider, ColorScheme colorScheme) {
+    final currentStyle = themeProvider.designStyle;
 
-  void _showLiquidSettingsSheet(BuildContext context, ThemeProvider themeProvider, ColorScheme colorScheme) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      children: AppDesignStyle.values.map((style) {
+        final isSelected = currentStyle == style;
+        final primaryColor = themeProvider.primaryColor;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: GestureDetector(
+            onTap: () => themeProvider.setDesignStyle(style),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? primaryColor.withValues(alpha: 0.10)
+                    : colorScheme.onSurface.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isSelected ? primaryColor : colorScheme.onSurface.withValues(alpha: 0.08),
+                  width: isSelected ? 2.0 : 1.0,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: primaryColor.withValues(alpha: 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Row(
                 children: [
-                  Center(
-                    child: Container(
-                      width: 50,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: colorScheme.onSurface.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? primaryColor
+                          : colorScheme.onSurface.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      style.icon,
+                      color: isSelected ? Colors.white : colorScheme.onSurface.withValues(alpha: 0.7),
+                      size: 26,
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Liquid Glass Controls',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: colorScheme.onSurface,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              style.displayName,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? primaryColor.withValues(alpha: 0.2)
+                                    : colorScheme.onSurface.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                style == AppDesignStyle.material ? 'Google M3' : 'Apple iOS',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected ? primaryColor : colorScheme.onSurface.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          style.description,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurface.withValues(alpha: 0.65),
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Enable Effect',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                  const SizedBox(width: 8),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected ? primaryColor : Colors.transparent,
+                      border: Border.all(
+                        color: isSelected ? primaryColor : colorScheme.onSurface.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
                     ),
-                    value: themeProvider.isLiquidBackgroundEnabled,
-                    onChanged: (val) {
-                      setState(() {
-                        themeProvider.toggleLiquidBackground(val);
-                      });
-                    },
-                    activeColor: colorScheme.primary,
+                    child: isSelected
+                        ? const Icon(
+                            Icons.check,
+                            size: 16,
+                            color: Colors.white,
+                          )
+                        : null,
                   ),
-                  const SizedBox(height: 10),
-                  if (themeProvider.isLiquidBackgroundEnabled) ...[
-                    Text(
-                      'Transparency (Opacity)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    Slider(
-                      value: themeProvider.liquidOpacity,
-                      min: 0.0,
-                      max: 1.0,
-                      activeColor: colorScheme.primary,
-                      onChanged: (val) {
-                        setState(() {
-                          themeProvider.updateLiquidOpacity(val, save: false);
-                        });
-                      },
-                      onChangeEnd: (val) {
-                        themeProvider.updateLiquidOpacity(val, save: true);
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Edge Control (Blur Amount)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    Slider(
-                      value: themeProvider.liquidBlur,
-                      min: 0.0,
-                      max: 100.0,
-                      activeColor: colorScheme.primary,
-                      onChanged: (val) {
-                        setState(() {
-                          themeProvider.updateLiquidBlur(val, save: false);
-                        });
-                      },
-                      onChangeEnd: (val) {
-                        themeProvider.updateLiquidBlur(val, save: true);
-                      },
-                    ),
-                  ],
-                  const SizedBox(height: 20),
                 ],
               ),
-            );
-          },
+            ),
+          ),
         );
-      },
+      }).toList(),
     );
   }
 
@@ -288,6 +292,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     final isDark = themeProvider.themeMode == ThemeMode.dark ||
         (themeProvider.themeMode == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
+    final isCupertino = themeProvider.isCupertino;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -335,18 +340,45 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                 ),
               ),
               const SizedBox(width: 10),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Live Theme Preview',
+                  const Text(
+                    'Live Theme & Design Preview',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Online',
-                    style: TextStyle(fontSize: 10, color: Colors.green),
+                    'Active System: ${themeProvider.designStyle.displayName}',
+                    style: TextStyle(fontSize: 10, color: themeProvider.primaryColor, fontWeight: FontWeight.w600),
                   ),
                 ],
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: themeProvider.primaryColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isCupertino ? Icons.apple_rounded : Icons.android_rounded,
+                      size: 14,
+                      color: themeProvider.primaryColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isCupertino ? 'Cupertino' : 'Material 3',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: themeProvider.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -359,11 +391,13 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
               margin: const EdgeInsets.only(right: 40),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF262626) : Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(18),
-                  topRight: Radius.circular(18),
-                  bottomRight: Radius.circular(18),
-                ),
+                borderRadius: isCupertino
+                    ? BorderRadius.circular(18)
+                    : const BorderRadius.only(
+                        topLeft: Radius.circular(18),
+                        topRight: Radius.circular(18),
+                        bottomRight: Radius.circular(18),
+                      ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.03),
@@ -372,11 +406,11 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                   )
                 ],
               ),
-              child: const Text(
-                'How does the new theme setup look to you?',
+              child: Text(
+                'Switching to ${themeProvider.designStyle.shortName} mode!',
                 style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
+                  fontSize: 15,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
             ),
@@ -390,20 +424,104 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
               margin: const EdgeInsets.only(left: 40),
               decoration: BoxDecoration(
                 color: themeProvider.primaryColor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(18),
-                  topRight: Radius.circular(18),
-                  bottomLeft: Radius.circular(18),
-                ),
+                borderRadius: isCupertino
+                    ? BorderRadius.circular(18)
+                    : const BorderRadius.only(
+                        topLeft: Radius.circular(18),
+                        topRight: Radius.circular(18),
+                        bottomLeft: Radius.circular(18),
+                      ),
               ),
               child: const Text(
-                'Wow, the dynamic brand color is awesome! 🎨✨',
+                'Awesome, the whole UI adapts instantly! 🎨✨',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
                   color: Colors.white,
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdaptiveShowcase(ThemeProvider themeProvider, ColorScheme colorScheme) {
+    return AdaptiveCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Interactive Reusable Components',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              AdaptiveProgressIndicator(radius: 10),
+            ],
+          ),
+          const SizedBox(height: 16),
+          AdaptiveTextField(
+            controller: _demoTextController,
+            labelText: 'Sample Text Field',
+            placeholder: 'Type something...',
+            prefix: Icon(Icons.edit_note_rounded, size: 20, color: themeProvider.primaryColor),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Adaptive Switch Control',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+              AdaptiveSwitch(
+                value: _demoSwitchVal,
+                onChanged: (val) => setState(() => _demoSwitchVal = val),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: AdaptiveButton.filled(
+                  onPressed: () {
+                    AdaptiveDialog.show(
+                      context: context,
+                      title: Text('${themeProvider.designStyle.shortName} Dialog'),
+                      content: Text('This dialog is rendered using native ${themeProvider.designStyle.displayName} components.'),
+                      actions: [
+                        AdaptiveDialogAction(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                          isDefaultAction: true,
+                        ),
+                      ],
+                    );
+                  },
+                  icon: const Icon(Icons.touch_app_rounded, size: 18),
+                  child: const Text('Test Dialog'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AdaptiveButton.outlined(
+                  onPressed: () {},
+                  child: const Text('Outlined'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -625,6 +743,148 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildLiquidEffectToggle(ThemeProvider themeProvider, ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+      ),
+      child: ListTile(
+        title: const Text(
+          'Liquid Glass Settings',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          'Show floating glassmorphism blobs behind screens',
+          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 12),
+        ),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.water_drop_outlined,
+            color: colorScheme.primary,
+            size: 20,
+          ),
+        ),
+        trailing: Icon(Icons.chevron_right, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+        onTap: () => _showLiquidSettingsSheet(context, themeProvider, colorScheme),
+      ),
+    );
+  }
+
+  void _showLiquidSettingsSheet(BuildContext context, ThemeProvider themeProvider, ColorScheme colorScheme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 50,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: colorScheme.onSurface.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Liquid Glass Controls',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Enable Effect',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    value: themeProvider.isLiquidBackgroundEnabled,
+                    onChanged: (val) {
+                      setState(() {
+                        themeProvider.toggleLiquidBackground(val);
+                      });
+                    },
+                    activeColor: colorScheme.primary,
+                  ),
+                  const SizedBox(height: 10),
+                  if (themeProvider.isLiquidBackgroundEnabled) ...[
+                    Text(
+                      'Transparency (Opacity)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    Slider(
+                      value: themeProvider.liquidOpacity,
+                      min: 0.0,
+                      max: 1.0,
+                      activeColor: colorScheme.primary,
+                      onChanged: (val) {
+                        setState(() {
+                          themeProvider.updateLiquidOpacity(val, save: false);
+                        });
+                      },
+                      onChangeEnd: (val) {
+                        themeProvider.updateLiquidOpacity(val, save: true);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Edge Control (Blur Amount)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    Slider(
+                      value: themeProvider.liquidBlur,
+                      min: 0.0,
+                      max: 100.0,
+                      activeColor: colorScheme.primary,
+                      onChanged: (val) {
+                        setState(() {
+                          themeProvider.updateLiquidBlur(val, save: false);
+                        });
+                      },
+                      onChangeEnd: (val) {
+                        themeProvider.updateLiquidBlur(val, save: true);
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

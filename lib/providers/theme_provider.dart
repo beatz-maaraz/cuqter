@@ -1,8 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum AppDesignStyle {
+  material,
+  cupertino;
+
+  String get displayName {
+    switch (this) {
+      case AppDesignStyle.material:
+        return 'Material Design';
+      case AppDesignStyle.cupertino:
+        return 'Cupertino Design';
+    }
+  }
+
+  String get shortName {
+    switch (this) {
+      case AppDesignStyle.material:
+        return 'Material';
+      case AppDesignStyle.cupertino:
+        return 'Cupertino';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case AppDesignStyle.material:
+        return "Google's Material 3 design system with bold elevation, dynamic shapes, and fluid touch ripples.";
+      case AppDesignStyle.cupertino:
+        return "Apple's iOS design system with subtle translucency, rounded grouped containers, and crisp iOS controls.";
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case AppDesignStyle.material:
+        return Icons.android_rounded;
+      case AppDesignStyle.cupertino:
+        return Icons.apple_rounded;
+    }
+  }
+}
+
 class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
+  AppDesignStyle _designStyle = AppDesignStyle.material;
   Color _primaryColor = const Color(0xFF7C3AED);
   bool _isLiquidBackgroundEnabled = false;
   double _liquidOpacity = 0.15;
@@ -13,12 +55,15 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   ThemeMode get themeMode => _themeMode;
+  AppDesignStyle get designStyle => _designStyle;
   Color get primaryColor => _primaryColor;
   bool get isLiquidBackgroundEnabled => _isLiquidBackgroundEnabled;
   double get liquidOpacity => _liquidOpacity;
   double get liquidBlur => _liquidBlur;
 
   bool get isDarkMode => _themeMode == ThemeMode.dark;
+  bool get isMaterial => _designStyle == AppDesignStyle.material;
+  bool get isCupertino => _designStyle == AppDesignStyle.cupertino;
 
   Future<void> _loadTheme() async {
     try {
@@ -26,6 +71,11 @@ class ThemeProvider extends ChangeNotifier {
       final themeIndex = prefs.getInt('theme_mode');
       if (themeIndex != null && themeIndex >= 0 && themeIndex < ThemeMode.values.length) {
         _themeMode = ThemeMode.values[themeIndex];
+      }
+
+      final designIndex = prefs.getInt('theme_design_style');
+      if (designIndex != null && designIndex >= 0 && designIndex < AppDesignStyle.values.length) {
+        _designStyle = AppDesignStyle.values[designIndex];
       }
       
       final colorHex = prefs.getInt('theme_primary_color');
@@ -58,6 +108,15 @@ class ThemeProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('theme_mode', _themeMode.index);
+    } catch (_) {}
+  }
+
+  Future<void> setDesignStyle(AppDesignStyle style) async {
+    _designStyle = style;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('theme_design_style', style.index);
     } catch (_) {}
   }
 

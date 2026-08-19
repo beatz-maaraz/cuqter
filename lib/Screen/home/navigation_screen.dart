@@ -13,6 +13,8 @@ import 'package:cuqter/Screen/home/homepage.dart';
 import 'package:cuqter/Screen/calls/incoming_call_screen.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/services/web_lifecycle.dart';
+import 'package:provider/provider.dart';
+import 'package:cuqter/providers/theme_provider.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});
@@ -349,6 +351,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isCupertino = themeProvider.isCupertino;
 
     return Scaffold(
       extendBody: true,
@@ -370,21 +374,22 @@ class _NavigationScreenState extends State<NavigationScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding:
-              const EdgeInsets.only(left: 80, right: 80, bottom: 15, top: 8),
+          padding: isCupertino
+              ? const EdgeInsets.only(left: 24, right: 24, bottom: 10, top: 4)
+              : const EdgeInsets.only(left: 80, right: 80, bottom: 15, top: 8),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(isCupertino ? 24 : 30),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
               child: Container(
-                height: 62,
+                height: isCupertino ? 64 : 62,
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
                 decoration: BoxDecoration(
                   color: isDark
                       ? colorScheme.surfaceContainerHigh
-                          .withValues(alpha: 0.60)
-                      : colorScheme.surface.withValues(alpha: 0.70),
-                  borderRadius: BorderRadius.circular(30),
+                          .withValues(alpha: isCupertino ? 0.75 : 0.60)
+                      : colorScheme.surface.withValues(alpha: isCupertino ? 0.82 : 0.70),
+                  borderRadius: BorderRadius.circular(isCupertino ? 24 : 30),
                   border: Border.all(
                     color: colorScheme.onSurface.withValues(
                       alpha: isDark ? 0.12 : 0.06,

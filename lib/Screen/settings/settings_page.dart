@@ -16,6 +16,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:share_plus/share_plus.dart';
+import 'package:provider/provider.dart';
+import 'package:cuqter/providers/theme_provider.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDialog;
@@ -188,7 +190,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     _buildSettingsTile(
                       icon: huge.HugeIcons.strokeRoundedPaintBoard,
                       title: 'Appearance',
-                      subtitle: 'Dark mode, custom colors, text size',
+                      subtitle: 'Design System (${Provider.of<ThemeProvider>(context).designStyle.shortName}), dark mode & colors',
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildBadge(context, Provider.of<ThemeProvider>(context).designStyle.shortName.toUpperCase()),
+                          const SizedBox(width: 8),
+                          huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedArrowRight01, size: 20, color: colorScheme.onSurface.withValues(alpha: 0.3)),
+                        ],
+                      ),
                       onTap: () {
                         Navigator.push(
                           context,

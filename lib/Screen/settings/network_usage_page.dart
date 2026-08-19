@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:cuqter/widgets/adaptive/adaptive.dart';
 
 class NetworkUsagePage extends StatefulWidget {
   const NetworkUsagePage({super.key});
@@ -33,7 +34,7 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Initialize with mock values if not set yet to make the screen look populated and premium
+      // Initialize with mock values if not set yet to populate statistics cleanly
       if (prefs.getInt('net_messages_sent') == null) {
         final rand = Random();
         await prefs.setInt('net_messages_sent', 250 + rand.nextInt(300));
@@ -93,7 +94,7 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Statistics reset successfully'),
+            content: Text('Network statistics reset successfully'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -115,8 +116,9 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final totalSentBytes = _mediaSentBytes + (_messagesSent * 500); // Rough estimate of size
+    final totalSentBytes = _mediaSentBytes + (_messagesSent * 500);
     final totalReceivedBytes = _mediaReceivedBytes + (_messagesReceived * 500);
+    final grandTotal = totalSentBytes + totalReceivedBytes;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -131,11 +133,11 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AdaptiveProgressIndicator())
           : ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               children: [
-                _buildOverviewCard(totalSentBytes, totalReceivedBytes, colorScheme),
+                _buildOverviewCard(totalSentBytes, totalReceivedBytes, grandTotal, colorScheme),
                 const SizedBox(height: 30),
                 _buildSectionLabel('STATISTICS BREAKDOWN'),
                 const SizedBox(height: 12),
@@ -147,15 +149,17 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
                     'Sent: $_messagesSent messages',
                     'Received: $_messagesReceived messages',
                   ],
+                  badge: '${_messagesSent + _messagesReceived} Total',
                 ),
                 _buildStatTile(
                   icon: huge.HugeIcons.strokeRoundedCall02,
-                  title: 'Voice Calls',
+                  title: 'Voice & Video Calls',
                   color: Colors.greenAccent,
                   lines: [
                     'Total calls: $_callsCount connections',
                     'Duration: $_callsDurationMinutes minutes',
                   ],
+                  badge: '$_callsDurationMinutes mins',
                 ),
                 _buildStatTile(
                   icon: huge.HugeIcons.strokeRoundedUpload01,
@@ -165,6 +169,7 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
                     'Uploaded: ${_formatBytes(_mediaSentBytes)}',
                     'Downloaded: ${_formatBytes(_mediaReceivedBytes)}',
                   ],
+                  badge: _formatBytes(_mediaSentBytes + _mediaReceivedBytes),
                 ),
                 _buildStatTile(
                   icon: huge.HugeIcons.strokeRoundedDatabase,
@@ -174,6 +179,7 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
                     'Firestore sync cycles: $_dbSyncs cycles',
                     'Status updates fetched: $_statusUpdates updates',
                   ],
+                  badge: '$_dbSyncs Syncs',
                 ),
                 const SizedBox(height: 30),
                 _buildResetButton(colorScheme),
@@ -196,24 +202,10 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
     );
   }
 
-  Widget _buildOverviewCard(int sent, int received, ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer.withValues(alpha: 0.5),
-            colorScheme.secondaryContainer.withValues(alpha: 0.3),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.1),
-          width: 1.5,
-        ),
-      ),
+  Widget _buildOverviewCard(int sent, int received, int total, ColorScheme colorScheme) {
+    final sentRatio = total > 0 ? (sent / total).clamp(0.0, 1.0) : 0.5;
+
+    return AdaptiveCard(
       child: Column(
         children: [
           Row(
@@ -234,7 +226,39 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
                 label: 'RECEIVED',
                 value: _formatBytes(received),
                 icon: huge.HugeIcons.strokeRoundedDownload01,
-                color: colorScheme.secondary,
+                color: colorScheme.secondary.withValues(alpha: 0.9),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: sentRatio,
+              minHeight: 8,
+              backgroundColor: colorScheme.secondary.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total Network Traffic: ${_formatBytes(total)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              Text(
+                '${(sentRatio * 100).toStringAsFixed(0)}% Sent',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
+                ),
               ),
             ],
           ),
@@ -272,7 +296,7 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w900,
               color: colorScheme.onSurface,
               letterSpacing: -0.5,
@@ -288,23 +312,18 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
     required String title,
     required Color color,
     required List<String> lines,
+    required String badge,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
+    return AdaptiveCard(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: colorScheme.onSurface.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.06)),
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: huge.HugeIcon(icon: icon, color: color, size: 22),
@@ -314,9 +333,29 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 ...lines.map((line) => Padding(
@@ -338,103 +377,37 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
   }
 
   Widget _buildResetButton(ColorScheme colorScheme) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.errorContainer.withValues(alpha: 0.2),
-          foregroundColor: colorScheme.error,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          elevation: 0,
-        ),
-        onPressed: () => _showResetConfirmation(),
-        icon: huge.HugeIcon(
-          icon: huge.HugeIcons.strokeRoundedDelete02,
-          color: colorScheme.error,
-          size: 20,
-        ),
-        label: const Text('Reset Statistics', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
+    return AdaptiveButton(
+      style: AdaptiveButtonStyle.outlined,
+      color: Colors.redAccent,
+      textColor: Colors.redAccent,
+      onPressed: () => _showResetConfirmation(),
+      icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+      child: const Text('Reset Network Statistics'),
     );
   }
 
   void _showResetConfirmation() {
-    final colorScheme = Theme.of(context).colorScheme;
-    showDialog(
+    AdaptiveDialog.show(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.errorContainer.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: huge.HugeIcon(
-                  icon: huge.HugeIcons.strokeRoundedDelete02,
-                  color: colorScheme.error,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Reset Network Usage?',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'This will clear all accumulated data transfers, call timers, and message counters. The stats will start counting from zero.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.error,
-                    foregroundColor: colorScheme.onError,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _resetStatistics();
-                  },
-                  child: const Text('Reset All', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                    foregroundColor: colorScheme.onSurface,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
+      title: const Text('Reset Network Usage?'),
+      content: const Text(
+        'This will clear all accumulated data transfers, call timers, and message counters. The stats will start counting from zero.',
       ),
+      actions: [
+        AdaptiveDialogAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        AdaptiveDialogAction(
+          onPressed: () {
+            Navigator.pop(context);
+            _resetStatistics();
+          },
+          isDestructiveAction: true,
+          child: const Text('Reset All'),
+        ),
+      ],
     );
   }
 }

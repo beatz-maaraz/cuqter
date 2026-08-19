@@ -15,6 +15,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cuqter/services/biometric_service.dart';
 import 'package:cuqter/Screen/settings/app_lock_screen.dart';
 import 'firebase_options.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -63,6 +64,8 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final isCupertino = themeProvider.isCupertino;
+    final isDark = themeProvider.isDarkMode;
 
     // Pre-cache key brand assets for instant flicker-free opening
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,6 +74,82 @@ class MainApp extends StatelessWidget {
         precacheImage(const AssetImage('assets/icon/google_icon.png'), context);
       } catch (_) {}
     });
+
+    final homeWidget = AppLockWrapper(
+      child: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        initialData: FirebaseAuth.instance.currentUser,
+        builder: (context, snapshot) {
+          if (snapshot.hasData || FirebaseAuth.instance.currentUser != null) {
+            return const ResponsiveLayout(
+              mobileLayout: NavigationScreen(),
+              desktopLayout: DesktopNavigationScreen(),
+            );
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox.shrink();
+          }
+          return const Loginpage();
+        },
+      ),
+    );
+
+    Widget buildAppShell(BuildContext context, Widget? child) {
+      final mediaQuery = MediaQuery.of(context);
+      
+      const double scale = 0.90;
+      final scaledSize = mediaQuery.size / scale;
+
+      return MediaQuery(
+        data: mediaQuery.copyWith(
+          size: scaledSize,
+          padding: mediaQuery.padding / scale,
+          viewPadding: mediaQuery.viewPadding / scale,
+          viewInsets: mediaQuery.viewInsets / scale,
+          systemGestureInsets: mediaQuery.systemGestureInsets / scale,
+        ),
+        child: OverflowBox(
+          minWidth: scaledSize.width,
+          maxWidth: scaledSize.width,
+          minHeight: scaledSize.height,
+          maxHeight: scaledSize.height,
+          child: Transform.scale(
+            scale: scale,
+            alignment: Alignment.center,
+            child: Scaffold(
+              backgroundColor: isDark ? Colors.black : Colors.white,
+              body: LiquidBackground(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: child ?? const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (isCupertino) {
+      return CupertinoApp(
+        navigatorKey: navigatorKey,
+        debugShowCheckedModeBanner: false,
+        title: 'Cuqter',
+        theme: CupertinoThemeData(
+          brightness: isDark ? Brightness.dark : Brightness.light,
+          primaryColor: themeProvider.primaryColor,
+          scaffoldBackgroundColor: isDark ? Colors.black : Colors.white,
+          barBackgroundColor: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
+        ),
+        localizationsDelegates: const [
+          DefaultMaterialLocalizations.delegate,
+          DefaultCupertinoLocalizations.delegate,
+          DefaultWidgetsLocalizations.delegate,
+        ],
+        builder: (context, child) => buildAppShell(context, child),
+        home: homeWidget,
+      );
+    }
 
     return MaterialApp(
       navigatorKey: navigatorKey,
@@ -93,6 +172,10 @@ class MainApp extends StatelessWidget {
           secondaryContainer: AppColors.accent,
           onSecondaryContainer: Colors.white,
         ),
+        cupertinoOverrideTheme: CupertinoThemeData(
+          brightness: Brightness.light,
+          primaryColor: themeProvider.primaryColor,
+        ),
         scaffoldBackgroundColor: Colors.transparent,
         useMaterial3: true,
       ),
@@ -104,57 +187,15 @@ class MainApp extends StatelessWidget {
           primary: themeProvider.primaryColor,
           surface: Colors.black,
         ),
+        cupertinoOverrideTheme: CupertinoThemeData(
+          brightness: Brightness.dark,
+          primaryColor: themeProvider.primaryColor,
+        ),
         scaffoldBackgroundColor: Colors.transparent,
         useMaterial3: true,
       ),
-      builder: (context, child) {
-        final mediaQuery = MediaQuery.of(context);
-        
-        const double scale = 0.90;
-        final scaledSize = mediaQuery.size / scale;
-
-        return MediaQuery(
-          data: mediaQuery.copyWith(
-            size: scaledSize,
-            padding: mediaQuery.padding / scale,
-            viewPadding: mediaQuery.viewPadding / scale,
-            viewInsets: mediaQuery.viewInsets / scale,
-            systemGestureInsets: mediaQuery.systemGestureInsets / scale,
-          ),
-          child: OverflowBox(
-            minWidth: scaledSize.width,
-            maxWidth: scaledSize.width,
-            minHeight: scaledSize.height,
-            maxHeight: scaledSize.height,
-            child: Transform.scale(
-              scale: scale,
-              alignment: Alignment.center,
-              child: Scaffold(
-                backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
-                body: LiquidBackground(child: child ?? const SizedBox.shrink()),
-              ),
-            ),
-          ),
-        );
-      },
-      home: AppLockWrapper(
-        child: StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          initialData: FirebaseAuth.instance.currentUser,
-          builder: (context, snapshot) {
-            if (snapshot.hasData || FirebaseAuth.instance.currentUser != null) {
-              return const ResponsiveLayout(
-                mobileLayout: NavigationScreen(),
-                desktopLayout: DesktopNavigationScreen(),
-              );
-            }
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox.shrink();
-            }
-            return const Loginpage();
-          },
-        ),
-      ),
+      builder: (context, child) => buildAppShell(context, child),
+      home: homeWidget,
     );
   }
 }
