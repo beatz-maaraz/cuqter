@@ -2,6 +2,7 @@ import 'package:cuqter/Account/login.dart';
 import 'package:cuqter/Screen/home/navigation_screen.dart';
 import 'package:cuqter/Screen/home/desktop_navigation_screen.dart';
 import 'package:cuqter/responsive/responsive_layout.dart';
+import 'package:cuqter/widgets/liquid_background.dart';
 import 'package:cuqter/providers/chat_provider.dart';
 import 'package:cuqter/providers/theme_provider.dart';
 import 'package:cuqter/utils/colors.dart';
@@ -92,7 +93,7 @@ class MainApp extends StatelessWidget {
           secondaryContainer: AppColors.accent,
           onSecondaryContainer: Colors.white,
         ),
-        scaffoldBackgroundColor: Colors.white,
+        scaffoldBackgroundColor: Colors.transparent,
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
@@ -103,7 +104,7 @@ class MainApp extends StatelessWidget {
           primary: themeProvider.primaryColor,
           surface: Colors.black,
         ),
-        scaffoldBackgroundColor: Colors.black,
+        scaffoldBackgroundColor: Colors.transparent,
         useMaterial3: true,
       ),
       builder: (context, child) {
@@ -128,7 +129,10 @@ class MainApp extends StatelessWidget {
             child: Transform.scale(
               scale: scale,
               alignment: Alignment.center,
-              child: child ?? const SizedBox.shrink(),
+              child: Scaffold(
+                backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
+                body: LiquidBackground(child: child ?? const SizedBox.shrink()),
+              ),
             ),
           ),
         );

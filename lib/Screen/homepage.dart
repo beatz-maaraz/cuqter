@@ -271,11 +271,6 @@ class _HomepageState extends State<Homepage> {
     final String currentUserId = _auth.currentUser!.uid;
     final String chatId = getChatId(currentUserId, otherUserId);
 
-    // 1. Remove from contacts list on Firestore
-    await _firestore.collection('users').doc(currentUserId).update({
-      'contacts': FieldValue.arrayRemove([otherUserId]),
-    });
-
     // 2. Delete messages subcollection
     final messagesSnapshot = await _firestore
         .collection('chats')

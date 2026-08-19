@@ -117,6 +117,10 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                 _buildSectionLabel('APP ICON STYLE'),
                 const SizedBox(height: 12),
                 _buildAppIconPicker(colorScheme),
+                const SizedBox(height: 30),
+                _buildSectionLabel('EFFECTS'),
+                const SizedBox(height: 12),
+                _buildLiquidEffectToggle(themeProvider, colorScheme),
                 const SizedBox(height: 20),
                 _buildHomeScreenMockup(colorScheme),
                 const SizedBox(height: 40),
@@ -135,6 +139,148 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
         letterSpacing: 1.5,
         color: colorScheme.onSurface.withValues(alpha: 0.45),
       ),
+    );
+  }
+
+  Widget _buildLiquidEffectToggle(ThemeProvider themeProvider, ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+      ),
+      child: ListTile(
+        title: const Text(
+          'Liquid Glass Settings',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          'Show floating glassmorphism blobs behind screens',
+          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 12),
+        ),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.water_drop_outlined,
+            color: colorScheme.primary,
+            size: 20,
+          ),
+        ),
+        trailing: Icon(Icons.chevron_right, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+        onTap: () => _showLiquidSettingsSheet(context, themeProvider, colorScheme),
+      ),
+    );
+  }
+
+  void _showLiquidSettingsSheet(BuildContext context, ThemeProvider themeProvider, ColorScheme colorScheme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 50,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: colorScheme.onSurface.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Liquid Glass Controls',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Enable Effect',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    value: themeProvider.isLiquidBackgroundEnabled,
+                    onChanged: (val) {
+                      setState(() {
+                        themeProvider.toggleLiquidBackground(val);
+                      });
+                    },
+                    activeColor: colorScheme.primary,
+                  ),
+                  const SizedBox(height: 10),
+                  if (themeProvider.isLiquidBackgroundEnabled) ...[
+                    Text(
+                      'Transparency (Opacity)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    Slider(
+                      value: themeProvider.liquidOpacity,
+                      min: 0.0,
+                      max: 1.0,
+                      activeColor: colorScheme.primary,
+                      onChanged: (val) {
+                        setState(() {
+                          themeProvider.updateLiquidOpacity(val, save: false);
+                        });
+                      },
+                      onChangeEnd: (val) {
+                        themeProvider.updateLiquidOpacity(val, save: true);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Edge Control (Blur Amount)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    Slider(
+                      value: themeProvider.liquidBlur,
+                      min: 0.0,
+                      max: 100.0,
+                      activeColor: colorScheme.primary,
+                      onChanged: (val) {
+                        setState(() {
+                          themeProvider.updateLiquidBlur(val, save: false);
+                        });
+                      },
+                      onChangeEnd: (val) {
+                        themeProvider.updateLiquidBlur(val, save: true);
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

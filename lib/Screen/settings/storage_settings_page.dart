@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/services/local_storage_service.dart';
+import 'storage_file_manager_page.dart' as cuqter_file_manager;
 
 class StorageDetails {
   final int size;
@@ -810,20 +811,63 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                 ],
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colorScheme.error,
+                        side: BorderSide(color: colorScheme.error.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await _clearSpecificStorage(title);
+                      },
+                      child: const Text('Clear', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        if (title == 'Cached Data') return;
+                        
+                        String fileType = 'document';
+                        if (title == 'Photos') fileType = 'image';
+                        else if (title == 'Videos') fileType = 'video';
+                        else if (title == 'Voice & Audio') fileType = 'audio';
+
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => cuqter_file_manager.StorageFileManagerPage(
+                              title: title,
+                              fileType: fileType,
+                            ),
+                          ),
+                        );
+                        _calculateStorageSizes(showLoader: true);
+                      },
+                      child: Text(
+                        title == 'Cached Data' ? 'Done' : 'View Files', 
+                        style: const TextStyle(fontWeight: FontWeight.bold)
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
             ],
@@ -831,6 +875,124 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
         );
       },
     );
+  }
+
+  Future<void> _clearSpecificStorage(String title) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: huge.HugeIcon(
+                  icon: huge.HugeIcons.strokeRoundedDelete02,
+                  color: colorScheme.error,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Delete all $title?',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'This will permanently delete all downloaded $title saved by Cuqter on your device.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.error,
+                    foregroundColor: colorScheme.onError,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    foregroundColor: colorScheme.onSurface,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        String? targetPath;
+        if (title == 'Photos') {
+          targetPath = await LocalStorageService.getLocalFolderPath('image');
+        } else if (title == 'Videos') {
+          targetPath = await LocalStorageService.getLocalFolderPath('video');
+        } else if (title == 'Voice & Audio') {
+          targetPath = await LocalStorageService.getLocalFolderPath('audio');
+        } else if (title == 'Documents & Files') {
+          targetPath = await LocalStorageService.getLocalFolderPath('document');
+        } else if (title == 'Cached Data') {
+          await _clearCache();
+          return;
+        }
+
+        if (targetPath != null) {
+          final dir = Directory(targetPath);
+          if (await dir.exists()) {
+            await for (final file in dir.list(recursive: true, followLinks: false)) {
+              if (file is File) {
+                try {
+                  await file.delete();
+                } catch (e) {
+                  debugPrint('Error deleting $title file: $e');
+                }
+              }
+            }
+          }
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('All downloaded $title deleted')),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('Error clearing specific storage for $title: $e');
+      }
+
+      await _calculateStorageSizes(showLoader: false);
+    }
   }
 
   Widget _buildDetailCard({
