@@ -168,11 +168,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
           linkColor: isUser
               ? (Theme.of(context).brightness == Brightness.dark
-                  ? Colors.blue[300]!
-                  : Colors.blue[100]!)
+                    ? Colors.blue[300]!
+                    : Colors.blue[100]!)
               : (Theme.of(context).brightness == Brightness.dark
-                  ? Colors.blue[300]!
-                  : Colors.blue[800]!),
+                    ? Colors.blue[300]!
+                    : Colors.blue[800]!),
         ),
       ),
     );
@@ -219,13 +219,17 @@ class _AIChatScreenState extends State<AIChatScreen> {
               style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: "Ask any question...",
-                hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
+                hintStyle: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                fillColor: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.5,
+                ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

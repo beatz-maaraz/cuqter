@@ -32,14 +32,20 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
   Future<void> _loadStatistics() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Initialize with mock values if not set yet to make the screen look populated and premium
       if (prefs.getInt('net_messages_sent') == null) {
         final rand = Random();
         await prefs.setInt('net_messages_sent', 250 + rand.nextInt(300));
         await prefs.setInt('net_messages_received', 890 + rand.nextInt(500));
-        await prefs.setInt('net_media_sent_bytes', 45 * 1024 * 1024 + rand.nextInt(20 * 1024 * 1024));
-        await prefs.setInt('net_media_received_bytes', 184 * 1024 * 1024 + rand.nextInt(100 * 1024 * 1024));
+        await prefs.setInt(
+          'net_media_sent_bytes',
+          45 * 1024 * 1024 + rand.nextInt(20 * 1024 * 1024),
+        );
+        await prefs.setInt(
+          'net_media_received_bytes',
+          184 * 1024 * 1024 + rand.nextInt(100 * 1024 * 1024),
+        );
         await prefs.setInt('net_calls_count', 12 + rand.nextInt(15));
         await prefs.setInt('net_calls_duration', 45 + rand.nextInt(120));
         await prefs.setInt('net_db_syncs', 3420 + rand.nextInt(2000));
@@ -115,7 +121,8 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final totalSentBytes = _mediaSentBytes + (_messagesSent * 500); // Rough estimate of size
+    final totalSentBytes =
+        _mediaSentBytes + (_messagesSent * 500); // Rough estimate of size
     final totalReceivedBytes = _mediaReceivedBytes + (_messagesReceived * 500);
 
     return Scaffold(
@@ -123,7 +130,10 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
       appBar: AppBar(
         title: Text(
           'Network Usage',
-          style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -135,7 +145,11 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
           : ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               children: [
-                _buildOverviewCard(totalSentBytes, totalReceivedBytes, colorScheme),
+                _buildOverviewCard(
+                  totalSentBytes,
+                  totalReceivedBytes,
+                  colorScheme,
+                ),
                 const SizedBox(height: 30),
                 _buildSectionLabel('STATISTICS BREAKDOWN'),
                 const SizedBox(height: 12),
@@ -296,7 +310,9 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
       decoration: BoxDecoration(
         color: colorScheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.06)),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.06),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,19 +332,24 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
                 const SizedBox(height: 6),
-                ...lines.map((line) => Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        line,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
+                ...lines.map(
+                  (line) => Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      line,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
-                    )),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -356,7 +377,10 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
           color: colorScheme.error,
           size: 20,
         ),
-        label: const Text('Reset Statistics', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text(
+          'Reset Statistics',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
@@ -394,7 +418,9 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
               Text(
                 'This will clear all accumulated data transfers, call timers, and message counters. The stats will start counting from zero.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
+                style: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -412,7 +438,10 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
                     Navigator.pop(context);
                     _resetStatistics();
                   },
-                  child: const Text('Reset All', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Reset All',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -420,7 +449,8 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
                 width: double.infinity,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    backgroundColor: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                     foregroundColor: colorScheme.onSurface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -428,7 +458,10 @@ class _NetworkUsagePageState extends State<NetworkUsagePage> {
                     ),
                   ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],

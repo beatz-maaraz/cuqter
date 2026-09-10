@@ -56,9 +56,11 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     await prefs.setString(key, value);
     final user = _auth.currentUser;
     if (user != null) {
-      await _firestore.collection('users').doc(user.uid).update({
-        key: value,
-      }).catchError((_) {});
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .update({key: value})
+          .catchError((_) {});
     }
   }
 
@@ -70,14 +72,20 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     });
     final user = _auth.currentUser;
     if (user != null) {
-      await _firestore.collection('users').doc(user.uid).update({
-        'privacy_read_receipts': value,
-      }).catchError((_) {});
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .update({'privacy_read_receipts': value})
+          .catchError((_) {});
     }
   }
 
-  void _showVisibilityPicker(String title, String prefKey, String currentValue,
-      ValueChanged<String> onSelected) {
+  void _showVisibilityPicker(
+    String title,
+    String prefKey,
+    String currentValue,
+    ValueChanged<String> onSelected,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final options = ['Everyone', 'My Contacts', 'Nobody'];
 
@@ -110,7 +118,9 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 child: Text(
                   title,
                   style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -120,8 +130,9 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                   title: Text(
                     opt,
                     style: TextStyle(
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   trailing: isSelected
@@ -182,10 +193,14 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                     subtitle: _profilePhotoPrivacy,
                     icon: huge.HugeIcons.strokeRoundedUser,
                     onTap: () {
-                      _showVisibilityPicker('Profile Photo Visibility',
-                          'privacy_profile_pic', _profilePhotoPrivacy, (val) {
-                        setState(() => _profilePhotoPrivacy = val);
-                      });
+                      _showVisibilityPicker(
+                        'Profile Photo Visibility',
+                        'privacy_profile_pic',
+                        _profilePhotoPrivacy,
+                        (val) {
+                          setState(() => _profilePhotoPrivacy = val);
+                        },
+                      );
                     },
                   ),
                   const Divider(height: 1, indent: 56),
@@ -194,10 +209,14 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                     subtitle: _lastSeenPrivacy,
                     icon: huge.HugeIcons.strokeRoundedClock01,
                     onTap: () {
-                      _showVisibilityPicker('Last Seen & Online',
-                          'privacy_last_seen', _lastSeenPrivacy, (val) {
-                        setState(() => _lastSeenPrivacy = val);
-                      });
+                      _showVisibilityPicker(
+                        'Last Seen & Online',
+                        'privacy_last_seen',
+                        _lastSeenPrivacy,
+                        (val) {
+                          setState(() => _lastSeenPrivacy = val);
+                        },
+                      );
                     },
                   ),
                   const Divider(height: 1, indent: 56),
@@ -207,10 +226,13 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                     icon: huge.HugeIcons.strokeRoundedInformationCircle,
                     onTap: () {
                       _showVisibilityPicker(
-                          'About Visibility', 'privacy_about', _aboutPrivacy,
-                          (val) {
-                        setState(() => _aboutPrivacy = val);
-                      });
+                        'About Visibility',
+                        'privacy_about',
+                        _aboutPrivacy,
+                        (val) {
+                          setState(() => _aboutPrivacy = val);
+                        },
+                      );
                     },
                   ),
                   const Divider(height: 1, indent: 56),
@@ -219,10 +241,14 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                     subtitle: _statusPrivacy,
                     icon: huge.HugeIcons.strokeRoundedView,
                     onTap: () {
-                      _showVisibilityPicker('Status Updates Visibility',
-                          'privacy_status', _statusPrivacy, (val) {
-                        setState(() => _statusPrivacy = val);
-                      });
+                      _showVisibilityPicker(
+                        'Status Updates Visibility',
+                        'privacy_status',
+                        _statusPrivacy,
+                        (val) {
+                          setState(() => _statusPrivacy = val);
+                        },
+                      );
                     },
                   ),
                 ]),
@@ -246,13 +272,16 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                         color: colorScheme.primary,
                       ),
                     ),
-                    title: const Text('Read Receipts',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    title: const Text(
+                      'Read Receipts',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     subtitle: Text(
                       'If turned off, you won\'t send or receive read receipts.',
                       style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurface.withValues(alpha: 0.6)),
+                        fontSize: 12,
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
                     ),
                   ),
                   const Divider(height: 1, indent: 56),
@@ -307,8 +336,9 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       decoration: BoxDecoration(
         color: colorScheme.onSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
       ),
       child: Column(children: children),
     );
@@ -329,17 +359,15 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
           color: colorScheme.primary.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: huge.HugeIcon(
-          icon: icon,
-          size: 20,
-          color: colorScheme.primary,
-        ),
+        child: huge.HugeIcon(icon: icon, size: 20, color: colorScheme.primary),
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(
         subtitle,
         style: TextStyle(
-            fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+          fontSize: 12,
+          color: colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
       ),
       trailing: huge.HugeIcon(
         icon: huge.HugeIcons.strokeRoundedArrowRight01,

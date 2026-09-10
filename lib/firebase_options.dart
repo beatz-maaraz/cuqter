@@ -67,8 +67,10 @@ class DefaultFirebaseOptions {
     projectId: 'cuqter-2fa01',
     databaseURL: 'https://cuqter-2fa01-default-rtdb.firebaseio.com',
     storageBucket: 'cuqter-2fa01.firebasestorage.app',
-    androidClientId: '921725231252-pk2vi5htcjc0qak8tos5ald4enbi3uvl.apps.googleusercontent.com',
-    iosClientId: '921725231252-plfauvgtjfit4vrbr2qst2j64h26n7fv.apps.googleusercontent.com',
+    androidClientId:
+        '921725231252-pk2vi5htcjc0qak8tos5ald4enbi3uvl.apps.googleusercontent.com',
+    iosClientId:
+        '921725231252-plfauvgtjfit4vrbr2qst2j64h26n7fv.apps.googleusercontent.com',
     iosBundleId: 'com.example.cuqter',
   );
 
@@ -79,8 +81,10 @@ class DefaultFirebaseOptions {
     projectId: 'cuqter-2fa01',
     databaseURL: 'https://cuqter-2fa01-default-rtdb.firebaseio.com',
     storageBucket: 'cuqter-2fa01.firebasestorage.app',
-    androidClientId: '921725231252-pk2vi5htcjc0qak8tos5ald4enbi3uvl.apps.googleusercontent.com',
-    iosClientId: '921725231252-plfauvgtjfit4vrbr2qst2j64h26n7fv.apps.googleusercontent.com',
+    androidClientId:
+        '921725231252-pk2vi5htcjc0qak8tos5ald4enbi3uvl.apps.googleusercontent.com',
+    iosClientId:
+        '921725231252-plfauvgtjfit4vrbr2qst2j64h26n7fv.apps.googleusercontent.com',
     iosBundleId: 'com.example.cuqter',
   );
 

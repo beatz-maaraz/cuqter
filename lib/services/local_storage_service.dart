@@ -67,7 +67,9 @@ class LocalStorageService {
 
       // Clean up double extensions if any (e.g. "my_video.mp4.mp4" -> "my_video.mp4")
       final List<String> parts = filename.split('.');
-      if (parts.length > 2 && parts[parts.length - 1].toLowerCase() == parts[parts.length - 2].toLowerCase()) {
+      if (parts.length > 2 &&
+          parts[parts.length - 1].toLowerCase() ==
+              parts[parts.length - 2].toLowerCase()) {
         filename = parts.sublist(0, parts.length - 1).join('.');
       }
 
@@ -85,7 +87,11 @@ class LocalStorageService {
   }
 
   /// Get the local absolute file path inside the corresponding subfolder
-  static Future<String?> getLocalFilePath(String url, String fileType, {String? originalFileName}) async {
+  static Future<String?> getLocalFilePath(
+    String url,
+    String fileType, {
+    String? originalFileName,
+  }) async {
     if (kIsWeb) return null;
     final folderPath = await getLocalFolderPath(fileType);
     if (folderPath == null) return null;
@@ -94,10 +100,18 @@ class LocalStorageService {
   }
 
   /// Check if file is already saved locally on device
-  static Future<String?> checkFileExists(String url, String fileType, {String? originalFileName}) async {
+  static Future<String?> checkFileExists(
+    String url,
+    String fileType, {
+    String? originalFileName,
+  }) async {
     if (kIsWeb) return null;
     try {
-      final path = await getLocalFilePath(url, fileType, originalFileName: originalFileName);
+      final path = await getLocalFilePath(
+        url,
+        fileType,
+        originalFileName: originalFileName,
+      );
       if (path != null && await File(path).exists()) {
         return path;
       }
@@ -108,7 +122,11 @@ class LocalStorageService {
   }
 
   /// Save raw bytes locally in Beatz/Cuqter/[FileType] folder
-  static Future<String?> saveFileLocally(String fileName, Uint8List bytes, String fileType) async {
+  static Future<String?> saveFileLocally(
+    String fileName,
+    Uint8List bytes,
+    String fileType,
+  ) async {
     if (kIsWeb) return null;
     try {
       final folderPath = await getLocalFolderPath(fileType);
@@ -122,7 +140,7 @@ class LocalStorageService {
           cleanName = fileName.substring(underscoreIdx + 1);
         }
       }
-      
+
       final String path = '$folderPath/$cleanName';
       final file = File(path);
       await file.writeAsBytes(bytes);
@@ -138,12 +156,16 @@ class LocalStorageService {
   static Future<String?> downloadAndSaveFile(
     String url,
     String fileType,
-    void Function(double progress) onProgress,
-    {String? originalFileName}
-  ) async {
+    void Function(double progress) onProgress, {
+    String? originalFileName,
+  }) async {
     if (kIsWeb) return null;
     try {
-      final localPath = await getLocalFilePath(url, fileType, originalFileName: originalFileName);
+      final localPath = await getLocalFilePath(
+        url,
+        fileType,
+        originalFileName: originalFileName,
+      );
       if (localPath == null) return null;
 
       final cleanUrl = url.split('|')[0];
@@ -157,7 +179,7 @@ class LocalStorageService {
 
       final total = response.contentLength ?? 0;
       int downloaded = 0;
-      
+
       final file = File(localPath);
       final sink = file.openWrite();
 

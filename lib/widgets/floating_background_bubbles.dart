@@ -3,24 +3,23 @@ import 'package:flutter/material.dart';
 class FloatingBackgroundBubbles extends StatelessWidget {
   final List<IconData>? customIcons;
 
-  const FloatingBackgroundBubbles({
-    super.key,
-    this.customIcons,
-  });
+  const FloatingBackgroundBubbles({super.key, this.customIcons});
 
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final secondaryColor = Theme.of(context).colorScheme.secondary;
 
-    final icons = customIcons ?? const [
-      Icons.forum_outlined,
-      Icons.send_rounded,
-      Icons.add_reaction_outlined,
-      Icons.chat_bubble_outline_rounded,
-      Icons.sms_outlined,
-      Icons.alternate_email_rounded,
-    ];
+    final icons =
+        customIcons ??
+        const [
+          Icons.forum_outlined,
+          Icons.send_rounded,
+          Icons.add_reaction_outlined,
+          Icons.chat_bubble_outline_rounded,
+          Icons.sms_outlined,
+          Icons.alternate_email_rounded,
+        ];
 
     return Stack(
       children: [
@@ -32,9 +31,10 @@ class FloatingBackgroundBubbles extends StatelessWidget {
             duration: const Duration(seconds: 5),
             offsetDelta: const Offset(14, -20),
             rotateDelta: 0.1,
-            child: Opacity(
-              opacity: 0.12,
-              child: Icon(icons[0], size: 90, color: primaryColor),
+            child: Icon(
+              icons[0],
+              size: 90,
+              color: primaryColor.withValues(alpha: 0.12),
             ),
           ),
         ),
@@ -46,9 +46,10 @@ class FloatingBackgroundBubbles extends StatelessWidget {
             duration: const Duration(seconds: 4),
             offsetDelta: const Offset(-12, 16),
             rotateDelta: -0.08,
-            child: Opacity(
-              opacity: 0.10,
-              child: Icon(icons.length > 1 ? icons[1] : icons[0], size: 70, color: primaryColor),
+            child: Icon(
+              icons.length > 1 ? icons[1] : icons[0],
+              size: 70,
+              color: primaryColor.withValues(alpha: 0.10),
             ),
           ),
         ),
@@ -60,9 +61,10 @@ class FloatingBackgroundBubbles extends StatelessWidget {
             duration: const Duration(seconds: 6),
             offsetDelta: const Offset(10, -12),
             rotateDelta: 0.12,
-            child: Opacity(
-              opacity: 0.09,
-              child: Icon(icons.length > 2 ? icons[2] : icons[0], size: 55, color: secondaryColor),
+            child: Icon(
+              icons.length > 2 ? icons[2] : icons[0],
+              size: 55,
+              color: secondaryColor.withValues(alpha: 0.09),
             ),
           ),
         ),
@@ -74,9 +76,10 @@ class FloatingBackgroundBubbles extends StatelessWidget {
             duration: const Duration(seconds: 5),
             offsetDelta: const Offset(-16, -14),
             rotateDelta: -0.09,
-            child: Opacity(
-              opacity: 0.11,
-              child: Icon(icons.length > 3 ? icons[3] : icons[0], size: 65, color: secondaryColor),
+            child: Icon(
+              icons.length > 3 ? icons[3] : icons[0],
+              size: 65,
+              color: secondaryColor.withValues(alpha: 0.11),
             ),
           ),
         ),
@@ -88,9 +91,10 @@ class FloatingBackgroundBubbles extends StatelessWidget {
             duration: const Duration(seconds: 7),
             offsetDelta: const Offset(15, 18),
             rotateDelta: 0.08,
-            child: Opacity(
-              opacity: 0.10,
-              child: Icon(icons.length > 4 ? icons[4] : icons[0], size: 80, color: secondaryColor),
+            child: Icon(
+              icons.length > 4 ? icons[4] : icons[0],
+              size: 80,
+              color: secondaryColor.withValues(alpha: 0.10),
             ),
           ),
         ),
@@ -102,9 +106,10 @@ class FloatingBackgroundBubbles extends StatelessWidget {
             duration: const Duration(seconds: 4),
             offsetDelta: const Offset(-10, -22),
             rotateDelta: -0.1,
-            child: Opacity(
-              opacity: 0.12,
-              child: Icon(icons.length > 5 ? icons[5] : icons[0], size: 95, color: primaryColor),
+            child: Icon(
+              icons.length > 5 ? icons[5] : icons[0],
+              size: 95,
+              color: primaryColor.withValues(alpha: 0.12),
             ),
           ),
         ),
@@ -128,7 +133,8 @@ class AnimatedFloatingBubbleIcon extends StatefulWidget {
   });
 
   @override
-  State<AnimatedFloatingBubbleIcon> createState() => _AnimatedFloatingBubbleIconState();
+  State<AnimatedFloatingBubbleIcon> createState() =>
+      _AnimatedFloatingBubbleIconState();
 }
 
 class _AnimatedFloatingBubbleIconState extends State<AnimatedFloatingBubbleIcon>
@@ -139,10 +145,8 @@ class _AnimatedFloatingBubbleIconState extends State<AnimatedFloatingBubbleIcon>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat(reverse: true);
 
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
   }
@@ -167,10 +171,7 @@ class _AnimatedFloatingBubbleIconState extends State<AnimatedFloatingBubbleIcon>
 
         return Transform.translate(
           offset: currentOffset,
-          child: Transform.rotate(
-            angle: currentAngle,
-            child: widget.child,
-          ),
+          child: Transform.rotate(angle: currentAngle, child: widget.child),
         );
       },
       child: widget.child,

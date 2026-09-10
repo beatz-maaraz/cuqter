@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
-import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/services/status_service.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
@@ -17,7 +16,11 @@ class CreateStatusScreen extends StatefulWidget {
   final String? sharedMediaPath;
   final bool? isSharedMediaVideo;
 
-  const CreateStatusScreen({super.key, this.sharedMediaPath, this.isSharedMediaVideo});
+  const CreateStatusScreen({
+    super.key,
+    this.sharedMediaPath,
+    this.isSharedMediaVideo,
+  });
 
   @override
   State<CreateStatusScreen> createState() => _CreateStatusScreenState();
@@ -39,7 +42,10 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   void initState() {
     super.initState();
     if (widget.sharedMediaPath != null) {
-      _loadSharedMedia(widget.sharedMediaPath!, widget.isSharedMediaVideo ?? false);
+      _loadSharedMedia(
+        widget.sharedMediaPath!,
+        widget.isSharedMediaVideo ?? false,
+      );
     }
   }
 
@@ -127,7 +133,9 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
           _videoController = VideoPlayerController.networkUrl(Uri.parse(path));
         } else {
           if (kIsWeb) {
-            _videoController = VideoPlayerController.networkUrl(Uri.parse(path));
+            _videoController = VideoPlayerController.networkUrl(
+              Uri.parse(path),
+            );
           } else {
             _videoController = VideoPlayerController.file(File(path));
           }
@@ -160,7 +168,10 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      var userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      var userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
       String username = userDoc.data()?['name'] ?? 'Unknown';
       String profilePic = userDoc.data()?['profilepic'] ?? '';
 
@@ -211,7 +222,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
           ext = _videoFile!.path.split('.').last;
           if (ext.isEmpty || ext.length > 5) ext = 'mp4';
         }
-        
+
         Map<String, String>? res;
         if (kIsWeb) {
           Uint8List videoBytes = await _videoFile!.readAsBytes();
@@ -229,7 +240,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
             resourceType: 'video',
           );
         }
-        
+
         if (res != null) {
           mediaUrl = res['url']!;
           mediaType = 'video';
@@ -279,9 +290,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('new status'),
-      ),
+      appBar: AppBar(title: const Text('new status')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -292,7 +301,10 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (_selectedNetworkUrl == null && _selectedLocalPath == null && _file == null && !_isVideo)
+                        if (_selectedNetworkUrl == null &&
+                            _selectedLocalPath == null &&
+                            _file == null &&
+                            !_isVideo)
                           Expanded(
                             child: Center(
                               child: TextField(
@@ -318,7 +330,10 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                             ),
                             maxLines: null,
                           ),
-                        if (_selectedNetworkUrl != null || _selectedLocalPath != null || _file != null || _isVideo)
+                        if (_selectedNetworkUrl != null ||
+                            _selectedLocalPath != null ||
+                            _file != null ||
+                            _isVideo)
                           const SizedBox(height: 20),
                         if (_selectedNetworkUrl != null && !_isVideo)
                           Expanded(
@@ -356,12 +371,15 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                               ),
                             ),
                           )
-                        else if (_isVideo && _videoController != null && _videoController!.value.isInitialized)
+                        else if (_isVideo &&
+                            _videoController != null &&
+                            _videoController!.value.isInitialized)
                           Expanded(
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: AspectRatio(
-                                aspectRatio: _videoController!.value.aspectRatio,
+                                aspectRatio:
+                                    _videoController!.value.aspectRatio,
                                 child: VideoPlayer(_videoController!),
                               ),
                             ),
@@ -372,7 +390,10 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                 ),
                 SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -395,12 +416,16 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                                 _buildPillButton('Camera', () async {
                                   final result = await Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const CustomCameraScreen(),
+                                    ),
                                   );
                                   if (result != null) {
                                     final XFile file = result['file'];
-                                    final bool isVideo = result['type'] == 'video';
-                                    
+                                    final bool isVideo =
+                                        result['type'] == 'video';
+
                                     if (_videoController != null) {
                                       _videoController!.dispose();
                                       _videoController = null;
@@ -421,9 +446,13 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                                     });
 
                                     if (isVideo) {
-                                      _videoController = kIsWeb 
-                                        ? VideoPlayerController.networkUrl(Uri.parse(file.path)) 
-                                        : VideoPlayerController.file(File(file.path));
+                                      _videoController = kIsWeb
+                                          ? VideoPlayerController.networkUrl(
+                                              Uri.parse(file.path),
+                                            )
+                                          : VideoPlayerController.file(
+                                              File(file.path),
+                                            );
                                       _videoController!
                                         ..initialize().then((_) {
                                           if (mounted) setState(() {});
@@ -470,11 +499,12 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.5)),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+          ),
         ),
         child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500)),
       ),
     );
   }
 }
-

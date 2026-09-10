@@ -199,12 +199,13 @@ class _StatusViewScreenState extends State<StatusViewScreen>
   }
 
   void _sendReply(Status status) {
-    if (_messageController.text.trim().isEmpty || _currentUserId == null)
+    if (_messageController.text.trim().isEmpty || _currentUserId == null) {
       return;
+    }
 
     String chatId = _currentUserId.compareTo(status.uid) > 0
         ? '${_currentUserId}_${status.uid}'
-        : '${status.uid}_${_currentUserId}';
+        : '${status.uid}_$_currentUserId';
 
     _messageService.sendMessage(
       chatId: chatId,
@@ -324,7 +325,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
     }
 
     final liker = StatusLiker(
-      uid: _currentUserId!,
+      uid: _currentUserId,
       username: currentUserName,
       profilePic: currentUserPic,
       likedAt: DateTime.now(),
@@ -382,9 +383,15 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedView, size: 18, color: Theme.of(context).colorScheme.primary),
+                          huge.HugeIcon(
+                            icon: huge.HugeIcons.strokeRoundedView,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                           const SizedBox(width: 6),
-                          Text('Views (${status.viewers.map((v) => v.uid).toSet().length})'),
+                          Text(
+                            'Views (${status.viewers.map((v) => v.uid).toSet().length})',
+                          ),
                         ],
                       ),
                     ),
@@ -392,7 +399,11 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, size: 18, color: Colors.redAccent),
+                          const huge.HugeIcon(
+                            icon: huge.HugeIcons.strokeRoundedFavourite,
+                            size: 18,
+                            color: Colors.redAccent,
+                          ),
                           const SizedBox(width: 6),
                           Text('Likes (${status.likes.length})'),
                         ],
@@ -440,9 +451,13 @@ class _StatusViewScreenState extends State<StatusViewScreen>
         final viewerLiked = status.likes.any((l) => l.uid == viewer.uid);
 
         return FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('users').doc(viewer.uid).get(),
+          future: FirebaseFirestore.instance
+              .collection('users')
+              .doc(viewer.uid)
+              .get(),
           builder: (context, snapshot) {
-            String name = viewer.username != 'User' && viewer.username != 'Unknown User'
+            String name =
+                viewer.username != 'User' && viewer.username != 'Unknown User'
                 ? viewer.username
                 : 'Loading...';
             String pic = viewer.profilePic;
@@ -463,8 +478,9 @@ class _StatusViewScreenState extends State<StatusViewScreen>
               leading: CircleAvatar(
                 backgroundImage: pic.isNotEmpty
                     ? (pic.startsWith('http')
-                        ? CachedNetworkImageProvider(pic)
-                        : AssetImage(pic)) as ImageProvider
+                              ? CachedNetworkImageProvider(pic)
+                              : AssetImage(pic))
+                          as ImageProvider
                     : const AssetImage('assets/icon/default_profile.png'),
               ),
               title: Row(
@@ -472,7 +488,11 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                   Text(name),
                   if (viewerLiked) ...[
                     const SizedBox(width: 6),
-                    huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, size: 14, color: Colors.redAccent),
+                    const huge.HugeIcon(
+                      icon: huge.HugeIcons.strokeRoundedFavourite,
+                      size: 14,
+                      color: Colors.redAccent,
+                    ),
                   ],
                 ],
               ),
@@ -511,9 +531,13 @@ class _StatusViewScreenState extends State<StatusViewScreen>
         final liker = status.likes[index];
 
         return FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('users').doc(liker.uid).get(),
+          future: FirebaseFirestore.instance
+              .collection('users')
+              .doc(liker.uid)
+              .get(),
           builder: (context, snapshot) {
-            String name = liker.username != 'User' && liker.username != 'Unknown User'
+            String name =
+                liker.username != 'User' && liker.username != 'Unknown User'
                 ? liker.username
                 : 'Loading...';
             String pic = liker.profilePic;
@@ -534,13 +558,18 @@ class _StatusViewScreenState extends State<StatusViewScreen>
               leading: CircleAvatar(
                 backgroundImage: pic.isNotEmpty
                     ? (pic.startsWith('http')
-                        ? CachedNetworkImageProvider(pic)
-                        : AssetImage(pic)) as ImageProvider
+                              ? CachedNetworkImageProvider(pic)
+                              : AssetImage(pic))
+                          as ImageProvider
                     : const AssetImage('assets/icon/default_profile.png'),
               ),
               title: Text(name),
               subtitle: Text(_formatTimeAgo(liker.likedAt)),
-              trailing: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, color: Colors.redAccent, size: 20),
+              trailing: const huge.HugeIcon(
+                icon: huge.HugeIcons.strokeRoundedFavourite,
+                color: Colors.redAccent,
+                size: 20,
+              ),
               onTap: () async {
                 await Navigator.push(
                   context,
@@ -567,7 +596,9 @@ class _StatusViewScreenState extends State<StatusViewScreen>
     if (_currentGroup.isEmpty) return const Scaffold();
 
     final currentStatus = _currentGroup[_currentIndex];
-    final isLikedByMe = _currentUserId != null && currentStatus.likes.any((l) => l.uid == _currentUserId);
+    final isLikedByMe =
+        _currentUserId != null &&
+        currentStatus.likes.any((l) => l.uid == _currentUserId);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -789,14 +820,16 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                               ? (_currentGroup.last.profilePic.startsWith(
                                           'http',
                                         )
-                                         ? CachedNetworkImageProvider(
-                                             _currentGroup.last.profilePic,
-                                           )
-                                         : AssetImage(
-                                             _currentGroup.last.profilePic,
-                                           ))
-                                     as ImageProvider
-                              : const AssetImage('assets/icon/default_profile.png'),
+                                        ? CachedNetworkImageProvider(
+                                            _currentGroup.last.profilePic,
+                                          )
+                                        : AssetImage(
+                                            _currentGroup.last.profilePic,
+                                          ))
+                                    as ImageProvider
+                              : const AssetImage(
+                                  'assets/icon/default_profile.png',
+                                ),
                         ),
                         const SizedBox(width: 10),
                         Column(
@@ -841,8 +874,11 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       TextButton.icon(
-                        onPressed: () => _showStatusDetailsSheet(_currentGroup[_currentIndex], initialTabIndex: 0),
-                        icon: huge.HugeIcon(
+                        onPressed: () => _showStatusDetailsSheet(
+                          _currentGroup[_currentIndex],
+                          initialTabIndex: 0,
+                        ),
+                        icon: const huge.HugeIcon(
                           icon: huge.HugeIcons.strokeRoundedView,
                           color: Colors.white,
                           size: 24,
@@ -857,7 +893,10 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                         ),
                       ),
                       TextButton.icon(
-                        onPressed: () => _showStatusDetailsSheet(_currentGroup[_currentIndex], initialTabIndex: 1),
+                        onPressed: () => _showStatusDetailsSheet(
+                          _currentGroup[_currentIndex],
+                          initialTabIndex: 1,
+                        ),
                         icon: huge.HugeIcon(
                           icon: huge.HugeIcons.strokeRoundedFavourite,
                           color: _currentGroup[_currentIndex].likes.isNotEmpty
@@ -875,7 +914,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                         ),
                       ),
                       IconButton(
-                        icon: huge.HugeIcon(
+                        icon: const huge.HugeIcon(
                           icon: huge.HugeIcons.strokeRoundedShare01,
                           color: Colors.white,
                           size: 24,
@@ -893,7 +932,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                         },
                       ),
                       IconButton(
-                        icon: huge.HugeIcon(
+                        icon: const huge.HugeIcon(
                           icon: huge.HugeIcons.strokeRoundedDelete02,
                           color: Colors.redAccent,
                           size: 24,
@@ -962,7 +1001,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                           ),
                         ),
                         IconButton(
-                          icon: huge.HugeIcon(
+                          icon: const huge.HugeIcon(
                             icon: huge.HugeIcons.strokeRoundedSent,
                             color: Colors.blueAccent,
                             size: 24,
@@ -981,7 +1020,9 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                                 scale: scale,
                                 child: huge.HugeIcon(
                                   icon: huge.HugeIcons.strokeRoundedFavourite,
-                                  color: isLikedByMe ? Colors.redAccent : Colors.white,
+                                  color: isLikedByMe
+                                      ? Colors.redAccent
+                                      : Colors.white,
                                   size: 26,
                                 ),
                               );
@@ -1003,7 +1044,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                   builder: (context, scale, child) {
                     return Transform.scale(
                       scale: scale,
-                      child: huge.HugeIcon(
+                      child: const huge.HugeIcon(
                         icon: huge.HugeIcons.strokeRoundedFavourite,
                         color: Colors.redAccent,
                         size: 100,

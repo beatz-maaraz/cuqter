@@ -12,12 +12,12 @@ class ChatMessageText extends StatelessWidget {
   final Widget? trailing;
 
   const ChatMessageText({
-    Key? key,
+    super.key,
     required this.text,
     required this.baseStyle,
     required this.linkColor,
     this.trailing,
-  }) : super(key: key);
+  });
 
   /// Checks if a single grapheme cluster is an emoji.
   bool _isEmoji(String character) {
@@ -26,13 +26,26 @@ class ChatMessageText extends StatelessWidget {
       if ((rune >= 48 && rune <= 57) || // 0-9
           (rune >= 65 && rune <= 90) || // A-Z
           (rune >= 97 && rune <= 122) || // a-z
-          rune == 46 || rune == 63 || rune == 33 || // . ? !
-          rune == 44 || rune == 58 || rune == 59 || // , : ;
-          rune == 45 || rune == 95 || rune == 47 || // - _ /
-          rune == 64 || rune == 35 || rune == 36 || // @ # $
-          rune == 37 || rune == 38 || rune == 42 || // % & *
-          rune == 40 || rune == 41 || rune == 43 || // ( ) +
-          rune == 61) { // =
+          rune == 46 ||
+          rune == 63 ||
+          rune == 33 || // . ? !
+          rune == 44 ||
+          rune == 58 ||
+          rune == 59 || // , : ;
+          rune == 45 ||
+          rune == 95 ||
+          rune == 47 || // - _ /
+          rune == 64 ||
+          rune == 35 ||
+          rune == 36 || // @ # $
+          rune == 37 ||
+          rune == 38 ||
+          rune == 42 || // % & *
+          rune == 40 ||
+          rune == 41 ||
+          rune == 43 || // ( ) +
+          rune == 61) {
+        // =
         return false;
       }
     }
@@ -95,10 +108,7 @@ class ChatMessageText extends StatelessWidget {
       return SelectableText.rich(
         TextSpan(
           text: text,
-          style: baseStyle.copyWith(
-            fontSize: size,
-            height: 1.1,
-          ),
+          style: baseStyle.copyWith(fontSize: size, height: 1.1),
           children: trailing != null
               ? [
                   WidgetSpan(
@@ -107,7 +117,7 @@ class ChatMessageText extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 8.0),
                       child: trailing!,
                     ),
-                  )
+                  ),
                 ]
               : null,
         ),
@@ -131,12 +141,11 @@ class _LinkText extends StatefulWidget {
   final Widget? trailing;
 
   const _LinkText({
-    Key? key,
     required this.text,
     required this.style,
     required this.linkColor,
     this.trailing,
-  }) : super(key: key);
+  });
 
   @override
   State<_LinkText> createState() => _LinkTextState();
@@ -198,7 +207,7 @@ class _LinkTextState extends State<_LinkText> {
                       padding: const EdgeInsets.only(left: 8.0),
                       child: widget.trailing!,
                     ),
-                  )
+                  ),
                 ]
               : null,
         ),
@@ -210,10 +219,12 @@ class _LinkTextState extends State<_LinkText> {
 
     for (final match in matches) {
       if (match.start > lastMatchEnd) {
-        spans.add(TextSpan(
-          text: widget.text.substring(lastMatchEnd, match.start),
-          style: widget.style,
-        ));
+        spans.add(
+          TextSpan(
+            text: widget.text.substring(lastMatchEnd, match.start),
+            style: widget.style,
+          ),
+        );
       }
 
       final urlString = match.group(0)!;
@@ -221,38 +232,42 @@ class _LinkTextState extends State<_LinkText> {
         ..onTap = () => _launchURL(urlString);
       _recognizers.add(recognizer);
 
-      spans.add(TextSpan(
-        text: urlString,
-        style: widget.style.copyWith(
-          color: widget.linkColor,
-          decoration: TextDecoration.underline,
-          fontWeight: FontWeight.w600,
+      spans.add(
+        TextSpan(
+          text: urlString,
+          style: widget.style.copyWith(
+            color: widget.linkColor,
+            decoration: TextDecoration.underline,
+            fontWeight: FontWeight.w600,
+          ),
+          recognizer: recognizer,
         ),
-        recognizer: recognizer,
-      ));
+      );
 
       lastMatchEnd = match.end;
     }
 
     if (lastMatchEnd < widget.text.length) {
-      spans.add(TextSpan(
-        text: widget.text.substring(lastMatchEnd),
-        style: widget.style,
-      ));
+      spans.add(
+        TextSpan(
+          text: widget.text.substring(lastMatchEnd),
+          style: widget.style,
+        ),
+      );
     }
 
     if (widget.trailing != null) {
-      spans.add(WidgetSpan(
-        alignment: PlaceholderAlignment.bottom,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: widget.trailing!,
+      spans.add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.bottom,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: widget.trailing!,
+          ),
         ),
-      ));
+      );
     }
 
-    return SelectableText.rich(
-      TextSpan(children: spans),
-    );
+    return SelectableText.rich(TextSpan(children: spans));
   }
 }

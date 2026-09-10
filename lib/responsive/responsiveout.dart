@@ -6,8 +6,11 @@ class Responsiveout extends StatefulWidget {
   final Widget Phonepages;
   final Widget Webpage;
 
-
-  const Responsiveout({super.key, required this.Phonepages, required this.Webpage});
+  const Responsiveout({
+    super.key,
+    required this.Phonepages,
+    required this.Webpage,
+  });
 
   @override
   State<Responsiveout> createState() => _ResponsiveoutState();
@@ -19,9 +22,9 @@ class _ResponsiveoutState extends State<Responsiveout> {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth > 600) {
-          return Webpage();
+          return const Webpage();
         } else {
-          return Phonepages();
+          return const Phonepages();
         }
       },
     );

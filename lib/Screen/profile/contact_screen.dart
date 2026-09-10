@@ -250,7 +250,8 @@ class _ContactScreenState extends State<ContactScreen> {
                                             receiverId: userId,
                                             receiverName: name,
                                             receiverProfilePic: profilePic,
-                                            receiverIsOnline: data['isOnline'] as bool?,
+                                            receiverIsOnline:
+                                                data['isOnline'] as bool?,
                                           ),
                                         ),
                                       );
@@ -290,7 +291,9 @@ class _ContactScreenState extends State<ContactScreen> {
                                                             profilePic,
                                                           ))
                                                     as ImageProvider
-                                              : const AssetImage('assets/icon/default_profile.png'),
+                                              : const AssetImage(
+                                                  'assets/icon/default_profile.png',
+                                                ),
                                         ),
                                         title: Text(
                                           name,

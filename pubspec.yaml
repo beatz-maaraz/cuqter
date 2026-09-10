@@ -1,7 +1,7 @@
 name: cuqter
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.4.22+7
+version: 1.5.35+8
 
 environment:
   sdk: ^3.11.1
@@ -51,12 +51,15 @@ dependencies:
   local_auth: ^3.0.2
   mobile_scanner: ^7.4.0
   app_links: ^6.4.0
+  device_info_plus: ^13.2.0
+  uuid: ^4.6.0
 
 
 dependency_overrides:
   win32: ^6.0.1
 
 dev_dependencies:
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
 

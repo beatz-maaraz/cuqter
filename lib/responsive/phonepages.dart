@@ -10,10 +10,6 @@ class Phonepages extends StatefulWidget {
 class _PhonepagesState extends State<Phonepages> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text('Phone Pages'),
-      ),
-    );
+    return const Scaffold(body: Center(child: Text('Phone Pages')));
   }
 }

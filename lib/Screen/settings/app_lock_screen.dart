@@ -143,7 +143,8 @@ class _AppLockScreenState extends State<AppLockScreen> {
                             ),
                           )
                         : huge.HugeIcon(
-                            icon: huge.HugeIcons.strokeRoundedSecurityValidation,
+                            icon:
+                                huge.HugeIcons.strokeRoundedSecurityValidation,
                             size: 24,
                             color: colorScheme.onPrimary,
                           ),

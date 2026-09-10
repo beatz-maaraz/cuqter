@@ -16,11 +16,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuqter/Screen/calls/incoming_call_screen.dart';
 import 'package:cuqter/widgets/resizable_sidebar.dart';
 import 'package:cuqter/services/notification_service.dart';
+
 class DesktopNavigationScreen extends StatefulWidget {
   const DesktopNavigationScreen({super.key});
 
   @override
-  State<DesktopNavigationScreen> createState() => _DesktopNavigationScreenState();
+  State<DesktopNavigationScreen> createState() =>
+      _DesktopNavigationScreenState();
 }
 
 class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
@@ -48,7 +50,7 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
     super.initState();
     NotificationService().initialize();
     _statusesStream = _statusService.getActiveStatuses();
-    
+
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       _listenForIncomingCalls(currentUser.uid);
@@ -60,41 +62,43 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
         .ref('incoming_calls/$uid')
         .onValue
         .listen((event) {
-      if (event.snapshot.value != null) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>;
-        final roomId = data['roomId'] as String? ?? '';
-        final callerName = data['callerName'] as String? ?? 'Unknown';
-        final callerId = data['callerId'] as String? ?? '';
-        final isVideoCall = data['isVideo'] as bool? ?? false;
+          if (event.snapshot.value != null) {
+            final data = event.snapshot.value as Map<dynamic, dynamic>;
+            final roomId = data['roomId'] as String? ?? '';
+            final callerName = data['callerName'] as String? ?? 'Unknown';
+            final callerId = data['callerId'] as String? ?? '';
+            final isVideoCall = data['isVideo'] as bool? ?? false;
 
-        // Guard: skip if this room is already being shown
-        if (_isShowingIncomingCall && _currentRingingRoomId == roomId) return;
+            // Guard: skip if this room is already being shown
+            if (_isShowingIncomingCall && _currentRingingRoomId == roomId)
+              return;
 
-        _currentRingingRoomId = roomId;
-        _isShowingIncomingCall = true;
+            _currentRingingRoomId = roomId;
+            _isShowingIncomingCall = true;
 
-        // Push incoming call screen
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => IncomingCallScreen(
-                roomId: roomId,
-                callerName: callerName,
-                callerId: callerId,
-                isVideoCall: isVideoCall,
-              ),
-            ),
-          ).whenComplete(() {
+            // Push incoming call screen
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => IncomingCallScreen(
+                    roomId: roomId,
+                    callerName: callerName,
+                    callerId: callerId,
+                    isVideoCall: isVideoCall,
+                  ),
+                ),
+              ).whenComplete(() {
+                _isShowingIncomingCall = false;
+                if (_currentRingingRoomId == roomId)
+                  _currentRingingRoomId = null;
+              });
+            }
+          } else {
             _isShowingIncomingCall = false;
-            if (_currentRingingRoomId == roomId) _currentRingingRoomId = null;
-          });
-        }
-      } else {
-        _isShowingIncomingCall = false;
-        _currentRingingRoomId = null;
-      }
-    });
+            _currentRingingRoomId = null;
+          }
+        });
   }
 
   @override
@@ -108,16 +112,15 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surfaceContainerLowest, // Slightly darker background to make panels pop
+      backgroundColor: colorScheme
+          .surfaceContainerLowest, // Slightly darker background to make panels pop
       body: Row(
         children: [
           // Pane 1: Navigation Rail
           _buildNavigationRail(context, colorScheme),
 
           // Pane 2 & 3: Content based on selected tab
-          Expanded(
-            child: _buildMainContent(context, colorScheme),
-          ),
+          Expanded(child: _buildMainContent(context, colorScheme)),
         ],
       ),
     );
@@ -129,7 +132,10 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
       margin: const EdgeInsets.only(right: 8),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.05),
@@ -148,7 +154,12 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
             child: FloatingActionButton(
               heroTag: 'desktop_fab',
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateStatusScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateStatusScreen(),
+                  ),
+                );
               },
               backgroundColor: colorScheme.primary,
               shape: const CircleBorder(),
@@ -214,8 +225,8 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                     backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                     backgroundImage: profilePic.isNotEmpty
                         ? (profilePic.startsWith('http')
-                            ? CachedNetworkImageProvider(profilePic)
-                            : AssetImage(profilePic) as ImageProvider)
+                              ? CachedNetworkImageProvider(profilePic)
+                              : AssetImage(profilePic) as ImageProvider)
                         : null,
                     child: profilePic.isEmpty
                         ? Icon(Icons.person, color: colorScheme.primary)
@@ -257,7 +268,9 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
               curve: Curves.easeOutBack,
               child: huge.HugeIcon(
                 icon: isSelected ? activeIcon : icon,
-                color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.4),
+                color: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.onSurface.withValues(alpha: 0.4),
                 size: 26,
               ),
             ),
@@ -267,7 +280,9 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.4),
+                color: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.onSurface.withValues(alpha: 0.4),
               ),
             ),
           ],
@@ -294,7 +309,10 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
-                      border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+                      border: Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.1),
+                        width: 1,
+                      ),
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -328,7 +346,10 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
-                      border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+                      border: Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.1),
+                        width: 1,
+                      ),
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -340,34 +361,38 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: _selectedUserId != null && _selectedUserName != null
-                    ? ChatScreen(
-                        key: ValueKey(_selectedUserId),
-                        receiverId: _selectedUserId!,
-                        receiverName: _selectedUserName!,
-                        receiverProfilePic: _selectedUserProfilePic,
-                        receiverIsOnline: _selectedUserIsOnline,
-                        isDesktop: true,
-                      )
-                    : Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            huge.HugeIcon(
-                              icon: huge.HugeIcons.strokeRoundedBubbleChat,
-                              color: colorScheme.onSurface.withValues(alpha: 0.2),
-                              size: 64,
+                        ? ChatScreen(
+                            key: ValueKey(_selectedUserId),
+                            receiverId: _selectedUserId!,
+                            receiverName: _selectedUserName!,
+                            receiverProfilePic: _selectedUserProfilePic,
+                            receiverIsOnline: _selectedUserIsOnline,
+                            isDesktop: true,
+                          )
+                        : Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                huge.HugeIcon(
+                                  icon: huge.HugeIcons.strokeRoundedBubbleChat,
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                  size: 64,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Select a chat to start messaging',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Select a chat to start messaging',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: colorScheme.onSurface.withValues(alpha: 0.5),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
                   ),
                 ),
               ),
@@ -380,7 +405,10 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                   width: 120,
                   decoration: BoxDecoration(
                     color: colorScheme.surface,
-                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+                    border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.1),
+                      width: 1,
+                    ),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
@@ -403,7 +431,10 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
           child: Container(
             decoration: BoxDecoration(
               color: colorScheme.surface,
-              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1), width: 1),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.1),
+                width: 1,
+              ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
@@ -419,9 +450,7 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
         ),
 
         // Index 2: Calls pane
-        Container(
-          child: CallsHistoryPage(isActive: _selectedIndex == 2),
-        ),
+        Container(child: CallsHistoryPage(isActive: _selectedIndex == 2)),
       ],
     );
   }
@@ -443,17 +472,23 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
         final currentUser = FirebaseAuth.instance.currentUser;
         String? currentUserId = currentUser?.uid;
         List<Status> myStatuses = [];
-        if (currentUserId != null && groupedStatuses.containsKey(currentUserId)) {
+        if (currentUserId != null &&
+            groupedStatuses.containsKey(currentUserId)) {
           myStatuses = groupedStatuses[currentUserId]!;
           groupedStatuses.remove(currentUserId);
         }
 
-        List<List<Status>> allOtherUserStatuses = groupedStatuses.values.toList();
-        
+        List<List<Status>> allOtherUserStatuses = groupedStatuses.values
+            .toList();
+
         if (currentUserId != null) {
           allOtherUserStatuses.sort((a, b) {
-            bool aAllViewed = a.every((s) => s.viewers.any((v) => v.uid == currentUserId));
-            bool bAllViewed = b.every((s) => s.viewers.any((v) => v.uid == currentUserId));
+            bool aAllViewed = a.every(
+              (s) => s.viewers.any((v) => v.uid == currentUserId),
+            );
+            bool bAllViewed = b.every(
+              (s) => s.viewers.any((v) => v.uid == currentUserId),
+            );
             if (aAllViewed == bAllViewed) {
               return b.last.createdAt.compareTo(a.last.createdAt);
             }
@@ -484,7 +519,12 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                   List<Status> userStatuses = allOtherUserStatuses[index - 1];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 24.0),
-                    child: _buildUserStatusAvatar(context, userStatuses, allOtherUserStatuses, index - 1),
+                    child: _buildUserStatusAvatar(
+                      context,
+                      userStatuses,
+                      allOtherUserStatuses,
+                      index - 1,
+                    ),
                   );
                 },
               ),
@@ -500,7 +540,12 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: currentUser != null ? FirebaseFirestore.instance.collection('users').doc(currentUser.uid).snapshots() : null,
+      stream: currentUser != null
+          ? FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUser.uid)
+                .snapshots()
+          : null,
       builder: (context, snapshot) {
         String profilePic = '';
         if (snapshot.hasData && snapshot.data!.exists) {
@@ -513,9 +558,19 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
         return GestureDetector(
           onTap: () {
             if (myStatuses.isNotEmpty) {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => StatusViewScreen(statuses: myStatuses)));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StatusViewScreen(statuses: myStatuses),
+                ),
+              );
             } else {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateStatusScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CreateStatusScreen(),
+                ),
+              );
             }
           },
           child: Column(
@@ -527,7 +582,9 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: myStatuses.isNotEmpty ? colorScheme.primary : Colors.transparent,
+                        color: myStatuses.isNotEmpty
+                            ? colorScheme.primary
+                            : Colors.transparent,
                         width: 2,
                       ),
                     ),
@@ -536,11 +593,16 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                       backgroundColor: colorScheme.surfaceContainerHighest,
                       backgroundImage: profilePic.isNotEmpty
                           ? (profilePic.startsWith('http')
-                              ? CachedNetworkImageProvider(profilePic)
-                              : AssetImage(profilePic)) as ImageProvider
+                                    ? CachedNetworkImageProvider(profilePic)
+                                    : AssetImage(profilePic))
+                                as ImageProvider
                           : null,
                       child: profilePic.isEmpty
-                          ? Icon(Icons.person, color: colorScheme.onSurface, size: 24)
+                          ? Icon(
+                              Icons.person,
+                              color: colorScheme.onSurface,
+                              size: 24,
+                            )
                           : null,
                     ),
                   ),
@@ -552,18 +614,29 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                         decoration: BoxDecoration(
                           color: colorScheme.primary,
                           shape: BoxShape.circle,
-                          border: Border.all(color: colorScheme.surface, width: 2),
+                          border: Border.all(
+                            color: colorScheme.surface,
+                            width: 2,
+                          ),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(2.0),
-                          child: Icon(Icons.add, size: 20, color: colorScheme.onPrimary),
+                          child: Icon(
+                            Icons.add,
+                            size: 20,
+                            color: colorScheme.onPrimary,
+                          ),
                         ),
                       ),
                     ),
                 ],
               ),
               const SizedBox(height: 6),
-              Text('My status', style: TextStyle(fontSize: 12, color: colorScheme.onSurface), textAlign: TextAlign.center),
+              Text(
+                'My status',
+                style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         );
@@ -571,20 +644,34 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
     );
   }
 
-  Widget _buildUserStatusAvatar(BuildContext context, List<Status> statuses, List<List<Status>> allUserStatuses, int userIndex) {
+  Widget _buildUserStatusAvatar(
+    BuildContext context,
+    List<Status> statuses,
+    List<List<Status>> allUserStatuses,
+    int userIndex,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final latestStatus = statuses.last;
-    
+
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    bool allViewed = currentUserId != null && statuses.every((s) => s.viewers.any((v) => v.uid == currentUserId));
-    Color ringColor = allViewed ? colorScheme.onSurface.withValues(alpha: 0.2) : colorScheme.primary;
+    bool allViewed =
+        currentUserId != null &&
+        statuses.every((s) => s.viewers.any((v) => v.uid == currentUserId));
+    Color ringColor = allViewed
+        ? colorScheme.onSurface.withValues(alpha: 0.2)
+        : colorScheme.primary;
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => StatusViewScreen(
-          groupedStatusesList: allUserStatuses,
-          initialUserIndex: userIndex,
-        )));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => StatusViewScreen(
+              groupedStatusesList: allUserStatuses,
+              initialUserIndex: userIndex,
+            ),
+          ),
+        );
       },
       child: Column(
         children: [
@@ -598,8 +685,11 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
               radius: 28,
               backgroundImage: latestStatus.profilePic.isNotEmpty
                   ? (latestStatus.profilePic.startsWith('http')
-                      ? CachedNetworkImageProvider(latestStatus.profilePic)
-                      : AssetImage(latestStatus.profilePic)) as ImageProvider
+                            ? CachedNetworkImageProvider(
+                                latestStatus.profilePic,
+                              )
+                            : AssetImage(latestStatus.profilePic))
+                        as ImageProvider
                   : null,
               child: latestStatus.profilePic.isEmpty
                   ? Icon(Icons.person, color: colorScheme.onSurface, size: 24)
@@ -608,7 +698,9 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            latestStatus.username.length > 8 ? '${latestStatus.username.substring(0, 8)}...' : latestStatus.username,
+            latestStatus.username.length > 8
+                ? '${latestStatus.username.substring(0, 8)}...'
+                : latestStatus.username,
             style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
             textAlign: TextAlign.center,
           ),

@@ -13,7 +13,7 @@ class InlineAudioPlayer extends StatefulWidget {
   final String titlePrefix;
 
   const InlineAudioPlayer({
-    Key? key,
+    super.key,
     required this.source,
     required this.isLocal,
     required this.colorScheme,
@@ -21,7 +21,7 @@ class InlineAudioPlayer extends StatefulWidget {
     required this.fileName,
     required this.fileSize,
     required this.titlePrefix,
-  }) : super(key: key);
+  });
 
   @override
   State<InlineAudioPlayer> createState() => _InlineAudioPlayerState();
@@ -60,7 +60,7 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
         });
       }
     });
-    
+
     _audioPlayer.onPlayerComplete.listen((event) async {
       if (mounted) {
         await _audioPlayer.seek(Duration.zero);
@@ -73,7 +73,7 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
 
     _setSource();
   }
-  
+
   Future<void> _setSource() async {
     try {
       if (kIsWeb) {
@@ -106,9 +106,11 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
     final textColor = widget.isMe
         ? widget.colorScheme.onPrimaryContainer
         : widget.colorScheme.onSurfaceVariant;
-    final iconColor = widget.isMe ? widget.colorScheme.onPrimaryContainer : widget.colorScheme.primary;
+    final iconColor = widget.isMe
+        ? widget.colorScheme.onPrimaryContainer
+        : widget.colorScheme.primary;
 
-    final double progress = _duration.inMilliseconds > 0 
+    final double progress = _duration.inMilliseconds > 0
         ? (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0)
         : 0.0;
 
@@ -116,7 +118,9 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
       width: 280, // Fixed width for consistent bubble size
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: widget.isMe ? Colors.white.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.15),
+        color: widget.isMe
+            ? Colors.white.withValues(alpha: 0.2)
+            : Colors.orange.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -210,8 +214,8 @@ class _InlineAudioPlayerState extends State<InlineAudioPlayer> {
                     color: iconColor.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
-                  )
-                ]
+                  ),
+                ],
               ),
               child: Icon(
                 _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
@@ -234,13 +238,13 @@ class SimulatedWaveformSlider extends StatelessWidget {
   final String seedString;
 
   const SimulatedWaveformSlider({
-    Key? key,
+    super.key,
     required this.progress,
     required this.activeColor,
     required this.inactiveColor,
     required this.onChanged,
     required this.seedString,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -248,8 +252,10 @@ class SimulatedWaveformSlider extends StatelessWidget {
       builder: (context, constraints) {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTapDown: (details) => _handleTapOrDrag(details.localPosition.dx, constraints.maxWidth),
-          onPanUpdate: (details) => _handleTapOrDrag(details.localPosition.dx, constraints.maxWidth),
+          onTapDown: (details) =>
+              _handleTapOrDrag(details.localPosition.dx, constraints.maxWidth),
+          onPanUpdate: (details) =>
+              _handleTapOrDrag(details.localPosition.dx, constraints.maxWidth),
           child: CustomPaint(
             size: Size(constraints.maxWidth, 30), // Waveform height
             painter: WaveformPainter(
@@ -287,10 +293,11 @@ class WaveformPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final int barCount = 35; // number of bars
-    final double barWidth = 3.0;
-    final double spacing = (size.width - (barCount * barWidth)) / (barCount - 1);
-    
+    const int barCount = 35; // number of bars
+    const double barWidth = 3.0;
+    final double spacing =
+        (size.width - (barCount * barWidth)) / (barCount - 1);
+
     // Simple deterministic random generator based on seed string
     final seed = seedString.hashCode;
     final random = Random(seed);
@@ -309,7 +316,7 @@ class WaveformPainter extends CustomPainter {
       // Random height between 20% and 100% of max height
       final double normalizedHeight = 0.2 + random.nextDouble() * 0.8;
       final double barHeight = size.height * normalizedHeight;
-      
+
       final double x = i * (barWidth + spacing);
       final double yStart = (size.height - barHeight) / 2;
       final double yEnd = yStart + barHeight;
@@ -324,8 +331,8 @@ class WaveformPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant WaveformPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-           oldDelegate.activeColor != activeColor ||
-           oldDelegate.inactiveColor != inactiveColor ||
-           oldDelegate.seedString != seedString;
+        oldDelegate.activeColor != activeColor ||
+        oldDelegate.inactiveColor != inactiveColor ||
+        oldDelegate.seedString != seedString;
   }
 }

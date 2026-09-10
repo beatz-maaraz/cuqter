@@ -134,7 +134,8 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                   const Divider(height: 1, indent: 56),
                   _buildSwitchTile(
                     title: 'Message Preview',
-                    subtitle: 'Show message content in push notification popups',
+                    subtitle:
+                        'Show message content in push notification popups',
                     icon: huge.HugeIcons.strokeRoundedEye,
                     value: _previewMessage,
                     onChanged: (val) {
@@ -169,8 +170,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       decoration: BoxDecoration(
         color: colorScheme.onSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
       ),
       child: Column(children: children),
     );
@@ -194,16 +196,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           color: colorScheme.primary.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: huge.HugeIcon(
-          icon: icon,
-          size: 20,
-          color: colorScheme.primary,
-        ),
+        child: huge.HugeIcon(icon: icon, size: 20, color: colorScheme.primary),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(
         subtitle,
         style: TextStyle(

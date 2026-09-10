@@ -6,14 +6,15 @@ import 'package:flutter/material.dart';
 class ImageCropScreen extends StatefulWidget {
   final Uint8List imageBytes;
 
-  const ImageCropScreen({Key? key, required this.imageBytes}) : super(key: key);
+  const ImageCropScreen({super.key, required this.imageBytes});
 
   @override
   State<ImageCropScreen> createState() => _ImageCropScreenState();
 }
 
 class _ImageCropScreenState extends State<ImageCropScreen> {
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
   ui.Image? _decodedImage;
   bool _isProcessing = false;
   double _viewportSize = 300.0;
@@ -54,17 +55,17 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
 
   void _resetTransformation() {
     if (_decodedImage == null) return;
-    
+
     final double imgW = _decodedImage!.width.toDouble();
     final double imgH = _decodedImage!.height.toDouble();
-    
+
     // Fit image inside the viewport
     final double scaleX = _viewportSize / imgW;
     final double scaleY = _viewportSize / imgH;
     final double scale = scaleX > scaleY ? scaleX : scaleY; // Cover fit
-    
+
     _minScale = scale;
-    
+
     final double dx = (_viewportSize - imgW * scale) / 2;
     final double dy = (_viewportSize - imgH * scale) / 2;
 
@@ -92,20 +93,29 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
 
       // 1. Scale from cutout space to target size
       canvas.scale(scaleFactor);
-      
+
       // 2. Shift so the cutout's top-left is at (0,0)
       canvas.translate(-cutoutLeft, -cutoutTop);
-      
+
       // 3. Apply the user's interactive transformation
       canvas.transform(_transformationController.value.storage);
-      
+
       // 4. Draw the original high-resolution image
-      canvas.drawImage(_decodedImage!, Offset.zero, Paint()..filterQuality = ui.FilterQuality.high);
+      canvas.drawImage(
+        _decodedImage!,
+        Offset.zero,
+        Paint()..filterQuality = ui.FilterQuality.high,
+      );
 
       final ui.Picture picture = recorder.endRecording();
-      final ui.Image croppedImage = await picture.toImage(targetSize.toInt(), targetSize.toInt());
-      
-      final ByteData? pngByteData = await croppedImage.toByteData(format: ui.ImageByteFormat.png);
+      final ui.Image croppedImage = await picture.toImage(
+        targetSize.toInt(),
+        targetSize.toInt(),
+      );
+
+      final ByteData? pngByteData = await croppedImage.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       if (pngByteData != null) {
         final Uint8List croppedBytes = pngByteData.buffer.asUint8List();
         if (mounted) {
@@ -115,9 +125,9 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
         throw Exception("Failed to convert cropped image to byte data");
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error cropping image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error cropping image: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -152,9 +162,15 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
         ? Colors.white.withValues(alpha: 0.1)
         : colorScheme.onSurface.withValues(alpha: 0.1);
     final bottomPanelGradientColors = isDark
-        ? [Colors.white.withValues(alpha: 0.07), Colors.white.withValues(alpha: 0.02)]
-        : [colorScheme.surface.withValues(alpha: 0.8), colorScheme.surface.withValues(alpha: 0.4)];
-    
+        ? [
+            Colors.white.withValues(alpha: 0.07),
+            Colors.white.withValues(alpha: 0.02),
+          ]
+        : [
+            colorScheme.surface.withValues(alpha: 0.8),
+            colorScheme.surface.withValues(alpha: 0.4),
+          ];
+
     // Bottom Panel Text & Cancel Button
     final cancelBtnBorderColor = isDark
         ? Colors.white.withValues(alpha: 0.2)
@@ -186,7 +202,11 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
             ),
           ),
           child: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new, color: colorScheme.onSurface, size: 16),
+            icon: Icon(
+              Icons.arrow_back_ios_new,
+              color: colorScheme.onSurface,
+              size: 16,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -218,7 +238,9 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
           ),
         ),
         child: _decodedImage == null
-            ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
+            ? Center(
+                child: CircularProgressIndicator(color: colorScheme.primary),
+              )
             : Column(
                 children: [
                   Expanded(
@@ -232,7 +254,8 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                               width: _viewportSize,
                               height: _viewportSize,
                               child: InteractiveViewer(
-                                transformationController: _transformationController,
+                                transformationController:
+                                    _transformationController,
                                 boundaryMargin: EdgeInsets.zero,
                                 minScale: _minScale,
                                 maxScale: _minScale * 5.0,
@@ -290,7 +313,9 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                                   Icon(
                                     Icons.info_outline,
                                     size: 16,
-                                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.6,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
@@ -298,7 +323,9 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
-                                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       letterSpacing: 0.2,
                                     ),
                                   ),
@@ -310,13 +337,17 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                                   Expanded(
                                     child: OutlinedButton(
                                       style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
                                         side: BorderSide(
                                           color: cancelBtnBorderColor,
                                           width: 1.5,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
                                         ),
                                       ),
                                       onPressed: () => Navigator.pop(context),
@@ -345,7 +376,8 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: colorScheme.primary.withValues(alpha: 0.3),
+                                            color: colorScheme.primary
+                                                .withValues(alpha: 0.3),
                                             blurRadius: 12,
                                             offset: const Offset(0, 4),
                                           ),
@@ -354,22 +386,31 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                                       child: ElevatedButton(
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.transparent,
-                                          foregroundColor: colorScheme.onPrimary,
+                                          foregroundColor:
+                                              colorScheme.onPrimary,
                                           shadowColor: Colors.transparent,
-                                          padding: const EdgeInsets.symmetric(vertical: 16),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
                                           ),
                                         ),
-                                        onPressed: _isProcessing ? null : _cropAndSave,
+                                        onPressed: _isProcessing
+                                            ? null
+                                            : _cropAndSave,
                                         child: _isProcessing
                                             ? SizedBox(
                                                 width: 20,
                                                 height: 20,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: colorScheme.onPrimary,
-                                                ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color:
+                                                          colorScheme.onPrimary,
+                                                    ),
                                               )
                                             : const Text(
                                                 'Save Photo',
@@ -410,19 +451,24 @@ class CutoutOverlayPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Paint paint = Paint()..color = overlayColor;
-    
+
     final cutoutLeft = (size.width - cutoutSize) / 2;
     final cutoutTop = (size.height - cutoutSize) / 2;
 
     // Path representing the outer rectangle
-    final Path path = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    
+    final Path path = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+
     // Path representing the inner cutout circle
     final Path cutoutPath = Path()
       ..addOval(Rect.fromLTWH(cutoutLeft, cutoutTop, cutoutSize, cutoutSize));
 
     // Combine them to get a hole in the overlay
-    final Path overlayPath = Path.combine(PathOperation.difference, path, cutoutPath);
+    final Path overlayPath = Path.combine(
+      PathOperation.difference,
+      path,
+      cutoutPath,
+    );
 
     canvas.drawPath(overlayPath, paint);
 
@@ -431,7 +477,7 @@ class CutoutOverlayPainter extends CustomPainter {
       ..color = Colors.black.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0;
-    
+
     canvas.drawOval(
       Rect.fromLTWH(cutoutLeft, cutoutTop, cutoutSize, cutoutSize),
       shadowPaint,
@@ -442,7 +488,7 @@ class CutoutOverlayPainter extends CustomPainter {
       ..color = borderColor.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5;
-    
+
     canvas.drawOval(
       Rect.fromLTWH(cutoutLeft, cutoutTop, cutoutSize, cutoutSize),
       borderPaint,
@@ -451,6 +497,8 @@ class CutoutOverlayPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CutoutOverlayPainter oldDelegate) {
-    return oldDelegate.cutoutSize != cutoutSize || oldDelegate.overlayColor != overlayColor || oldDelegate.borderColor != borderColor;
+    return oldDelegate.cutoutSize != cutoutSize ||
+        oldDelegate.overlayColor != overlayColor ||
+        oldDelegate.borderColor != borderColor;
   }
 }

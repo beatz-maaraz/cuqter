@@ -16,7 +16,9 @@ class ChatWallpaper {
   });
 
   static List<ChatWallpaper> defaultWallpapers = [
-    ChatWallpaper(type: WallpaperType.theme), // Automatically adapts to light/dark mode
+    ChatWallpaper(
+      type: WallpaperType.theme,
+    ), // Automatically adapts to light/dark mode
     ChatWallpaper(type: WallpaperType.asset, path: 'assets/Wallpaper/1.png'),
   ];
 }

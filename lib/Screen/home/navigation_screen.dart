@@ -43,10 +43,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectedIndex);
-    
+
     // Initialize push notification service
     NotificationService().initialize();
-    
+
     // Check for updates after the first frame so context is ready
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
 
@@ -57,7 +57,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
         return AppExitResponse.exit;
       },
     );
-    
+
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       _currentUserStream = FirebaseFirestore.instance
@@ -67,7 +67,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       setupWebLifecycle(currentUser.uid);
       _listenForIncomingCalls(currentUser.uid);
     }
-    
+
     _setUserStatus(true);
   }
 
@@ -76,56 +76,59 @@ class _NavigationScreenState extends State<NavigationScreen> {
         .ref('incoming_calls/$uid')
         .onValue
         .listen((event) {
-      if (event.snapshot.value != null) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>;
-        final roomId = data['roomId'] as String?;
-        final callerName = data['callerName'] as String? ?? 'Unknown';
-        final callerId = data['callerId'] as String? ?? '';
-        final callerPic = data['callerPic'] as String?;
-        final isVideoCall = data['isVideo'] as bool? ?? false;
+          if (event.snapshot.value != null) {
+            final data = event.snapshot.value as Map<dynamic, dynamic>;
+            final roomId = data['roomId'] as String?;
+            final callerName = data['callerName'] as String? ?? 'Unknown';
+            final callerId = data['callerId'] as String? ?? '';
+            final callerPic = data['callerPic'] as String?;
+            final isVideoCall = data['isVideo'] as bool? ?? false;
 
-        // Guard: skip if this room is already being shown or ringing
-        if (_isShowingIncomingCall && _currentRingingRoomId == roomId) return;
+            // Guard: skip if this room is already being shown or ringing
+            if (_isShowingIncomingCall && _currentRingingRoomId == roomId)
+              return;
 
-        _currentRingingRoomId = roomId;
-        _isShowingIncomingCall = true;
+            _currentRingingRoomId = roomId;
+            _isShowingIncomingCall = true;
 
-        NotificationService.showIncomingCallNotification(
-          callerName: callerName,
-          roomId: roomId ?? '',
-          callerId: callerId,
-          isVideoCall: isVideoCall,
-          callerPic: callerPic,
-        );
+            NotificationService.showIncomingCallNotification(
+              callerName: callerName,
+              roomId: roomId ?? '',
+              callerId: callerId,
+              isVideoCall: isVideoCall,
+              callerPic: callerPic,
+            );
 
-        // Push incoming call screen
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => IncomingCallScreen(
-                roomId: roomId ?? '',
-                callerName: callerName,
-                callerId: callerId,
-                isVideoCall: isVideoCall,
-              ),
-            ),
-          ).whenComplete(() {
-            // Reset flag once the incoming call screen is dismissed
+            // Push incoming call screen
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => IncomingCallScreen(
+                    roomId: roomId ?? '',
+                    callerName: callerName,
+                    callerId: callerId,
+                    isVideoCall: isVideoCall,
+                  ),
+                ),
+              ).whenComplete(() {
+                // Reset flag once the incoming call screen is dismissed
+                _isShowingIncomingCall = false;
+                if (_currentRingingRoomId == roomId) {
+                  _currentRingingRoomId = null;
+                }
+              });
+            }
+          } else {
             _isShowingIncomingCall = false;
-            if (_currentRingingRoomId == roomId) {
+            if (_currentRingingRoomId != null) {
+              NotificationService.cancelCallNotification(
+                _currentRingingRoomId!,
+              );
               _currentRingingRoomId = null;
             }
-          });
-        }
-      } else {
-        _isShowingIncomingCall = false;
-        if (_currentRingingRoomId != null) {
-          NotificationService.cancelCallNotification(_currentRingingRoomId!);
-          _currentRingingRoomId = null;
-        }
-      }
-    });
+          }
+        });
   }
 
   Future<void> _checkForUpdate() async {
@@ -183,7 +186,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Widget _buildNavItem(
-      int index, String label, dynamic icon, dynamic activeIcon) {
+    int index,
+    String label,
+    dynamic icon,
+    dynamic activeIcon,
+  ) {
     final isSelected = _selectedIndex == index;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -201,16 +208,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 2),
             padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? colorScheme.primary.withValues(alpha: 0.15)
-                  : Colors.transparent,
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(25),
-              border: isSelected
-                  ? Border.all(
-                      color: colorScheme.primary.withValues(alpha: 0.35),
-                      width: 1.5,
-                    )
-                  : Border.all(color: Colors.transparent, width: 1.5),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -268,16 +267,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 2),
             padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? colorScheme.primary.withValues(alpha: 0.15)
-                  : Colors.transparent,
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(25),
-              border: isSelected
-                  ? Border.all(
-                      color: colorScheme.primary.withValues(alpha: 0.35),
-                      width: 1.5,
-                    )
-                  : Border.all(color: Colors.transparent, width: 1.5),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -301,23 +292,27 @@ class _NavigationScreenState extends State<NavigationScreen> {
                             ? BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                    color: colorScheme.primary, width: 1.5),
+                                  color: colorScheme.primary,
+                                  width: 1.5,
+                                ),
                               )
                             : null,
                         child: CircleAvatar(
                           radius: 9.5,
-                          backgroundColor:
-                              colorScheme.primary.withValues(alpha: 0.1),
+                          backgroundColor: colorScheme.primary.withValues(
+                            alpha: 0.1,
+                          ),
                           backgroundImage: profilePic.isNotEmpty
                               ? (profilePic.startsWith('http')
-                                  ? ResizeImage(
-                                      CachedNetworkImageProvider(profilePic),
-                                      width: 120,
-                                      height: 120,
-                                    )
-                                  : AssetImage(profilePic) as ImageProvider)
+                                    ? ResizeImage(
+                                        CachedNetworkImageProvider(profilePic),
+                                        width: 120,
+                                        height: 120,
+                                      )
+                                    : AssetImage(profilePic) as ImageProvider)
                               : const AssetImage(
-                                  'assets/icon/default_profile.png'),
+                                  'assets/icon/default_profile.png',
+                                ),
                         ),
                       ),
                     );
@@ -370,8 +365,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding:
-              const EdgeInsets.only(left: 80, right: 80, bottom: 15, top: 8),
+          padding: const EdgeInsets.only(
+            left: 80,
+            right: 80,
+            bottom: 15,
+            top: 8,
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: BackdropFilter(
@@ -381,8 +380,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? colorScheme.surfaceContainerHigh
-                          .withValues(alpha: 0.60)
+                      ? colorScheme.surfaceContainerHigh.withValues(alpha: 0.60)
                       : colorScheme.surface.withValues(alpha: 0.70),
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(

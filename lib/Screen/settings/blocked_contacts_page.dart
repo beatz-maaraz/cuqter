@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'package:cuqter/utils/custom_snackbar.dart';
 
 class BlockedContactsPage extends StatefulWidget {
   const BlockedContactsPage({super.key});
@@ -28,15 +29,11 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
           .delete();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unblocked $peerName')),
-        );
+        showCustomSnackBar(context, 'Unblocked $peerName');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error unblocking user: $e')),
-        );
+        showCustomSnackBar(context, 'Error unblocking user: $e', isError: true);
       }
     }
   }
@@ -51,27 +48,22 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
           .doc(currentUserId)
           .collection('blocked_users')
           .doc(peerId)
-          .set({
-        'peerId': peerId,
-        'blockedAt': FieldValue.serverTimestamp(),
-      });
+          .set({'peerId': peerId, 'blockedAt': FieldValue.serverTimestamp()});
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Blocked $peerName')),
-        );
+        showCustomSnackBar(context, 'Blocked $peerName');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error blocking user: $e')),
-        );
+        showCustomSnackBar(context, 'Error blocking user: $e', isError: true);
       }
     }
   }
 
   void _showAddBlockModal(
-      BuildContext context, Set<String> currentlyBlockedIds) {
+    BuildContext context,
+    Set<String> currentlyBlockedIds,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final currentUserId = _auth.currentUser?.uid;
 
@@ -131,8 +123,9 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                         controller: scrollController,
                         itemCount: eligibleUsers.length,
                         itemBuilder: (context, index) {
-                          final data = eligibleUsers[index].data()
-                              as Map<String, dynamic>;
+                          final data =
+                              eligibleUsers[index].data()
+                                  as Map<String, dynamic>;
                           final peerId = eligibleUsers[index].id;
                           final name = data['name'] ?? 'User';
                           final username = data['username'] ?? '';
@@ -142,7 +135,8 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                             leading: CircleAvatar(
                               radius: 20,
                               backgroundColor: colorScheme.primaryContainer,
-                              backgroundImage: profilePic.isNotEmpty &&
+                              backgroundImage:
+                                  profilePic.isNotEmpty &&
                                       profilePic.startsWith('http')
                                   ? ResizeImage(
                                       CachedNetworkImageProvider(profilePic),
@@ -150,13 +144,15 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                                       height: 120,
                                     )
                                   : const AssetImage(
-                                          'assets/icon/default_profile.png')
-                                      as ImageProvider,
+                                          'assets/icon/default_profile.png',
+                                        )
+                                        as ImageProvider,
                             ),
                             title: Text(
                               name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             subtitle: Text(
                               '@$username',
@@ -275,8 +271,9 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                             Text(
                               'No blocked contacts',
                               style: TextStyle(
-                                color: colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -286,8 +283,9 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                               'Blocked contacts will not be able to call you\nor send you messages.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: colorScheme.onSurface
-                                    .withValues(alpha: 0.4),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.4,
+                                ),
                                 fontSize: 13,
                               ),
                             ),
@@ -318,9 +316,9 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                               return ListTile(
                                 leading: CircleAvatar(
                                   radius: 22,
-                                  backgroundColor:
-                                      colorScheme.primaryContainer,
-                                  backgroundImage: profilePic.isNotEmpty &&
+                                  backgroundColor: colorScheme.primaryContainer,
+                                  backgroundImage:
+                                      profilePic.isNotEmpty &&
                                           profilePic.startsWith('http')
                                       ? ResizeImage(
                                           CachedNetworkImageProvider(
@@ -330,8 +328,9 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                                           height: 160,
                                         )
                                       : const AssetImage(
-                                              'assets/icon/default_profile.png')
-                                          as ImageProvider,
+                                              'assets/icon/default_profile.png',
+                                            )
+                                            as ImageProvider,
                                 ),
                                 title: Text(
                                   peerName,

@@ -43,7 +43,10 @@ class _ShareIntentScreenState extends State<ShareIntentScreen> {
           Expanded(
             child: StreamBuilder<DocumentSnapshot>(
               stream: currentUserId != null
-                  ? _firestore.collection('users').doc(currentUserId).snapshots()
+                  ? _firestore
+                        .collection('users')
+                        .doc(currentUserId)
+                        .snapshots()
                   : null,
               builder: (context, userSnapshot) {
                 if (userSnapshot.connectionState == ConnectionState.waiting) {
@@ -80,73 +83,80 @@ class _ShareIntentScreenState extends State<ShareIntentScreen> {
                       return const Center(child: Text('No friends found'));
                     }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 16.0,
-                    mainAxisSpacing: 16.0,
-                    childAspectRatio: 0.8,
-                  ),
-                  itemCount: users.length,
-                  itemBuilder: (context, index) {
-                    var userData = users[index].data() as Map<String, dynamic>;
-                    String userName = userData['name'] ?? 'Unknown User';
-                    String profilePic = userData['profilepic']?.toString() ?? '';
-                    String userId = users[index].id;
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 16.0,
+                            mainAxisSpacing: 16.0,
+                            childAspectRatio: 0.8,
+                          ),
+                      itemCount: users.length,
+                      itemBuilder: (context, index) {
+                        var userData =
+                            users[index].data() as Map<String, dynamic>;
+                        String userName = userData['name'] ?? 'Unknown User';
+                        String profilePic =
+                            userData['profilepic']?.toString() ?? '';
+                        String userId = users[index].id;
 
-                    return InkWell(
-                      onTap: () {
-                        // Navigate to ChatScreen
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatScreen(
-                              receiverId: userId,
-                              receiverName: userName,
-                              receiverProfilePic: profilePic,
-                              receiverIsOnline: userData['isOnline'] as bool?,
-                              sharedMedia: widget.sharedFiles,
-                            ),
+                        return InkWell(
+                          onTap: () {
+                            // Navigate to ChatScreen
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatScreen(
+                                  receiverId: userId,
+                                  receiverName: userName,
+                                  receiverProfilePic: profilePic,
+                                  receiverIsOnline:
+                                      userData['isOnline'] as bool?,
+                                  sharedMedia: widget.sharedFiles,
+                                ),
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundColor: colorScheme.primaryContainer,
+                                backgroundImage: profilePic.isNotEmpty
+                                    ? NetworkImage(profilePic)
+                                    : null,
+                                child: profilePic.isEmpty
+                                    ? Icon(
+                                        Icons.person,
+                                        size: 30,
+                                        color: colorScheme.onPrimaryContainer,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                userName,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundColor: colorScheme.primaryContainer,
-                            backgroundImage: profilePic.isNotEmpty
-                                ? NetworkImage(profilePic)
-                                : null,
-                            child: profilePic.isEmpty
-                                ? Icon(Icons.person,
-                                    size: 30, color: colorScheme.onPrimaryContainer)
-                                : null,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            userName,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
                     );
                   },
                 );
               },
-            );
-          },
-        ),
-      ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: SizedBox(

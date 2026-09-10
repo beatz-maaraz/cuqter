@@ -63,10 +63,10 @@ class UpdateDialog extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: _DialogCard(
-              info:        info,
+              info: info,
               colorScheme: colorScheme,
-              isDark:      isDark,
-              onDownload:  (ctx) => _openDownload(ctx),
+              isDark: isDark,
+              onDownload: (ctx) => _openDownload(ctx),
             ),
           ),
         ),
@@ -76,9 +76,9 @@ class UpdateDialog extends StatelessWidget {
 }
 
 class _DialogCard extends StatefulWidget {
-  final UpdateInfo              info;
-  final ColorScheme             colorScheme;
-  final bool                    isDark;
+  final UpdateInfo info;
+  final ColorScheme colorScheme;
+  final bool isDark;
   final void Function(BuildContext) onDownload;
 
   const _DialogCard({
@@ -95,9 +95,9 @@ class _DialogCard extends StatefulWidget {
 class _DialogCardState extends State<_DialogCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  late Animation<double>   _scale;
-  late Animation<double>   _fade;
-  late Animation<Offset>   _slide;
+  late Animation<double> _scale;
+  late Animation<double> _fade;
+  late Animation<Offset> _slide;
 
   @override
   void initState() {
@@ -107,10 +107,10 @@ class _DialogCardState extends State<_DialogCard>
       duration: const Duration(milliseconds: 400),
     );
     _scale = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
-    _fade  = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     _slide = Tween<Offset>(
       begin: const Offset(0, 0.08),
-      end:   Offset.zero,
+      end: Offset.zero,
     ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
     _ctrl.forward();
   }
@@ -123,9 +123,9 @@ class _DialogCardState extends State<_DialogCard>
 
   @override
   Widget build(BuildContext context) {
-    final cs    = widget.colorScheme;
+    final cs = widget.colorScheme;
     final isDark = widget.isDark;
-    final info   = widget.info;
+    final info = widget.info;
 
     return FadeTransition(
       opacity: _fade,
@@ -136,9 +136,7 @@ class _DialogCardState extends State<_DialogCard>
           child: Container(
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF1E1027)
-                  : Colors.white,
+              color: isDark ? const Color(0xFF1E1027) : Colors.white,
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
                 color: AppColors.primary.withValues(alpha: 0.18),
@@ -146,7 +144,9 @@ class _DialogCardState extends State<_DialogCard>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.18),
+                  color: AppColors.primary.withValues(
+                    alpha: isDark ? 0.35 : 0.18,
+                  ),
                   blurRadius: 40,
                   spreadRadius: 0,
                   offset: const Offset(0, 16),
@@ -160,14 +160,14 @@ class _DialogCardState extends State<_DialogCard>
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
                       colors: [Color(0xFF7C3AED), Color(0xFFA855F7)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft:  Radius.circular(28),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(28),
                       topRight: Radius.circular(28),
                     ),
                   ),
@@ -199,8 +199,8 @@ class _DialogCardState extends State<_DialogCard>
                       const Text(
                         'Update Available',
                         style: TextStyle(
-                          color:      Colors.white,
-                          fontSize:   22,
+                          color: Colors.white,
+                          fontSize: 22,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
                         ),
@@ -211,16 +211,18 @@ class _DialogCardState extends State<_DialogCard>
                       // Version pill
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 5),
+                          horizontal: 14,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
-                          color:        Colors.white.withValues(alpha: 0.18),
+                          color: Colors.white.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(50),
                         ),
                         child: Text(
                           'v${info.currentVersion}  →  v${info.latestVersion}',
                           style: const TextStyle(
-                            color:      Colors.white,
-                            fontSize:   12,
+                            color: Colors.white,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.4,
                           ),
@@ -238,152 +240,164 @@ class _DialogCardState extends State<_DialogCard>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      // Description
-                      Center(
-                        child: Text(
-                          'A new version of Cuqter is ready to install with the latest features and improvements.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: cs.onSurface.withValues(alpha: 0.65),
-                            height: 1.6,
-                          ),
-                        ),
-                      ),
-
-                      // Release notes (if provided)
-                      if (info.releaseNotes.isNotEmpty) ...[
-                        const SizedBox(height: 18),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(
-                                alpha: isDark ? 0.12 : 0.06),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: AppColors.primary
-                                  .withValues(alpha: isDark ? 0.2 : 0.12),
+                          // Description
+                          Center(
+                            child: Text(
+                              'A new version of Cuqter is ready to install with the latest features and improvements.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: cs.onSurface.withValues(alpha: 0.65),
+                                height: 1.6,
+                              ),
                             ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.auto_awesome_rounded,
-                                    size: 14,
-                                    color: AppColors.primary,
+
+                          // Release notes (if provided)
+                          if (info.releaseNotes.isNotEmpty) ...[
+                            const SizedBox(height: 18),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(
+                                  alpha: isDark ? 0.12 : 0.06,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(
+                                    alpha: isDark ? 0.2 : 0.12,
                                   ),
-                                  const SizedBox(width: 6),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: 14,
+                                        color: AppColors.primary,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'What\'s new',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                          letterSpacing: 0.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
                                   Text(
-                                    'What\'s new',
+                                    info.releaseNotes,
                                     style: TextStyle(
-                                      fontSize:   12,
-                                      fontWeight: FontWeight.w700,
-                                      color:      AppColors.primary,
-                                      letterSpacing: 0.4,
+                                      fontSize: 13,
+                                      color: cs.onSurface.withValues(
+                                        alpha: 0.75,
+                                      ),
+                                      height: 1.55,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                info.releaseNotes,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: cs.onSurface.withValues(alpha: 0.75),
-                                  height: 1.55,
+                            ),
+                          ],
+
+                          const SizedBox(height: 24),
+
+                          // ── Update button ──────────────────────────────────
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF7C3AED),
+                                    Color(0xFFA855F7),
+                                  ],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(height: 24),
-
-                      // ── Update button ──────────────────────────────────
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF7C3AED), Color(0xFFA855F7)],
-                              begin: Alignment.centerLeft,
-                              end:   Alignment.centerRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary
-                                    .withValues(alpha: 0.38),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: TextButton(
-                            onPressed: () => widget.onDownload(context),
-                            style: TextButton.styleFrom(
-                              foregroundColor:  Colors.white,
-                              shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.38,
+                                    ),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
                               ),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.download_rounded,
-                                    size: 20, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Download Update',
-                                  style: TextStyle(
-                                    fontSize:   15,
-                                    fontWeight: FontWeight.w700,
-                                    color:      Colors.white,
-                                    letterSpacing: 0.2,
+                              child: TextButton(
+                                onPressed: () => widget.onDownload(context),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                              ],
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.download_rounded,
+                                      size: 20,
+                                      color: Colors.white,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Download Update',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
 
-                      // ── Later button (hidden on force update) ─────────
-                      if (!info.forceUpdate) ...[
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 44,
-                          child: TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: TextButton.styleFrom(
-                              foregroundColor:
-                                  cs.onSurface.withValues(alpha: 0.45),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                          // ── Later button (hidden on force update) ─────────
+                          if (!info.forceUpdate) ...[
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 44,
+                              child: TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: cs.onSurface.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Maybe Later',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: const Text(
-                              'Maybe Later',
-                              style: TextStyle(
-                                fontSize:   14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
               ],
             ),
           ),

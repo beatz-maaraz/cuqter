@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/widgets/chat_message_text.dart';
 import 'package:cuqter/modules/wallpaper.dart';
+import 'package:cuqter/utils/custom_snackbar.dart';
 
 class ChatSettingsPage extends StatefulWidget {
   const ChatSettingsPage({super.key});
@@ -65,11 +66,9 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                   fontSize: label == 'Small'
                       ? 12
                       : label == 'Medium'
-                          ? 14
-                          : 16,
-                  color: isSelected
-                      ? Colors.white
-                      : colorScheme.onSurface,
+                      ? 14
+                      : 16,
+                  color: isSelected ? Colors.white : colorScheme.onSurface,
                 ),
               ),
             ],
@@ -114,9 +113,13 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
           title: const Text('Clear all chat histories?'),
           content: Text(
             'This will clear all local cached files and settings. Your messages on the server will not be deleted.',
-            style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.8)),
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
+            ),
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -125,16 +128,14 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Chat histories cleared'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                showCustomSnackBar(context, 'Chat histories cleared');
               },
               child: const Text(
                 'Clear All',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -175,7 +176,9 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                   decoration: BoxDecoration(
                     color: colorScheme.onSurface.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+                    border: Border.all(
+                      color: colorScheme.onSurface.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,34 +204,51 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                                 setState(() {
                                   _wallpaperIndex = index;
                                 });
-                                _savePreference('global_wallpaper_index', index);
+                                _savePreference(
+                                  'global_wallpaper_index',
+                                  index,
+                                );
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 width: 60,
                                 margin: const EdgeInsets.only(right: 12),
                                 decoration: BoxDecoration(
-                                  color: wp.type == WallpaperType.color ? wp.color : Colors.grey[200],
-                                  image: wp.type == WallpaperType.asset 
-                                    ? DecorationImage(image: AssetImage(wp.path!), fit: wp.fit)
-                                    : null,
+                                  color: wp.type == WallpaperType.color
+                                      ? wp.color
+                                      : Colors.grey[200],
+                                  image: wp.type == WallpaperType.asset
+                                      ? DecorationImage(
+                                          image: AssetImage(wp.path!),
+                                          fit: wp.fit,
+                                        )
+                                      : null,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.1),
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurface.withValues(
+                                            alpha: 0.1,
+                                          ),
                                     width: isSelected ? 3 : 1,
                                   ),
                                   boxShadow: isSelected
                                       ? [
                                           BoxShadow(
-                                            color: colorScheme.primary.withValues(alpha: 0.2),
+                                            color: colorScheme.primary
+                                                .withValues(alpha: 0.2),
                                             blurRadius: 8,
                                             spreadRadius: 2,
-                                          )
+                                          ),
                                         ]
                                       : null,
                                 ),
                                 child: isSelected
-                                    ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 24)
+                                    ? Icon(
+                                        Icons.check_rounded,
+                                        color: colorScheme.primary,
+                                        size: 24,
+                                      )
                                     : null,
                               ),
                             );
@@ -250,7 +270,10 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                        horizontal: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: colorScheme.primaryContainer,
                         borderRadius: const BorderRadius.only(
@@ -266,12 +289,14 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                         curve: Curves.easeOutCubic,
                         builder: (context, animatedSize, child) {
                           return ChatMessageText(
-                            text: 'This is a preview of your chat message size.',
+                            text:
+                                'This is a preview of your chat message size.',
                             baseStyle: TextStyle(
                               fontSize: animatedSize,
                               color: colorScheme.onPrimaryContainer,
                             ),
-                            linkColor: Theme.of(context).brightness == Brightness.dark
+                            linkColor:
+                                Theme.of(context).brightness == Brightness.dark
                                 ? Colors.blue[300]!
                                 : Colors.blue[800]!,
                             trailing: Row(
@@ -281,7 +306,8 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                                   'Now',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                                    color: colorScheme.onPrimaryContainer
+                                        .withValues(alpha: 0.7),
                                   ),
                                 ),
                                 const Padding(
@@ -302,11 +328,16 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                 ),
                 const SizedBox(height: 20),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.onSurface.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+                    border: Border.all(
+                      color: colorScheme.onSurface.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,7 +381,9 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                   decoration: BoxDecoration(
                     color: colorScheme.onSurface.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+                    border: Border.all(
+                      color: colorScheme.onSurface.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Column(
                     children: [
@@ -368,7 +401,8 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                       _buildSwitchTile(
                         icon: huge.HugeIcons.strokeRoundedDownload01,
                         title: 'Save to Gallery',
-                        subtitle: 'Automatically save media files to your storage',
+                        subtitle:
+                            'Automatically save media files to your storage',
                         value: _saveToGallery,
                         onChanged: (val) {
                           setState(() => _saveToGallery = val);
@@ -385,7 +419,9 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                   decoration: BoxDecoration(
                     color: colorScheme.onSurface.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+                    border: Border.all(
+                      color: colorScheme.onSurface.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: ListTile(
                     onTap: _clearAllHistories,
@@ -415,7 +451,11 @@ class _ChatSettingsPageState extends State<ChatSettingsPage> {
                         color: colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
-                    trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: colorScheme.error.withValues(alpha: 0.6)),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: colorScheme.error.withValues(alpha: 0.6),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 40),

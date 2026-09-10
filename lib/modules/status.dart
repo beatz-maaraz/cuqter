@@ -27,7 +27,9 @@ class StatusViewer {
       uid: map['uid'] ?? '',
       username: map['username'] ?? 'Unknown User',
       profilePic: map['profilePic'] ?? '',
-      viewedAt: map['viewedAt'] != null ? (map['viewedAt'] as Timestamp).toDate() : DateTime.now(),
+      viewedAt: map['viewedAt'] != null
+          ? (map['viewedAt'] as Timestamp).toDate()
+          : DateTime.now(),
     );
   }
 }
@@ -59,7 +61,9 @@ class StatusLiker {
       uid: map['uid'] ?? '',
       username: map['username'] ?? 'Unknown User',
       profilePic: map['profilePic'] ?? '',
-      likedAt: map['likedAt'] != null ? (map['likedAt'] as Timestamp).toDate() : DateTime.now(),
+      likedAt: map['likedAt'] != null
+          ? (map['likedAt'] as Timestamp).toDate()
+          : DateTime.now(),
     );
   }
 }
@@ -116,21 +120,39 @@ class Status {
       mediaUrl: map['mediaUrl'] ?? '',
       mediaType: map['mediaType'] ?? '',
       caption: map['caption'] ?? '',
-      createdAt: map['createdAt'] != null ? (map['createdAt'] as Timestamp).toDate() : DateTime.now(),
-      expiresAt: map['expiresAt'] != null ? (map['expiresAt'] as Timestamp).toDate() : DateTime.now().add(const Duration(hours: 24)),
-      viewers: (map['viewers'] as List?)?.map((v) {
-        if (v is String) {
-          // Fallback for old schema where viewers was a list of strings
-          return StatusViewer(uid: v, username: 'User', profilePic: '', viewedAt: DateTime.now());
-        }
-        return StatusViewer.fromMap(Map<String, dynamic>.from(v));
-      }).toList() ?? [],
-      likes: (map['likes'] as List?)?.map((l) {
-        if (l is String) {
-          return StatusLiker(uid: l, username: 'User', profilePic: '', likedAt: DateTime.now());
-        }
-        return StatusLiker.fromMap(Map<String, dynamic>.from(l));
-      }).toList() ?? [],
+      createdAt: map['createdAt'] != null
+          ? (map['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      expiresAt: map['expiresAt'] != null
+          ? (map['expiresAt'] as Timestamp).toDate()
+          : DateTime.now().add(const Duration(hours: 24)),
+      viewers:
+          (map['viewers'] as List?)?.map((v) {
+            if (v is String) {
+              // Fallback for old schema where viewers was a list of strings
+              return StatusViewer(
+                uid: v,
+                username: 'User',
+                profilePic: '',
+                viewedAt: DateTime.now(),
+              );
+            }
+            return StatusViewer.fromMap(Map<String, dynamic>.from(v));
+          }).toList() ??
+          [],
+      likes:
+          (map['likes'] as List?)?.map((l) {
+            if (l is String) {
+              return StatusLiker(
+                uid: l,
+                username: 'User',
+                profilePic: '',
+                likedAt: DateTime.now(),
+              );
+            }
+            return StatusLiker.fromMap(Map<String, dynamic>.from(l));
+          }).toList() ??
+          [],
     );
   }
 }

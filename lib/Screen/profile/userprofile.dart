@@ -58,14 +58,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
               const SizedBox(height: 24),
               Text(
                 'Block ${widget.name}?',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
                 'Blocked users will not be able to call you, send you messages, or see your profile. They will also be removed from your friends list.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
+                style: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -90,17 +95,27 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             .collection('blocked_users')
                             .doc(widget.userId)
                             .set({
-                          'peerId': widget.userId,
-                          'blockedAt': FieldValue.serverTimestamp(),
-                        });
+                              'peerId': widget.userId,
+                              'blockedAt': FieldValue.serverTimestamp(),
+                            });
 
                         // 2. Remove from contacts list (unfriend)
-                        await FirebaseFirestore.instance.collection('users').doc(_currentUserId).update({
-                          'contacts': FieldValue.arrayRemove([widget.userId])
-                        });
-                        await FirebaseFirestore.instance.collection('users').doc(widget.userId).update({
-                          'contacts': FieldValue.arrayRemove([_currentUserId])
-                        });
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(_currentUserId)
+                            .update({
+                              'contacts': FieldValue.arrayRemove([
+                                widget.userId,
+                              ]),
+                            });
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(widget.userId)
+                            .update({
+                              'contacts': FieldValue.arrayRemove([
+                                _currentUserId,
+                              ]),
+                            });
 
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -112,15 +127,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Failed to block user: $e'),
-                            ),
+                            SnackBar(content: Text('Failed to block user: $e')),
                           );
                         }
                       }
                     }
                   },
-                  child: const Text('Block', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Block',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -128,7 +144,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 width: double.infinity,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    backgroundColor: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                     foregroundColor: colorScheme.onSurface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -136,7 +153,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ),
                   ),
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -364,7 +384,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                           )
                                         : AssetImage(widget.profilepic))
                                     as ImageProvider
-                              : const AssetImage('assets/icon/default_profile.png'),
+                              : const AssetImage(
+                                  'assets/icon/default_profile.png',
+                                ),
                         ),
                       ),
                     ),
@@ -536,7 +558,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                               if (isFriend) return;
                               if (_currentUserId == null) return;
 
-                              String requestId = '${_currentUserId}_${widget.userId}';
+                              String requestId =
+                                  '${_currentUserId}_${widget.userId}';
 
                               if (isRequested) {
                                 // Cancel request
@@ -554,7 +577,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                       .delete();
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Friend request cancelled')),
+                                      const SnackBar(
+                                        content: Text(
+                                          'Friend request cancelled',
+                                        ),
+                                      ),
                                     );
                                   }
                                 } catch (e) {
@@ -563,7 +590,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                   });
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Failed to cancel request')),
+                                      const SnackBar(
+                                        content: Text(
+                                          'Failed to cancel request',
+                                        ),
+                                      ),
                                     );
                                   }
                                 }
@@ -574,13 +605,22 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 });
 
                                 try {
-                                  DocumentSnapshot myDoc = await FirebaseFirestore
-                                      .instance
-                                      .collection('users')
-                                      .doc(_currentUserId)
-                                      .get();
-                                  String myName = (myDoc.data() as Map<String, dynamic>?)?['name'] ?? 'Unknown User';
-                                  String myPic = (myDoc.data() as Map<String, dynamic>?)?['profilepic'] ?? '';
+                                  DocumentSnapshot myDoc =
+                                      await FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(_currentUserId)
+                                          .get();
+                                  String myName =
+                                      (myDoc.data()
+                                          as Map<String, dynamic>?)?['name'] ??
+                                      'Unknown User';
+                                  String myPic =
+                                      (myDoc.data()
+                                          as Map<
+                                            String,
+                                            dynamic
+                                          >?)?['profilepic'] ??
+                                      '';
 
                                   await FirebaseFirestore.instance
                                       .collection('friend_requests')
@@ -591,14 +631,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                         'status': 'pending',
                                         'senderName': myName,
                                         'senderProfilePic': myPic,
-                                        'timestamp': FieldValue.serverTimestamp(),
+                                        'timestamp':
+                                            FieldValue.serverTimestamp(),
                                       });
 
                                   await FirebaseFirestore.instance
                                       .collection('notifications')
                                       .doc('friend_request_$requestId')
                                       .set({
-                                        'notificationId': 'friend_request_$requestId',
+                                        'notificationId':
+                                            'friend_request_$requestId',
                                         'type': 'friend_request',
                                         'requestId': requestId,
                                         'senderId': _currentUserId,
@@ -606,14 +648,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                         'senderName': myName,
                                         'senderProfilePic': myPic,
                                         'title': 'Friend Request',
-                                        'body': '$myName sent you a friend request',
-                                        'timestamp': FieldValue.serverTimestamp(),
+                                        'body':
+                                            '$myName sent you a friend request',
+                                        'timestamp':
+                                            FieldValue.serverTimestamp(),
                                         'isRead': false,
                                       });
 
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Friend request sent!')),
+                                      const SnackBar(
+                                        content: Text('Friend request sent!'),
+                                      ),
                                     );
                                   }
                                 } catch (e) {
@@ -622,7 +668,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                   });
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Failed to send request')),
+                                      const SnackBar(
+                                        content: Text('Failed to send request'),
+                                      ),
                                     );
                                   }
                                 }
@@ -672,21 +720,43 @@ class _UserProfilePageState extends State<UserProfilePage> {
                               onRemove: () async {
                                 if (_currentUserId != null) {
                                   try {
-                                    await FirebaseFirestore.instance.collection('users').doc(_currentUserId).update({
-                                      'contacts': FieldValue.arrayRemove([widget.userId])
-                                    });
-                                    await FirebaseFirestore.instance.collection('users').doc(widget.userId).update({
-                                      'contacts': FieldValue.arrayRemove([_currentUserId])
-                                    });
+                                    await FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(_currentUserId)
+                                        .update({
+                                          'contacts': FieldValue.arrayRemove([
+                                            widget.userId,
+                                          ]),
+                                        });
+                                    await FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(widget.userId)
+                                        .update({
+                                          'contacts': FieldValue.arrayRemove([
+                                            _currentUserId,
+                                          ]),
+                                        });
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Removed from friend list')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Removed from friend list',
+                                          ),
+                                        ),
                                       );
                                     }
                                   } catch (e) {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Failed to remove friend')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Failed to remove friend',
+                                          ),
+                                        ),
                                       );
                                     }
                                   }
@@ -696,34 +766,71 @@ class _UserProfilePageState extends State<UserProfilePage> {
                               onFavorite: () async {
                                 if (_currentUserId != null) {
                                   try {
-                                    final myDoc = await FirebaseFirestore.instance.collection('users').doc(_currentUserId).get();
+                                    final myDoc = await FirebaseFirestore
+                                        .instance
+                                        .collection('users')
+                                        .doc(_currentUserId)
+                                        .get();
                                     final myData = myDoc.data();
-                                    final List<dynamic> favorites = myData?['favorite_contacts'] ?? [];
-                                    final isFav = favorites.contains(widget.userId);
+                                    final List<dynamic> favorites =
+                                        myData?['favorite_contacts'] ?? [];
+                                    final isFav = favorites.contains(
+                                      widget.userId,
+                                    );
 
                                     if (isFav) {
-                                      await FirebaseFirestore.instance.collection('users').doc(_currentUserId).update({
-                                        'favorite_contacts': FieldValue.arrayRemove([widget.userId])
-                                      });
+                                      await FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(_currentUserId)
+                                          .update({
+                                            'favorite_contacts':
+                                                FieldValue.arrayRemove([
+                                                  widget.userId,
+                                                ]),
+                                          });
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Removed ${widget.name} from favorites')),
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Removed ${widget.name} from favorites',
+                                            ),
+                                          ),
                                         );
                                       }
                                     } else {
-                                      await FirebaseFirestore.instance.collection('users').doc(_currentUserId).update({
-                                        'favorite_contacts': FieldValue.arrayUnion([widget.userId])
-                                      });
+                                      await FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(_currentUserId)
+                                          .update({
+                                            'favorite_contacts':
+                                                FieldValue.arrayUnion([
+                                                  widget.userId,
+                                                ]),
+                                          });
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Added ${widget.name} to favorites')),
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Added ${widget.name} to favorites',
+                                            ),
+                                          ),
                                         );
                                       }
                                     }
                                   } catch (e) {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Failed to update favorites: $e')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Failed to update favorites: $e',
+                                          ),
+                                        ),
                                       );
                                     }
                                   }
@@ -857,7 +964,7 @@ class _TwoHeartsAnimationState extends State<TwoHeartsAnimation>
                 children: [
                   Transform.translate(
                     offset: Offset(_moveLeft.value, 0),
-                    child: Icon(
+                    child: const Icon(
                       Icons.favorite,
                       color: Colors.pinkAccent,
                       size: 40,
@@ -865,7 +972,7 @@ class _TwoHeartsAnimationState extends State<TwoHeartsAnimation>
                   ),
                   Transform.translate(
                     offset: Offset(_moveRight.value, 0),
-                    child: Icon(
+                    child: const Icon(
                       Icons.favorite,
                       color: Colors.redAccent,
                       size: 40,
@@ -970,9 +1077,7 @@ class _AnimatedThreeDotsMenuState extends State<AnimatedThreeDotsMenu>
           GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: _closeMenu,
-            child: Container(
-              color: Colors.transparent,
-            ),
+            child: Container(color: Colors.transparent),
           ),
           Positioned(
             width: 160,
@@ -999,26 +1104,47 @@ class _AnimatedThreeDotsMenuState extends State<AnimatedThreeDotsMenu>
                           ),
                         ],
                         border: Border.all(
-                          color: widget.colorScheme.outline.withValues(alpha: 0.1),
+                          color: widget.colorScheme.outline.withValues(
+                            alpha: 0.1,
+                          ),
                         ),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildMenuItem(Icons.person_remove_rounded, 'Remove', () {
-                            _closeMenu();
-                            if (widget.onRemove != null) widget.onRemove!();
-                          }),
-                          Divider(height: 1, color: widget.colorScheme.onSurface.withValues(alpha: 0.1)),
+                          _buildMenuItem(
+                            Icons.person_remove_rounded,
+                            'Remove',
+                            () {
+                              _closeMenu();
+                              if (widget.onRemove != null) widget.onRemove!();
+                            },
+                          ),
+                          Divider(
+                            height: 1,
+                            color: widget.colorScheme.onSurface.withValues(
+                              alpha: 0.1,
+                            ),
+                          ),
                           _buildMenuItem(Icons.block_rounded, 'Block', () {
                             _closeMenu();
                             if (widget.onBlock != null) widget.onBlock!();
                           }),
-                          Divider(height: 1, color: widget.colorScheme.onSurface.withValues(alpha: 0.1)),
-                          _buildMenuItem(Icons.favorite_border_rounded, 'Favorite', () {
-                            _closeMenu();
-                            if (widget.onFavorite != null) widget.onFavorite!();
-                          }),
+                          Divider(
+                            height: 1,
+                            color: widget.colorScheme.onSurface.withValues(
+                              alpha: 0.1,
+                            ),
+                          ),
+                          _buildMenuItem(
+                            Icons.favorite_border_rounded,
+                            'Favorite',
+                            () {
+                              _closeMenu();
+                              if (widget.onFavorite != null)
+                                widget.onFavorite!();
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -1073,7 +1199,10 @@ class _AnimatedThreeDotsMenuState extends State<AnimatedThreeDotsMenu>
           ],
         ),
         child: IconButton(
-          icon: Icon(Icons.more_horiz, color: widget.colorScheme.onSecondaryContainer),
+          icon: Icon(
+            Icons.more_horiz,
+            color: widget.colorScheme.onSecondaryContainer,
+          ),
           onPressed: _toggleMenu,
         ),
       ),

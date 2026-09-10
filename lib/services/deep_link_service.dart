@@ -33,7 +33,9 @@ class DeepLinkService {
   }
 
   Future<void> _handleUri(
-      Uri uri, GlobalKey<NavigatorState> navigatorKey) async {
+    Uri uri,
+    GlobalKey<NavigatorState> navigatorKey,
+  ) async {
     // Only handle cuqter.com links
     if (uri.host != 'cuqter.com') return;
 

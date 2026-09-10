@@ -1,2 +1,1 @@
-
 const webscreen = 600;

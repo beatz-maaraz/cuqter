@@ -30,7 +30,10 @@ class _GoogleLogoPainter extends CustomPainter {
     final double radius = size.width / 2;
     final Offset center = Offset(radius, radius);
     final double strokeWidth = size.width * 0.22;
-    final rect = Rect.fromCircle(center: center, radius: radius - strokeWidth / 2);
+    final rect = Rect.fromCircle(
+      center: center,
+      radius: radius - strokeWidth / 2,
+    );
 
     // 1. Red Top Arc
     final redPaint = Paint()

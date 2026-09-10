@@ -7,7 +7,6 @@ import 'package:video_player/video_player.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cuqter/services/local_storage_service.dart';
-import 'package:cuqter/utils/picker.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/Screen/media/camera_screen.dart';
 
@@ -16,7 +15,8 @@ class AppAsset {
   final String id;
   final String imageUrl; // Can be file path or network URL
   final String title;
-  final String category; // 'Favorites', 'Camera', 'Download', 'Screenshot', 'More'
+  final String
+  category; // 'Favorites', 'Camera', 'Download', 'Screenshot', 'More'
   final String type; // 'image' or 'video'
   final DateTime date;
   final String size;
@@ -52,11 +52,7 @@ class VideoThumbnailWidget extends StatelessWidget {
         ),
       ),
       child: const Center(
-        child: Icon(
-          Icons.videocam_rounded,
-          color: Colors.white38,
-          size: 28,
-        ),
+        child: Icon(Icons.videocam_rounded, color: Colors.white38, size: 28),
       ),
     );
   }
@@ -64,7 +60,8 @@ class VideoThumbnailWidget extends StatelessWidget {
 
 class AssetManagerScreen extends StatefulWidget {
   final String initialTab; // 'All', 'Images', 'Videos'
-  final String initialCategory; // 'Favorites', 'Camera', 'Download', 'Screenshot', 'More'
+  final String
+  initialCategory; // 'Favorites', 'Camera', 'Download', 'Screenshot', 'More'
   final bool isPicker;
   final bool onlyImages;
   final ValueChanged<AppAsset?>? onAssetSelected;
@@ -89,7 +86,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
   late String _selectedCategory;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  
+
   // Selection mode variables
   bool _isSelectionMode = false;
   final Set<String> _selectedAssetIds = {};
@@ -125,7 +122,8 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
 
   void _onCategorySelected(String category) {
     setState(() {
-      _selectedSubFolder = null; // Always reset selected folder when changing categories
+      _selectedSubFolder =
+          null; // Always reset selected folder when changing categories
       if (_selectedCategory == category) {
         _selectedCategory = 'All';
       } else {
@@ -160,7 +158,11 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_off_rounded, size: 64, color: Colors.black.withValues(alpha: 0.15)),
+            Icon(
+              Icons.folder_off_rounded,
+              size: 64,
+              color: Colors.black.withValues(alpha: 0.15),
+            ),
             const SizedBox(height: 16),
             Text(
               'No folders containing media found',
@@ -193,7 +195,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         final newestAsset = assets.first;
         final isVideo = newestAsset.type == 'video';
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        
+
         final imageCount = assets.where((a) => a.type == 'image').length;
         final videoCount = assets.where((a) => a.type == 'video').length;
         String subtitle = '';
@@ -219,7 +221,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade100,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.grey.shade100,
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Stack(
@@ -268,7 +272,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 11,
-                  color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.5),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : Colors.black.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -278,13 +284,18 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     );
   }
 
-  Widget _buildSelectedFolderView(String folderPath, List<AppAsset> folderAssets) {
+  Widget _buildSelectedFolderView(
+    String folderPath,
+    List<AppAsset> folderAssets,
+  ) {
     final folderName = folderPath.split(Platform.pathSeparator).last;
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? colorScheme.onSurface : Colors.black87;
-    final subtitleColor = isDark ? colorScheme.onSurface.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.5);
-    
+    final subtitleColor = isDark
+        ? colorScheme.onSurface.withValues(alpha: 0.6)
+        : Colors.black.withValues(alpha: 0.5);
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       child: Column(
@@ -292,7 +303,10 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: Row(
               children: [
                 IconButton(
@@ -324,10 +338,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                       ),
                       Text(
                         '${folderAssets.length} items',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: subtitleColor,
-                        ),
+                        style: TextStyle(fontSize: 12, color: subtitleColor),
                       ),
                     ],
                   ),
@@ -340,9 +351,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
               child: ListView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                children: [
-                  _buildAssetGrid(folderAssets),
-                ],
+                children: [_buildAssetGrid(folderAssets)],
               ),
             ),
           ),
@@ -358,7 +367,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     });
     try {
       final List<AppAsset> loadedAssets = [];
-      
+
       // Load favorites list once from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final favoritePaths = prefs.getStringList('media_favorites') ?? [];
@@ -369,7 +378,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
           final storageGranted = await Permission.storage.isGranted;
           final photosGranted = await Permission.photos.isGranted;
           final videosGranted = await Permission.videos.isGranted;
-          
+
           if (!storageGranted && !photosGranted && !videosGranted) {
             await [
               Permission.storage,
@@ -383,18 +392,32 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         final List<Map<String, String>> foldersToScan = [];
 
         // Helper to scan subfolders of a directory
-        Future<void> addFolderAndSubfolders(String parentPath, String defaultCategory) async {
+        Future<void> addFolderAndSubfolders(
+          String parentPath,
+          String defaultCategory,
+        ) async {
           final parentDir = Directory(parentPath);
           if (await parentDir.exists()) {
-            foldersToScan.add({'path': parentPath, 'category': defaultCategory});
+            foldersToScan.add({
+              'path': parentPath,
+              'category': defaultCategory,
+            });
             try {
-              await for (final entity in parentDir.list(recursive: false, followLinks: false).handleError((e) {
-                debugPrint('Error listing parent directory $parentPath: $e');
-              })) {
+              await for (final entity
+                  in parentDir
+                      .list(recursive: false, followLinks: false)
+                      .handleError((e) {
+                        debugPrint(
+                          'Error listing parent directory $parentPath: $e',
+                        );
+                      })) {
                 if (entity is Directory) {
                   final name = entity.path.split(Platform.pathSeparator).last;
                   if (!name.startsWith('.')) {
-                    foldersToScan.add({'path': entity.path, 'category': defaultCategory});
+                    foldersToScan.add({
+                      'path': entity.path,
+                      'category': defaultCategory,
+                    });
                   }
                 }
               }
@@ -405,27 +428,36 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         }
 
         // 1. App-specific local storage folders
-        final localImagePath = await LocalStorageService.getLocalFolderPath('image');
+        final localImagePath = await LocalStorageService.getLocalFolderPath(
+          'image',
+        );
         if (localImagePath != null) {
           foldersToScan.add({'path': localImagePath, 'category': 'Camera'});
         }
-        final localVideoPath = await LocalStorageService.getLocalFolderPath('video');
+        final localVideoPath = await LocalStorageService.getLocalFolderPath(
+          'video',
+        );
         if (localVideoPath != null) {
           foldersToScan.add({'path': localVideoPath, 'category': 'Camera'});
         }
-        final localDocPath = await LocalStorageService.getLocalFolderPath('document');
+        final localDocPath = await LocalStorageService.getLocalFolderPath(
+          'document',
+        );
         if (localDocPath != null) {
           foldersToScan.add({'path': localDocPath, 'category': 'Download'});
         }
 
         // 2. Public phone storage folders (Android only, if permission granted)
-        if (Platform.isAndroid && 
-            (await Permission.storage.isGranted || 
-             await Permission.photos.isGranted || 
-             await Permission.videos.isGranted)) {
+        if (Platform.isAndroid &&
+            (await Permission.storage.isGranted ||
+                await Permission.photos.isGranted ||
+                await Permission.videos.isGranted)) {
           await addFolderAndSubfolders('/storage/emulated/0/DCIM', 'Camera');
           await addFolderAndSubfolders('/storage/emulated/0/Pictures', 'More');
-          await addFolderAndSubfolders('/storage/emulated/0/Download', 'Download');
+          await addFolderAndSubfolders(
+            '/storage/emulated/0/Download',
+            'Download',
+          );
         }
 
         // 3. Windows user profile media folders
@@ -440,7 +472,12 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
 
         // Scan all folders in parallel (concurrently) using Future.wait
         final scanFutures = foldersToScan.map((folder) {
-          return _scanFolder(folder['path']!, folder['category']!, loadedAssets, favoritePaths);
+          return _scanFolder(
+            folder['path']!,
+            folder['category']!,
+            loadedAssets,
+            favoritePaths,
+          );
         });
         await Future.wait(scanFutures);
       }
@@ -454,8 +491,13 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
             final filename = path.split(Platform.pathSeparator).last;
             final stat = await file.stat();
             final nameLower = filename.toLowerCase();
-            final isVideo = nameLower.endsWith('.mp4') || nameLower.endsWith('.mov') || nameLower.endsWith('.avi') || nameLower.endsWith('.mkv') || nameLower.endsWith('.3gp');
-            
+            final isVideo =
+                nameLower.endsWith('.mp4') ||
+                nameLower.endsWith('.mov') ||
+                nameLower.endsWith('.avi') ||
+                nameLower.endsWith('.mkv') ||
+                nameLower.endsWith('.3gp');
+
             return AppAsset(
               id: path,
               imageUrl: path,
@@ -495,19 +537,37 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
   }
 
   // Scan folder concurrently loading metadata stats in parallel
-  Future<void> _scanFolder(String path, String category, List<AppAsset> loadedAssets, List<String> favoritePaths) async {
+  Future<void> _scanFolder(
+    String path,
+    String category,
+    List<AppAsset> loadedAssets,
+    List<String> favoritePaths,
+  ) async {
     try {
       final dir = Directory(path);
       if (await dir.exists()) {
         final List<File> candidateFiles = [];
-        await for (final entity in dir.list(recursive: false, followLinks: false)) {
+        await for (final entity in dir.list(
+          recursive: false,
+          followLinks: false,
+        )) {
           if (entity is File) {
             final filename = entity.path.split(Platform.pathSeparator).last;
             if (filename.startsWith('.')) continue;
 
             final nameLower = filename.toLowerCase();
-            final isImage = nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg') || nameLower.endsWith('.png') || nameLower.endsWith('.gif') || nameLower.endsWith('.webp');
-            final isVideo = nameLower.endsWith('.mp4') || nameLower.endsWith('.mov') || nameLower.endsWith('.avi') || nameLower.endsWith('.mkv') || nameLower.endsWith('.3gp');
+            final isImage =
+                nameLower.endsWith('.jpg') ||
+                nameLower.endsWith('.jpeg') ||
+                nameLower.endsWith('.png') ||
+                nameLower.endsWith('.gif') ||
+                nameLower.endsWith('.webp');
+            final isVideo =
+                nameLower.endsWith('.mp4') ||
+                nameLower.endsWith('.mov') ||
+                nameLower.endsWith('.avi') ||
+                nameLower.endsWith('.mkv') ||
+                nameLower.endsWith('.3gp');
 
             if (isImage || isVideo) {
               candidateFiles.add(entity);
@@ -520,7 +580,10 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
 
           // Determine category dynamically based on path name
           String dynamicCategory = category;
-          final folderNameLower = path.split(Platform.pathSeparator).last.toLowerCase();
+          final folderNameLower = path
+              .split(Platform.pathSeparator)
+              .last
+              .toLowerCase();
           if (folderNameLower.contains('screenshot')) {
             dynamicCategory = 'Screenshot';
           } else if (folderNameLower.contains('camera')) {
@@ -534,7 +597,12 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
             final stat = stats[i];
             final filename = file.path.split(Platform.pathSeparator).last;
             final nameLower = filename.toLowerCase();
-            final isVideo = nameLower.endsWith('.mp4') || nameLower.endsWith('.mov') || nameLower.endsWith('.avi') || nameLower.endsWith('.mkv') || nameLower.endsWith('.3gp');
+            final isVideo =
+                nameLower.endsWith('.mp4') ||
+                nameLower.endsWith('.mov') ||
+                nameLower.endsWith('.avi') ||
+                nameLower.endsWith('.mkv') ||
+                nameLower.endsWith('.3gp');
 
             // Prevent duplicates
             if (loadedAssets.any((a) => a.id == file.path)) continue;
@@ -591,63 +659,74 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     final XFile media = result['file'] as XFile;
     final String type = result['type'] as String;
 
-    if (media != null) {
-      String name = media.name;
-      bool isVideoFile = false;
-      if (media.mimeType != null && media.mimeType!.startsWith('video/')) {
-        isVideoFile = true;
-      } else {
-        final nameLower = name.toLowerCase();
-        isVideoFile = nameLower.endsWith('.mp4') || nameLower.endsWith('.mov') || nameLower.endsWith('.avi') || nameLower.endsWith('.mkv');
-      }
+    String name = media.name;
+    bool isVideoFile = false;
+    if (media.mimeType != null && media.mimeType!.startsWith('video/')) {
+      isVideoFile = true;
+    } else {
+      final nameLower = name.toLowerCase();
+      isVideoFile =
+          nameLower.endsWith('.mp4') ||
+          nameLower.endsWith('.mov') ||
+          nameLower.endsWith('.avi') ||
+          nameLower.endsWith('.mkv');
+    }
 
-      setState(() {
-        _isLoading = true;
-      });
+    setState(() {
+      _isLoading = true;
+    });
 
-      try {
-        final fileBytes = await media.readAsBytes();
-        final savedPath = await LocalStorageService.saveFileLocally(
-          name,
-          fileBytes,
-          isVideoFile ? 'video' : 'image',
-        );
+    try {
+      final fileBytes = await media.readAsBytes();
+      final savedPath = await LocalStorageService.saveFileLocally(
+        name,
+        fileBytes,
+        isVideoFile ? 'video' : 'image',
+      );
 
-        if (savedPath != null) {
-          await _loadStorageAssets();
-          
-          if (widget.isPicker) {
-            final newAsset = _assets.firstWhere((a) => a.id == savedPath, orElse: () => _assets.first);
-            if (widget.onAssetSelected != null) {
-              widget.onAssetSelected!(newAsset);
-            } else {
-              Navigator.pop(context, newAsset);
-            }
+      if (savedPath != null) {
+        await _loadStorageAssets();
+
+        if (widget.isPicker) {
+          final newAsset = _assets.firstWhere(
+            (a) => a.id == savedPath,
+            orElse: () => _assets.first,
+          );
+          if (widget.onAssetSelected != null) {
+            widget.onAssetSelected!(newAsset);
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Added new ${isVideoFile ? 'video' : 'image'} to local storage!'),
-                backgroundColor: figmaBlue,
-              ),
-            );
+            Navigator.pop(context, newAsset);
           }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Added new ${isVideoFile ? 'video' : 'image'} to local storage!',
+              ),
+              backgroundColor: figmaBlue,
+            ),
+          );
         }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save file: $e'), backgroundColor: Colors.redAccent),
-        );
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save file: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   List<AppAsset> get _filteredAssets {
     return _assets.where((asset) {
       // 1. Filter by search query
-      if (_searchQuery.isNotEmpty && !asset.title.toLowerCase().contains(_searchQuery)) {
+      if (_searchQuery.isNotEmpty &&
+          !asset.title.toLowerCase().contains(_searchQuery)) {
         return false;
       }
 
@@ -657,7 +736,11 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
 
       // 3. Filter by category
       if (_selectedCategory == 'Favorites' && !asset.isFavorite) return false;
-      if (_selectedCategory != 'All' && _selectedCategory != 'Favorites' && _selectedCategory != 'More' && asset.category != _selectedCategory) return false;
+      if (_selectedCategory != 'All' &&
+          _selectedCategory != 'Favorites' &&
+          _selectedCategory != 'More' &&
+          asset.category != _selectedCategory)
+        return false;
 
       return true;
     }).toList();
@@ -671,7 +754,11 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     final yesterday = today.subtract(const Duration(days: 1));
 
     for (var asset in assetList) {
-      final assetDate = DateTime(asset.date.year, asset.date.month, asset.date.day);
+      final assetDate = DateTime(
+        asset.date.year,
+        asset.date.month,
+        asset.date.day,
+      );
       String header;
       if (assetDate == today) {
         header = 'Recent';
@@ -687,33 +774,51 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
 
   String _formatDateHeader(DateTime date) {
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  Widget _buildContent(List<AppAsset> filtered, Map<String, List<AppAsset>> grouped) {
+  Widget _buildContent(
+    List<AppAsset> filtered,
+    Map<String, List<AppAsset>> grouped,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subtitleColor = isDark ? colorScheme.onSurface.withValues(alpha: 0.6) : Colors.black54;
+    final subtitleColor = isDark
+        ? colorScheme.onSurface.withValues(alpha: 0.6)
+        : Colors.black54;
 
     if (_selectedCategory == 'More') {
       return SizedBox(
         key: ValueKey('folder_view_${_selectedSubFolder ?? ""}'),
         child: _selectedSubFolder == null
             ? _buildFolderListView(_getFoldersFromAssets(filtered))
-            : _buildSelectedFolderView(_selectedSubFolder!, _getFoldersFromAssets(filtered)[_selectedSubFolder] ?? []),
+            : _buildSelectedFolderView(
+                _selectedSubFolder!,
+                _getFoldersFromAssets(filtered)[_selectedSubFolder] ?? [],
+              ),
       );
     }
-    
+
     if (_isLoading) {
       return Center(
         key: ValueKey('loading_${_selectedTab}_$_selectedCategory'),
         child: CircularProgressIndicator(color: colorScheme.primary),
       );
     }
-    
+
     if (filtered.isEmpty) {
       return Center(
         key: ValueKey('empty_${_selectedTab}_$_selectedCategory'),
@@ -723,7 +828,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
             Icon(
               Icons.image_not_supported_outlined,
               size: 64,
-              color: isDark ? colorScheme.onSurface.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.15),
+              color: isDark
+                  ? colorScheme.onSurface.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.15),
             ),
             const SizedBox(height: 16),
             Text(
@@ -764,10 +871,10 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     final grouped = _groupAssetsByDate(filtered);
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Glassmorphic background and border styling
-    final glassBgColor = isDark 
-        ? Colors.black.withValues(alpha: 0.6) 
+    final glassBgColor = isDark
+        ? Colors.black.withValues(alpha: 0.6)
         : Colors.white.withValues(alpha: 0.65);
     final borderColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
@@ -785,8 +892,8 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                 width: 40,
                 height: 4.5,
                 decoration: BoxDecoration(
-                  color: isDark 
-                      ? Colors.white.withValues(alpha: 0.2) 
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.2)
                       : Colors.black.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -794,7 +901,10 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
             ),
           // Header Row (Centered Title)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8.0,
+              vertical: 12.0,
+            ),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -812,7 +922,8 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                           _isSelectionMode = false;
                           _selectedAssetIds.clear();
                         });
-                      } else if (_selectedCategory != 'All' || _selectedSubFolder != null) {
+                      } else if (_selectedCategory != 'All' ||
+                          _selectedSubFolder != null) {
                         setState(() {
                           _selectedCategory = 'All';
                           _selectedSubFolder = null;
@@ -830,7 +941,10 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                 Text(
                   _isSelectionMode
                       ? '${_selectedAssetIds.length} Selected'
-                      : (widget.title ?? (widget.isPicker ? 'Select Photo' : 'AssetManager')),
+                      : (widget.title ??
+                            (widget.isPicker
+                                ? 'Select Photo'
+                                : 'AssetManager')),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -876,12 +990,16 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search assets...',
                   hintStyle: TextStyle(
-                    color: isDark ? colorScheme.onSurface.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.3),
+                    color: isDark
+                        ? colorScheme.onSurface.withValues(alpha: 0.4)
+                        : Colors.black.withValues(alpha: 0.3),
                     fontSize: 15,
                   ),
                   prefixIcon: Icon(
                     Icons.search,
-                    color: isDark ? colorScheme.onSurface.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.3),
+                    color: isDark
+                        ? colorScheme.onSurface.withValues(alpha: 0.4)
+                        : Colors.black.withValues(alpha: 0.3),
                   ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 14.0),
@@ -896,77 +1014,83 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
             Center(
               child: Container(
                 height: 42,
-              constraints: const BoxConstraints(maxWidth: 240),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.white.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(30.0),
-                border: Border.all(color: borderColor, width: 1.0),
-              ),
-              child: Stack(
-                children: [
-                  // Sliding indicator
-                  AnimatedAlign(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
-                    alignment: _selectedTab == 'All'
-                        ? Alignment.centerLeft
-                        : (_selectedTab == 'Images'
-                            ? Alignment.center
-                            : Alignment.centerRight),
-                    child: FractionallySizedBox(
-                      widthFactor: 1 / 3,
-                      heightFactor: 1.0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary,
-                          borderRadius: BorderRadius.circular(25.0),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colorScheme.primary.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            )
-                          ],
+                constraints: const BoxConstraints(maxWidth: 240),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.white.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(30.0),
+                  border: Border.all(color: borderColor, width: 1.0),
+                ),
+                child: Stack(
+                  children: [
+                    // Sliding indicator
+                    AnimatedAlign(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      alignment: _selectedTab == 'All'
+                          ? Alignment.centerLeft
+                          : (_selectedTab == 'Images'
+                                ? Alignment.center
+                                : Alignment.centerRight),
+                      child: FractionallySizedBox(
+                        widthFactor: 1 / 3,
+                        heightFactor: 1.0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            borderRadius: BorderRadius.circular(25.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.3,
+                                ),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  // Tab text layers
-                  Row(
-                    children: ['All', 'Images', 'Videos'].map((tab) {
-                      final isSelected = _selectedTab == tab;
-                      return Expanded(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            setState(() {
-                              _selectedTab = tab;
-                            });
-                          },
-                          child: Center(
-                            child: AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 200),
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : (isDark ? colorScheme.onSurface.withValues(alpha: 0.6) : Colors.black54),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                    // Tab text layers
+                    Row(
+                      children: ['All', 'Images', 'Videos'].map((tab) {
+                        final isSelected = _selectedTab == tab;
+                        return Expanded(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              setState(() {
+                                _selectedTab = tab;
+                              });
+                            },
+                            child: Center(
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 200),
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isDark
+                                            ? colorScheme.onSurface.withValues(
+                                                alpha: 0.6,
+                                              )
+                                            : Colors.black54),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                                child: Text(tab),
                               ),
-                              child: Text(tab),
                             ),
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 20),
 
           // Categories list: Favorites, Camera, Download, Screenshot, More
@@ -976,11 +1100,26 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               children: [
-                _buildCategoryCard('Favorites', huge.HugeIcons.strokeRoundedFavourite),
-                _buildCategoryCard('Camera', huge.HugeIcons.strokeRoundedCamera01),
-                _buildCategoryCard('Download', huge.HugeIcons.strokeRoundedDownload01),
-                _buildCategoryCard('Screenshot', huge.HugeIcons.strokeRoundedRecord),
-                _buildCategoryCard('More', huge.HugeIcons.strokeRoundedFolder01),
+                _buildCategoryCard(
+                  'Favorites',
+                  huge.HugeIcons.strokeRoundedFavourite,
+                ),
+                _buildCategoryCard(
+                  'Camera',
+                  huge.HugeIcons.strokeRoundedCamera01,
+                ),
+                _buildCategoryCard(
+                  'Download',
+                  huge.HugeIcons.strokeRoundedDownload01,
+                ),
+                _buildCategoryCard(
+                  'Screenshot',
+                  huge.HugeIcons.strokeRoundedRecord,
+                ),
+                _buildCategoryCard(
+                  'More',
+                  huge.HugeIcons.strokeRoundedFolder01,
+                ),
               ],
             ),
           ),
@@ -996,10 +1135,16 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                 return FadeTransition(
                   opacity: animation,
                   child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.06, 0.0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+                    position:
+                        Tween<Offset>(
+                          begin: const Offset(0.06, 0.0),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          ),
+                        ),
                     child: child,
                   ),
                 );
@@ -1012,22 +1157,19 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     );
 
     final glassLayout = ClipRRect(
-      borderRadius: widget.isPicker 
-          ? const BorderRadius.vertical(top: Radius.circular(24.0)) 
+      borderRadius: widget.isPicker
+          ? const BorderRadius.vertical(top: Radius.circular(24.0))
           : BorderRadius.zero,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-        child: Container(
-          color: glassBgColor,
-          child: bodyContent,
-        ),
+        child: Container(color: glassBgColor, child: bodyContent),
       ),
     );
 
     final scaffold = Scaffold(
       backgroundColor: Colors.transparent,
       body: glassLayout,
-      
+
       // Bulk Actions Bar (Shown when items are selected)
       bottomNavigationBar: _isSelectionMode
           ? SafeArea(
@@ -1035,8 +1177,8 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                 height: 70,
                 margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 decoration: BoxDecoration(
-                  color: isDark 
-                      ? Colors.black.withValues(alpha: 0.75) 
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.75)
                       : Colors.black.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
@@ -1048,8 +1190,8 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                       color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
-                    )
-                  ]
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1060,12 +1202,13 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                       onTap: () async {
                         bool allFavorites = true;
                         for (var asset in _assets) {
-                          if (_selectedAssetIds.contains(asset.id) && !asset.isFavorite) {
+                          if (_selectedAssetIds.contains(asset.id) &&
+                              !asset.isFavorite) {
                             allFavorites = false;
                             break;
                           }
                         }
-                        
+
                         final newState = !allFavorites;
 
                         for (var asset in _assets) {
@@ -1081,7 +1224,13 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                           _selectedAssetIds.clear();
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(newState ? 'Added to Favorites' : 'Removed from Favorites')),
+                          SnackBar(
+                            content: Text(
+                              newState
+                                  ? 'Added to Favorites'
+                                  : 'Removed from Favorites',
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -1105,7 +1254,11 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
               onPressed: _pickAndAddAsset,
               backgroundColor: colorScheme.primary,
               shape: const CircleBorder(),
-              child: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedCamera01, color: colorScheme.onPrimary, size: 26),
+              child: huge.HugeIcon(
+                icon: huge.HugeIcons.strokeRoundedCamera01,
+                color: colorScheme.onPrimary,
+                size: 26,
+              ),
             )
           : null,
     );
@@ -1124,10 +1277,10 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedCategory == category;
-    
+
     Color containerColor;
     Color iconColor;
-    
+
     if (isSelected) {
       containerColor = colorScheme.primary;
       iconColor = Colors.white;
@@ -1141,7 +1294,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         containerColor = isDark
             ? Colors.white.withValues(alpha: 0.06)
             : Colors.black.withValues(alpha: 0.04);
-        iconColor = isDark ? colorScheme.onSurface.withValues(alpha: 0.6) : Colors.black54;
+        iconColor = isDark
+            ? colorScheme.onSurface.withValues(alpha: 0.6)
+            : Colors.black54;
       }
     }
 
@@ -1166,21 +1321,15 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: isSelected ? colorScheme.primary : Colors.transparent,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: icon is IconData
-                        ? Icon(
-                            icon,
-                            color: iconColor,
-                            size: 22,
-                          )
-                        : huge.HugeIcon(
-                            icon: icon,
-                            color: iconColor,
-                            size: 22,
-                          ),
+                        ? Icon(icon, color: iconColor, size: 22)
+                        : huge.HugeIcon(icon: icon, color: iconColor, size: 22),
                   ),
                 ),
               ),
@@ -1191,7 +1340,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
               style: TextStyle(
                 color: isSelected
                     ? colorScheme.primary
-                    : (isDark ? colorScheme.onSurface.withValues(alpha: 0.8) : Colors.black87),
+                    : (isDark
+                          ? colorScheme.onSurface.withValues(alpha: 0.8)
+                          : Colors.black87),
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
@@ -1219,7 +1370,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
 
   Widget _buildAssetGrid(List<AppAsset> assetList) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -1280,36 +1431,46 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12.0),
-                         boxShadow: [
+                        boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
-                          )
+                          ),
                         ],
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: asset.type == 'video'
                           ? VideoThumbnailWidget(videoPath: asset.imageUrl)
                           : (asset.imageUrl.startsWith('http')
-                              ? Image.network(
-                                  asset.imageUrl,
-                                  cacheWidth: 200,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => Container(
-                                    color: Colors.grey.shade300,
-                                    child: const Icon(Icons.broken_image, color: Colors.grey),
-                                  ),
-                                )
-                              : Image.file(
-                                  File(asset.imageUrl),
-                                  cacheWidth: 200,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => Container(
-                                    color: Colors.grey.shade300,
-                                    child: const Icon(Icons.broken_image, color: Colors.grey),
-                                  ),
-                                )),
+                                ? Image.network(
+                                    asset.imageUrl,
+                                    cacheWidth: 200,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              color: Colors.grey.shade300,
+                                              child: const Icon(
+                                                Icons.broken_image,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                  )
+                                : Image.file(
+                                    File(asset.imageUrl),
+                                    cacheWidth: 200,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              color: Colors.grey.shade300,
+                                              child: const Icon(
+                                                Icons.broken_image,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                  )),
                     ),
                   ),
                 ),
@@ -1333,7 +1494,11 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                               color: Colors.white,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(Icons.play_arrow_rounded, color: colorScheme.primary, size: 16),
+                            child: Icon(
+                              Icons.play_arrow_rounded,
+                              color: colorScheme.primary,
+                              size: 16,
+                            ),
                           ),
                         ),
                       ),
@@ -1347,7 +1512,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                     curve: Curves.easeInOut,
                     decoration: BoxDecoration(
                       color: _isSelectionMode
-                          ? (isSelected ? colorScheme.primary.withValues(alpha: 0.25) : Colors.black.withValues(alpha: 0.1))
+                          ? (isSelected
+                                ? colorScheme.primary.withValues(alpha: 0.25)
+                                : Colors.black.withValues(alpha: 0.1))
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(12.0),
                       border: _isSelectionMode && isSelected
@@ -1393,7 +1560,11 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                           color: colorScheme.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check, color: Colors.white, size: 14),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ),
@@ -1428,9 +1599,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                 _assets.removeWhere((item) => item.id == asset.id);
               });
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Asset deleted')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Asset deleted')));
             } catch (e) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Failed to delete asset: $e')),
@@ -1455,17 +1626,27 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete assets?', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to delete ${_selectedAssetIds.length} assets? This action cannot be undone.'),
+        title: const Text(
+          'Delete assets?',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to delete ${_selectedAssetIds.length} assets? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () async {
               try {
@@ -1475,7 +1656,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                   }
                 }
                 setState(() {
-                  _assets.removeWhere((asset) => _selectedAssetIds.contains(asset.id));
+                  _assets.removeWhere(
+                    (asset) => _selectedAssetIds.contains(asset.id),
+                  );
                   _isSelectionMode = false;
                   _selectedAssetIds.clear();
                 });
@@ -1486,11 +1669,20 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
               } catch (e) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to delete files: $e'), backgroundColor: Colors.redAccent),
+                  SnackBar(
+                    content: Text('Failed to delete files: $e'),
+                    backgroundColor: Colors.redAccent,
+                  ),
                 );
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -1512,7 +1704,11 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -1576,7 +1772,9 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
           if (!widget.isPicker) ...[
             IconButton(
               icon: Icon(
-                _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                _isFavorite
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
                 color: _isFavorite ? Colors.redAccent : Colors.white,
               ),
               onPressed: () {
@@ -1587,7 +1785,10 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.white,
+              ),
               onPressed: _showDeleteConfirm,
             ),
           ],
@@ -1607,16 +1808,26 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
             child: widget.asset.type == 'video'
                 ? VideoPlayerPreview(videoPath: widget.asset.imageUrl)
                 : (widget.asset.imageUrl.startsWith('http')
-                    ? Image.network(
-                        widget.asset.imageUrl,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white54, size: 64),
-                      )
-                    : Image.file(
-                        File(widget.asset.imageUrl),
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white54, size: 64),
-                      )),
+                      ? Image.network(
+                          widget.asset.imageUrl,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.broken_image,
+                                color: Colors.white54,
+                                size: 64,
+                              ),
+                        )
+                      : Image.file(
+                          File(widget.asset.imageUrl),
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.broken_image,
+                                color: Colors.white54,
+                                size: 64,
+                              ),
+                        )),
           ),
         ),
       ),
@@ -1628,23 +1839,39 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete asset?', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to delete this asset? This action cannot be undone.'),
+        title: const Text(
+          'Delete asset?',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this asset? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () {
               Navigator.pop(context);
               widget.onDelete();
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -1655,7 +1882,9 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xff121212),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
@@ -1665,7 +1894,11 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
             children: [
               const Text(
                 'Asset Information',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
               _buildDetailRow('Name', widget.asset.title),
@@ -1673,7 +1906,7 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
               _buildDetailRow('Category', widget.asset.category),
               _buildDetailRow('Size', widget.asset.size),
               _buildDetailRow(
-                'Date Added', 
+                'Date Added',
                 '${widget.asset.date.day}/${widget.asset.date.month}/${widget.asset.date.year}',
               ),
               const SizedBox(height: 10),
@@ -1690,8 +1923,18 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 14)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white54, fontSize: 14),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -1719,7 +1962,9 @@ class _VideoPlayerPreviewState extends State<VideoPlayerPreview> {
 
   void _initializeController() async {
     if (widget.videoPath.startsWith('http')) {
-      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoPath));
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoPath),
+      );
     } else {
       _controller = VideoPlayerController.file(File(widget.videoPath));
     }
@@ -1754,8 +1999,6 @@ class _VideoPlayerPreviewState extends State<VideoPlayerPreview> {
         ),
       );
     }
-    return const Center(
-      child: CircularProgressIndicator(color: Colors.white),
-    );
+    return const Center(child: CircularProgressIndicator(color: Colors.white));
   }
 }

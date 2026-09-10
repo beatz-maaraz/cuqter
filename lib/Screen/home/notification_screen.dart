@@ -113,13 +113,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       .where('status', isEqualTo: 'pending')
                       .snapshots(),
                   builder: (context, freqSnapshot) {
-                    if (notifSnapshot.connectionState == ConnectionState.waiting &&
-                        freqSnapshot.connectionState == ConnectionState.waiting) {
+                    if (notifSnapshot.connectionState ==
+                            ConnectionState.waiting &&
+                        freqSnapshot.connectionState ==
+                            ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
 
                     // Map notifications by unique key to combine both collections safely
-                    final Map<String, Map<String, dynamic>> combinedNotifications = {};
+                    final Map<String, Map<String, dynamic>>
+                    combinedNotifications = {};
 
                     // 1. Process notifications collection
                     if (notifSnapshot.hasData) {
@@ -147,7 +150,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             'senderName': data['senderName'] ?? 'Someone',
                             'senderProfilePic': data['senderProfilePic'] ?? '',
                             'title': 'Friend Request',
-                            'body': '${data['senderName'] ?? 'Someone'} sent you a friend request',
+                            'body':
+                                '${data['senderName'] ?? 'Someone'} sent you a friend request',
                             'timestamp': data['timestamp'],
                             'source': 'friend_requests',
                           };
@@ -175,14 +179,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       if (tA == null && tB == null) return 0;
                       if (tA == null) return 1;
                       if (tB == null) return -1;
-                      final dA = tA is Timestamp ? tA.toDate() : (tA as DateTime);
-                      final dB = tB is Timestamp ? tB.toDate() : (tB as DateTime);
+                      final dA = tA is Timestamp
+                          ? tA.toDate()
+                          : (tA as DateTime);
+                      final dB = tB is Timestamp
+                          ? tB.toDate()
+                          : (tB as DateTime);
                       return dB.compareTo(dA);
                     });
 
-                    final friendRequests = items.where((i) => i['type'] == 'friend_request').toList();
-                    final statusLikes = items.where((i) => i['type'] == 'status_like').toList();
-                    final otherNotifs = items.where((i) => i['type'] != 'friend_request' && i['type'] != 'status_like').toList();
+                    final friendRequests = items
+                        .where((i) => i['type'] == 'friend_request')
+                        .toList();
+                    final statusLikes = items
+                        .where((i) => i['type'] == 'status_like')
+                        .toList();
+                    final otherNotifs = items
+                        .where(
+                          (i) =>
+                              i['type'] != 'friend_request' &&
+                              i['type'] != 'status_like',
+                        )
+                        .toList();
 
                     return SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -224,10 +242,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             _buildNotificationCard(
                               context,
                               notifications: otherNotifs.map((item) {
-                                return _buildGenericItem(
-                                  context,
-                                  item: item,
-                                );
+                                return _buildGenericItem(context, item: item);
                               }).toList(),
                             ),
                           ],
@@ -282,7 +297,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final name = item['senderName'] ?? 'Someone';
     final imageUrl = item['senderProfilePic'] ?? '';
     final requestId = item['requestId'] ?? item['docId'] ?? '';
-    final notifDocId = item['source'] == 'notifications' ? item['docId'] : 'friend_request_$requestId';
+    final notifDocId = item['source'] == 'notifications'
+        ? item['docId']
+        : 'friend_request_$requestId';
 
     return InkWell(
       onTap: () => _navigateToProfile(senderId, name, imageUrl),
@@ -342,9 +359,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   color: colorScheme.error,
                   onTap: () async {
                     // Delete from friend_requests
-                    await _firestore.collection('friend_requests').doc(requestId).delete().catchError((_) {});
+                    await _firestore
+                        .collection('friend_requests')
+                        .doc(requestId)
+                        .delete()
+                        .catchError((_) {});
                     // Delete from notifications
-                    await _firestore.collection('notifications').doc(notifDocId).delete().catchError((_) {});
+                    await _firestore
+                        .collection('notifications')
+                        .doc(notifDocId)
+                        .delete()
+                        .catchError((_) {});
                   },
                 ),
                 const SizedBox(width: 8),
@@ -357,13 +382,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     if (currentUserId == null) return;
 
                     // Delete request and notification
-                    await _firestore.collection('friend_requests').doc(requestId).delete().catchError((_) {});
-                    await _firestore.collection('notifications').doc(notifDocId).delete().catchError((_) {});
+                    await _firestore
+                        .collection('friend_requests')
+                        .doc(requestId)
+                        .delete()
+                        .catchError((_) {});
+                    await _firestore
+                        .collection('notifications')
+                        .doc(notifDocId)
+                        .delete()
+                        .catchError((_) {});
 
                     // Add to contacts
-                    await _firestore.collection('users').doc(currentUserId).update({
-                      'contacts': FieldValue.arrayUnion([senderId]),
-                    });
+                    await _firestore
+                        .collection('users')
+                        .doc(currentUserId)
+                        .update({
+                          'contacts': FieldValue.arrayUnion([senderId]),
+                        });
                     await _firestore.collection('users').doc(senderId).update({
                       'contacts': FieldValue.arrayUnion([currentUserId]),
                     });
@@ -402,7 +438,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       : null,
                   backgroundColor: colorScheme.surfaceContainerHighest,
                   child: imageUrl.isEmpty
-                      ? huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedUser, color: colorScheme.onSurfaceVariant, size: 22)
+                      ? huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedUser,
+                          color: colorScheme.onSurfaceVariant,
+                          size: 22,
+                        )
                       : null,
                 ),
                 Positioned(
@@ -414,7 +454,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       color: Colors.redAccent,
                       shape: BoxShape.circle,
                     ),
-                    child: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, size: 10, color: Colors.white),
+                    child: const huge.HugeIcon(
+                      icon: huge.HugeIcons.strokeRoundedFavourite,
+                      size: 10,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -459,7 +503,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
               color: colorScheme.onSurface.withValues(alpha: 0.4),
               onTap: () async {
                 if (docId.isNotEmpty) {
-                  await _firestore.collection('notifications').doc(docId).delete();
+                  await _firestore
+                      .collection('notifications')
+                      .doc(docId)
+                      .delete();
                 }
               },
             ),
@@ -497,7 +544,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   : null,
               backgroundColor: colorScheme.surfaceContainerHighest,
               child: imageUrl.isEmpty
-                  ? huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedNotification01, color: colorScheme.onSurfaceVariant, size: 22)
+                  ? huge.HugeIcon(
+                      icon: huge.HugeIcons.strokeRoundedNotification01,
+                      color: colorScheme.onSurfaceVariant,
+                      size: 22,
+                    )
                   : null,
             ),
             const SizedBox(width: 16),
@@ -542,7 +593,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
               color: colorScheme.onSurface.withValues(alpha: 0.4),
               onTap: () async {
                 if (docId.isNotEmpty) {
-                  await _firestore.collection('notifications').doc(docId).delete();
+                  await _firestore
+                      .collection('notifications')
+                      .doc(docId)
+                      .delete();
                 }
               },
             ),
@@ -552,7 +606,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  void _navigateToProfile(String senderId, String fallbackName, String fallbackPic) async {
+  void _navigateToProfile(
+    String senderId,
+    String fallbackName,
+    String fallbackPic,
+  ) async {
     try {
       final userDoc = await _firestore.collection('users').doc(senderId).get();
       if (userDoc.exists) {

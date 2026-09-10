@@ -13,40 +13,55 @@ class _FaqPageState extends State<FaqPage> {
   String _searchQuery = "";
   String _selectedCategory = "All";
 
-  final List<String> _categories = ["All", "General", "Appearance", "Storage", "Security"];
+  final List<String> _categories = [
+    "All",
+    "General",
+    "Appearance",
+    "Storage",
+    "Security",
+  ];
 
   final List<Map<String, String>> _faqItems = [
     {
       "category": "General",
       "question": "What is Cuqter Messenger?",
-      "answer": "Cuqter is a secure, next-generation messaging platform designed with premium customizable themes, rich media sharing features, and smart AI capabilities."
+      "answer":
+          "Cuqter is a secure, next-generation messaging platform designed with premium customizable themes, rich media sharing features, and smart AI capabilities.",
     },
     {
       "category": "Appearance",
       "question": "How do I change the accent color of the application?",
-      "answer": "Go to Settings > Appearance. You can choose from our curated color palette (Violet, Sky Blue, Emerald Green, Coral, etc.) to instantaneously update the whole app accent dynamically."
+      "answer":
+          "Go to Settings > Appearance. You can choose from our curated color palette (Violet, Sky Blue, Emerald Green, Coral, etc.) to instantaneously update the whole app accent dynamically.",
     },
     {
       "category": "Appearance",
       "question": "Can I change the home screen launcher icon?",
-      "answer": "Yes! In Settings > Appearance, scroll to the App Icon section. You can select custom launcher styles such as Classic Violet, Stealth Midnight, or Sunset Glow, and preview them live in the Home Screen Mockup."
+      "answer":
+          "Yes! In Settings > Appearance, scroll to the App Icon section. You can select custom launcher styles such as Classic Violet, Stealth Midnight, or Sunset Glow, and preview them live in the Home Screen Mockup.",
     },
     {
       "category": "Storage",
       "question": "How can I clear temporary cache files?",
-      "answer": "Navigate to Settings > Storage & Data. In the total storage card, tap on 'Clear Temporary Cache' to delete non-essential cached media and log files. Tapping categories shows the size details."
+      "answer":
+          "Navigate to Settings > Storage & Data. In the total storage card, tap on 'Clear Temporary Cache' to delete non-essential cached media and log files. Tapping categories shows the size details.",
     },
     {
       "category": "Security",
       "question": "Are my chat conversations secure?",
-      "answer": "Absolutely! Cuqter routes messages through real-time encrypted data sync channels and provides lock options to prevent unauthorized access to your account."
+      "answer":
+          "Absolutely! Cuqter routes messages through real-time encrypted data sync channels and provides lock options to prevent unauthorized access to your account.",
     },
   ];
 
   List<Map<String, String>> get _filteredFaqs {
     return _faqItems.where((item) {
-      final matchesCategory = _selectedCategory == "All" || item["category"] == _selectedCategory;
-      final matchesSearch = item["question"]!.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      final matchesCategory =
+          _selectedCategory == "All" || item["category"] == _selectedCategory;
+      final matchesSearch =
+          item["question"]!.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
           item["answer"]!.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     }).toList();
@@ -67,7 +82,10 @@ class _FaqPageState extends State<FaqPage> {
       appBar: AppBar(
         title: Text(
           'FAQ',
-          style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -82,7 +100,10 @@ class _FaqPageState extends State<FaqPage> {
             child: _filteredFaqs.isEmpty
                 ? _buildEmptyState(colorScheme)
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     itemCount: _filteredFaqs.length,
                     itemBuilder: (context, index) {
                       final faq = _filteredFaqs[index];
@@ -102,7 +123,9 @@ class _FaqPageState extends State<FaqPage> {
         decoration: BoxDecoration(
           color: colorScheme.onSurface.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.06)),
+          border: Border.all(
+            color: colorScheme.onSurface.withValues(alpha: 0.06),
+          ),
         ),
         child: TextField(
           controller: _searchController,
@@ -113,11 +136,19 @@ class _FaqPageState extends State<FaqPage> {
           },
           decoration: InputDecoration(
             hintText: 'Search answers, keywords...',
-            hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4)),
-            prefixIcon: Icon(Icons.search, color: colorScheme.onSurface.withValues(alpha: 0.4)),
+            hintStyle: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+            prefixIcon: Icon(
+              Icons.search,
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: Icon(Icons.clear, color: colorScheme.onSurface.withValues(alpha: 0.4)),
+                    icon: Icon(
+                      Icons.clear,
+                      color: colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
                     onPressed: () {
                       _searchController.clear();
                       setState(() {
@@ -152,7 +183,9 @@ class _FaqPageState extends State<FaqPage> {
                 cat,
                 style: TextStyle(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                  color: isSelected
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurface,
                   fontSize: 12,
                 ),
               ),
@@ -166,7 +199,9 @@ class _FaqPageState extends State<FaqPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: isSelected ? Colors.transparent : colorScheme.onSurface.withValues(alpha: 0.06),
+                  color: isSelected
+                      ? Colors.transparent
+                      : colorScheme.onSurface.withValues(alpha: 0.06),
                 ),
               ),
               showCheckmark: false,
@@ -183,7 +218,9 @@ class _FaqPageState extends State<FaqPage> {
       decoration: BoxDecoration(
         color: colorScheme.onSurface.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.05),
+        ),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -204,7 +241,11 @@ class _FaqPageState extends State<FaqPage> {
               size: 18,
             ),
           ),
-          childrenPadding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+          childrenPadding: const EdgeInsets.only(
+            left: 20,
+            right: 20,
+            bottom: 20,
+          ),
           expandedAlignment: Alignment.topLeft,
           children: [
             Text(

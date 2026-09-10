@@ -18,15 +18,17 @@ class ThemeProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final themeIndex = prefs.getInt('theme_mode');
-      if (themeIndex != null && themeIndex >= 0 && themeIndex < ThemeMode.values.length) {
+      if (themeIndex != null &&
+          themeIndex >= 0 &&
+          themeIndex < ThemeMode.values.length) {
         _themeMode = ThemeMode.values[themeIndex];
       }
-      
+
       final colorHex = prefs.getInt('theme_primary_color');
       if (colorHex != null) {
         _primaryColor = Color(colorHex);
       }
-      
+
       notifyListeners();
     } catch (e) {
       // SharedPreferences might fail to initialize in some environments, ignore gracefully
