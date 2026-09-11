@@ -24,7 +24,7 @@ void showCustomSnackBar(
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 12,
               ),
             ),
           ),
@@ -33,6 +33,7 @@ void showCustomSnackBar(
       backgroundColor:
           isError ? const Color(0xFFF43F5E) : const Color(0xFF10B981),
       behavior: SnackBarBehavior.floating,
+      dismissDirection: DismissDirection.down,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.all(16),
       duration: duration,
