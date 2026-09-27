@@ -80,6 +80,7 @@ class Status {
   final DateTime expiresAt;
   final List<StatusViewer> viewers;
   final List<StatusLiker> likes;
+  final int colorIndex;
 
   Status({
     required this.statusId,
@@ -93,6 +94,7 @@ class Status {
     required this.expiresAt,
     this.viewers = const [],
     this.likes = const [],
+    this.colorIndex = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -108,6 +110,7 @@ class Status {
       'expiresAt': expiresAt,
       'viewers': viewers.map((v) => v.toMap()).toList(),
       'likes': likes.map((l) => l.toMap()).toList(),
+      'colorIndex': colorIndex,
     };
   }
 
@@ -153,6 +156,7 @@ class Status {
             return StatusLiker.fromMap(Map<String, dynamic>.from(l));
           }).toList() ??
           [],
+      colorIndex: map['colorIndex'] ?? 0,
     );
   }
 }

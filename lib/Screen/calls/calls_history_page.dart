@@ -41,6 +41,19 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
   String _activeFilter = 'All'; // 'All' or 'Missed'
   bool _isSelectionMode = false;
   final Set<String> _selectedDocIds = {};
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: 0);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   String _formatTimestamp(Timestamp? timestamp) {
     if (timestamp == null) return '';
@@ -523,6 +536,14 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
     return GestureDetector(
       onTap: () {
         if (_activeFilter != label) {
+          int page = label == 'All' ? 0 : 1;
+          if (_pageController.hasClients) {
+            _pageController.animateToPage(
+              page,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
           setState(() {
             _activeFilter = label;
           });
@@ -726,7 +747,7 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
 
             final docs = snapshot.data?.docs ?? [];
 
-            // Apply Filter (All vs Missed)
+            // Wait, to keep Select All working, we pass the current active filter's docs to AppBar:
             var filteredDocs = docs;
             if (_activeFilter == 'Missed') {
               filteredDocs = docs.where((doc) {
@@ -735,365 +756,345 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                 return status == 'missed' || status == 'declined';
               }).toList();
             }
-
-            final allFilteredDocIds = filteredDocs.map((d) => d.id).toList();
-
-            if (filteredDocs.isEmpty) {
-              return Scaffold(
-                backgroundColor: colorScheme.surface,
-                appBar: _buildAppBar(context, allFilteredDocIds),
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedCall02,
-                        size: 64,
-                        color: colorScheme.outline,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _activeFilter == 'Missed'
-                            ? 'No missed calls'
-                            : 'No call history yet',
-                        style: TextStyle(
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            // Group consecutive calls for the same peerId under each date section
-            final dateGroups = <String, List<GroupedCallLog>>{};
-
-            for (var doc in filteredDocs) {
-              final data = doc.data() as Map<String, dynamic>;
-              final timestamp = data['timestamp'] as Timestamp?;
-              final peerId = data['peerId'] ?? '';
-
-              String dateLabel = 'Unknown';
-              if (timestamp != null) {
-                DateTime date = timestamp.toDate();
-                DateTime now = DateTime.now();
-                DateTime yesterday = now.subtract(const Duration(days: 1));
-                if (date.year == now.year &&
-                    date.month == now.month &&
-                    date.day == now.day) {
-                  dateLabel = 'Today';
-                } else if (date.year == yesterday.year &&
-                    date.month == yesterday.month &&
-                    date.day == yesterday.day) {
-                  dateLabel = 'Yesterday';
-                } else {
-                  dateLabel = DateFormat('MMMM d, yyyy').format(date);
-                }
-              }
-
-              if (!dateGroups.containsKey(dateLabel)) {
-                dateGroups[dateLabel] = [];
-              }
-
-              final listForDate = dateGroups[dateLabel]!;
-              if (listForDate.isNotEmpty && listForDate.last.peerId == peerId) {
-                listForDate.last.docs.add(doc);
-              } else {
-                listForDate.add(GroupedCallLog(peerId: peerId, docs: [doc]));
-              }
-            }
-
-            final listItems = [];
-            for (var dateLabel in dateGroups.keys) {
-              listItems.add(dateLabel);
-              listItems.addAll(dateGroups[dateLabel]!);
-            }
+            final allFilteredDocIdsForAppBar = filteredDocs
+                .map((d) => d.id)
+                .toList();
 
             return Scaffold(
               backgroundColor: colorScheme.surface,
-              appBar: _buildAppBar(context, allFilteredDocIds),
-              body: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position:
-                          Tween<Offset>(
-                            begin: const Offset(0.05, 0.0),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeOutCubic,
-                            ),
-                          ),
-                      child: child,
-                    ),
-                  );
+              appBar: _buildAppBar(context, allFilteredDocIdsForAppBar),
+              body: PageView(
+                controller: _pageController,
+                physics: const BouncingScrollPhysics(),
+                onPageChanged: (index) {
+                  final newFilter = index == 0 ? 'All' : 'Missed';
+                  if (_activeFilter != newFilter) {
+                    setState(() {
+                      _activeFilter = newFilter;
+                    });
+                  }
                 },
-                child: ListView.builder(
-                  key: ValueKey('list_$_activeFilter'),
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(top: 8, bottom: 90),
-                  itemCount: listItems.length,
-                  itemBuilder: (context, index) {
-                    final item = listItems[index];
+                children: [
+                  _buildCallList(docs, 'All', userMap, colorScheme),
+                  _buildCallList(docs, 'Missed', userMap, colorScheme),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
-                    if (item is String) {
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          left: 20,
-                          top: 16,
-                          bottom: 8,
-                          right: 20,
+  Widget _buildCallList(
+    List<QueryDocumentSnapshot> docs,
+    String filterType,
+    Map<String, Map<String, dynamic>> userMap,
+    ColorScheme colorScheme,
+  ) {
+    var filteredDocs = docs;
+    if (filterType == 'Missed') {
+      filteredDocs = docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final status = data['status']?.toString() ?? '';
+        return status == 'missed' || status == 'declined';
+      }).toList();
+    }
+
+    if (filteredDocs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            huge.HugeIcon(
+              icon: huge.HugeIcons.strokeRoundedCall02,
+              size: 64,
+              color: colorScheme.outline,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              filterType == 'Missed'
+                  ? 'No missed calls'
+                  : 'No call history yet',
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final dateGroups = <String, List<GroupedCallLog>>{};
+
+    for (var doc in filteredDocs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final timestamp = data['timestamp'] as Timestamp?;
+      final peerId = data['peerId'] ?? '';
+
+      String dateLabel = 'Unknown';
+      if (timestamp != null) {
+        DateTime date = timestamp.toDate();
+        DateTime now = DateTime.now();
+        DateTime yesterday = now.subtract(const Duration(days: 1));
+        if (date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day) {
+          dateLabel = 'Today';
+        } else if (date.year == yesterday.year &&
+            date.month == yesterday.month &&
+            date.day == yesterday.day) {
+          dateLabel = 'Yesterday';
+        } else {
+          dateLabel = DateFormat('MMMM d, yyyy').format(date);
+        }
+      }
+
+      if (!dateGroups.containsKey(dateLabel)) {
+        dateGroups[dateLabel] = [];
+      }
+
+      final listForDate = dateGroups[dateLabel]!;
+      if (listForDate.isNotEmpty && listForDate.last.peerId == peerId) {
+        listForDate.last.docs.add(doc);
+      } else {
+        listForDate.add(GroupedCallLog(peerId: peerId, docs: [doc]));
+      }
+    }
+
+    final listItems = [];
+    for (var dateLabel in dateGroups.keys) {
+      listItems.add(dateLabel);
+      listItems.addAll(dateGroups[dateLabel]!);
+    }
+
+    return ListView.builder(
+      key: ValueKey('list_$filterType'),
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(top: 8, bottom: 90),
+      itemCount: listItems.length,
+      itemBuilder: (context, index) {
+        final item = listItems[index];
+
+        if (item is String) {
+          return Padding(
+            padding: const EdgeInsets.only(
+              left: 20,
+              top: 16,
+              bottom: 8,
+              right: 20,
+            ),
+            child: Text(
+              item,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: colorScheme.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          );
+        }
+
+        final groupedLog = item as GroupedCallLog;
+        final latestData = groupedLog.latestDoc.data() as Map<String, dynamic>;
+        final peerId = groupedLog.peerId;
+        final latestStatus = latestData['status'] ?? 'incoming';
+        final latestTimestamp = latestData['timestamp'] as Timestamp?;
+
+        final allDocIds = groupedLog.docs.map((d) => d.id).toSet();
+        final isGroupSelected = allDocIds.every(
+          (id) => _selectedDocIds.contains(id),
+        );
+
+        final userData = userMap[peerId];
+        final peerName = userData?['name'] ?? 'User';
+        final profilePic = userData?['profilepic'] ?? '';
+        final isOutgoing = latestStatus == 'outgoing';
+        final isMissed = latestStatus == 'missed' || latestStatus == 'declined';
+
+        IconData statusIcon;
+        Color statusColor;
+        if (isMissed) {
+          statusIcon = Icons.call_missed;
+          statusColor = Colors.red;
+        } else if (isOutgoing) {
+          statusIcon = Icons.call_made;
+          statusColor = Colors.green;
+        } else {
+          statusIcon = Icons.call_received;
+          statusColor = Colors.blue;
+        }
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+          decoration: BoxDecoration(
+            color: isGroupSelected
+                ? colorScheme.primaryContainer.withValues(alpha: 0.25)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isGroupSelected ? colorScheme.primary : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 2,
+            ),
+            onTap: () {
+              if (_isSelectionMode) {
+                setState(() {
+                  if (isGroupSelected) {
+                    _selectedDocIds.removeAll(allDocIds);
+                    if (_selectedDocIds.isEmpty) {
+                      _isSelectionMode = false;
+                    }
+                  } else {
+                    _selectedDocIds.addAll(allDocIds);
+                  }
+                });
+              } else {
+                _showCallDetailsModal(
+                  context,
+                  groupedLog,
+                  peerName,
+                  profilePic,
+                );
+              }
+            },
+            onLongPress: () {
+              setState(() {
+                _isSelectionMode = true;
+                _selectedDocIds.addAll(allDocIds);
+              });
+            },
+            leading: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isSelectionMode)
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isGroupSelected) {
+                          _selectedDocIds.removeAll(allDocIds);
+                          if (_selectedDocIds.isEmpty) {
+                            _isSelectionMode = false;
+                          }
+                        } else {
+                          _selectedDocIds.addAll(allDocIds);
+                        }
+                      });
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 10),
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isGroupSelected
+                            ? colorScheme.primary
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: isGroupSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurface.withValues(alpha: 0.35),
+                          width: 2,
                         ),
-                        child: Text(
-                          item,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: colorScheme.primary,
-                            letterSpacing: 0.5,
+                      ),
+                      child: isGroupSelected
+                          ? const Icon(
+                              Icons.check,
+                              size: 14,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                  ),
+                GestureDetector(
+                  onTap: () {
+                    if (profilePic.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FullScreenProfilePicPage(
+                            imageUrl: profilePic,
+                            heroTag: 'call_profile_pic_$peerId',
                           ),
                         ),
                       );
                     }
-
-                    final groupedLog = item as GroupedCallLog;
-                    final latestData =
-                        groupedLog.latestDoc.data() as Map<String, dynamic>;
-                    final peerId = groupedLog.peerId;
-                    final latestStatus = latestData['status'] ?? 'incoming';
-                    final latestTimestamp =
-                        latestData['timestamp'] as Timestamp?;
-
-                    final allDocIds = groupedLog.docs.map((d) => d.id).toSet();
-                    final isGroupSelected = allDocIds.every(
-                      (id) => _selectedDocIds.contains(id),
-                    );
-
-                    final userData = userMap[peerId];
-                    final peerName = userData?['name'] ?? 'User';
-                    final profilePic = userData?['profilepic'] ?? '';
-                    final isOutgoing = latestStatus == 'outgoing';
-                    final isMissed =
-                        latestStatus == 'missed' || latestStatus == 'declined';
-
-                    IconData statusIcon;
-                    Color statusColor;
-                    if (isMissed) {
-                      statusIcon = Icons.call_missed;
-                      statusColor = Colors.red;
-                    } else if (isOutgoing) {
-                      statusIcon = Icons.call_made;
-                      statusColor = Colors.green;
-                    } else {
-                      statusIcon = Icons.call_received;
-                      statusColor = Colors.blue;
-                    }
-
-                    return Container(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isGroupSelected
-                            ? colorScheme.primaryContainer.withValues(
-                                alpha: 0.25,
-                              )
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isGroupSelected
-                              ? colorScheme.primary
-                              : Colors.transparent,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 2,
-                        ),
-                        onTap: () {
-                          if (_isSelectionMode) {
-                            setState(() {
-                              if (isGroupSelected) {
-                                _selectedDocIds.removeAll(allDocIds);
-                                if (_selectedDocIds.isEmpty) {
-                                  _isSelectionMode = false;
-                                }
-                              } else {
-                                _selectedDocIds.addAll(allDocIds);
-                              }
-                            });
-                          } else {
-                            _showCallDetailsModal(
-                              context,
-                              groupedLog,
-                              peerName,
-                              profilePic,
-                            );
-                          }
-                        },
-                        onLongPress: () {
-                          setState(() {
-                            _isSelectionMode = true;
-                            _selectedDocIds.addAll(allDocIds);
-                          });
-                        },
-                        leading: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_isSelectionMode)
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    if (isGroupSelected) {
-                                      _selectedDocIds.removeAll(allDocIds);
-                                      if (_selectedDocIds.isEmpty) {
-                                        _isSelectionMode = false;
-                                      }
-                                    } else {
-                                      _selectedDocIds.addAll(allDocIds);
-                                    }
-                                  });
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.only(right: 10),
-                                  width: 22,
-                                  height: 22,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isGroupSelected
-                                        ? colorScheme.primary
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: isGroupSelected
-                                          ? colorScheme.primary
-                                          : colorScheme.onSurface.withValues(
-                                              alpha: 0.35,
-                                            ),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: isGroupSelected
-                                      ? const Icon(
-                                          Icons.check,
-                                          size: 14,
-                                          color: Colors.white,
-                                        )
-                                      : null,
-                                ),
-                              ),
-                            GestureDetector(
-                              onTap: () {
-                                if (profilePic.isNotEmpty) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          FullScreenProfilePicPage(
-                                            imageUrl: profilePic,
-                                            heroTag: 'call_profile_pic_$peerId',
-                                          ),
-                                    ),
-                                  );
-                                }
-                              },
-                              child: CircleAvatar(
-                                radius: 24,
-                                backgroundColor: colorScheme.primaryContainer,
-                                backgroundImage:
-                                    profilePic.isNotEmpty &&
-                                        profilePic.startsWith('http')
-                                    ? ResizeImage(
-                                        CachedNetworkImageProvider(profilePic),
-                                        width: 160,
-                                        height: 160,
-                                      )
-                                    : const AssetImage(
-                                            'assets/icon/default_profile.png',
-                                          )
-                                          as ImageProvider,
-                              ),
-                            ),
-                          ],
-                        ),
-                        title: Text(
-                          groupedLog.count > 1
-                              ? '$peerName (${groupedLog.count})'
-                              : peerName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: isMissed
-                                ? Colors.red
-                                : colorScheme.onSurface,
-                          ),
-                        ),
-                        subtitle: Row(
-                          children: [
-                            Icon(statusIcon, size: 15, color: statusColor),
-                            const SizedBox(width: 6),
-                            Text(
-                              _formatTimestamp(latestTimestamp),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        trailing: _isSelectionMode
-                            ? null
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: huge.HugeIcon(
-                                      icon: huge.HugeIcons.strokeRoundedCall02,
-                                      color: colorScheme.primary,
-                                      size: 22,
-                                    ),
-                                    onPressed: () {
-                                      _startNewCall(
-                                        context,
-                                        peerId,
-                                        peerName,
-                                        false,
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: huge.HugeIcon(
-                                      icon: huge.HugeIcons.strokeRoundedVideo01,
-                                      color: colorScheme.primary,
-                                      size: 22,
-                                    ),
-                                    onPressed: () {
-                                      _startNewCall(
-                                        context,
-                                        peerId,
-                                        peerName,
-                                        true,
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                      ),
-                    );
                   },
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: colorScheme.primaryContainer,
+                    backgroundImage:
+                        profilePic.isNotEmpty && profilePic.startsWith('http')
+                        ? ResizeImage(
+                            CachedNetworkImageProvider(profilePic),
+                            width: 160,
+                            height: 160,
+                          )
+                        : const AssetImage('assets/icon/default_profile.png')
+                              as ImageProvider,
+                  ),
                 ),
+              ],
+            ),
+            title: Text(
+              groupedLog.count > 1
+                  ? '$peerName (${groupedLog.count})'
+                  : peerName,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: isMissed ? Colors.red : colorScheme.onSurface,
               ),
-            );
-          },
+            ),
+            subtitle: Row(
+              children: [
+                Icon(statusIcon, size: 15, color: statusColor),
+                const SizedBox(width: 6),
+                Text(
+                  _formatTimestamp(latestTimestamp),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            trailing: _isSelectionMode
+                ? null
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedCall02,
+                          color: colorScheme.primary,
+                          size: 22,
+                        ),
+                        onPressed: () {
+                          _startNewCall(context, peerId, peerName, false);
+                        },
+                      ),
+                      IconButton(
+                        icon: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedVideo01,
+                          color: colorScheme.primary,
+                          size: 22,
+                        ),
+                        onPressed: () {
+                          _startNewCall(context, peerId, peerName, true);
+                        },
+                      ),
+                    ],
+                  ),
+          ),
         );
       },
     );

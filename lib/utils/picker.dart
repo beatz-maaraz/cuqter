@@ -37,5 +37,11 @@ Future<XFile?> pickMediaFile() async {
 }
 
 void showSnackBar(String content, context) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(content)));
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Text(
+      content,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
+  ));
 }

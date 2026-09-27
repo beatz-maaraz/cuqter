@@ -32,7 +32,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
     }
 
     final bool authenticated = await BiometricService.authenticate(
-      reason: 'Unlock Cuqter using mobile biometrics or device passcode',
+      reason: 'Unlock Cuqter ',
     );
 
     if (mounted) {

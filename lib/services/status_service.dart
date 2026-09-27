@@ -13,6 +13,7 @@ class StatusService {
     required String mediaUrl,
     required String mediaType,
     required String caption,
+    int colorIndex = 0,
   }) async {
     try {
       final docRef = _firestore.collection('statuses').doc();
@@ -24,6 +25,7 @@ class StatusService {
         mediaUrl: mediaUrl,
         mediaType: mediaType,
         caption: caption,
+        colorIndex: colorIndex,
         createdAt: DateTime.now(),
         expiresAt: DateTime.now().add(const Duration(hours: 24)),
       );
