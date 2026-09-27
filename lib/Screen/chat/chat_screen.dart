@@ -2908,6 +2908,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                     child: TextField(
                                       focusNode: _focusNode,
                                       controller: _messageController,
+                                      minLines: 1,
+                                      maxLines: 5,
+                                      textInputAction: TextInputAction.newline,
+                                      keyboardType: TextInputType.multiline,
                                       style: TextStyle(
                                         color: colorScheme.onSurface,
                                       ),
@@ -5398,51 +5402,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Widget _buildReactionsRow(Map reactions, bool isMe, ColorScheme colorScheme) {
-    final Map<String, int> reactionCounts = {};
-    for (var emoji in reactions.values) {
-      final emojiStr = emoji.toString();
-      reactionCounts[emojiStr] = (reactionCounts[emojiStr] ?? 0) + 1;
-    }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 4.0),
-      child: Wrap(
-        spacing: 4.0,
-        runSpacing: 4.0,
-        alignment: isMe ? WrapAlignment.end : WrapAlignment.start,
-        children: reactionCounts.entries.map((e) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(e.key, style: const TextStyle(fontSize: 12)),
-                if (e.value > 1) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    '${e.value}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
 }
 
 class ZigZagLoading extends StatefulWidget {

@@ -153,6 +153,8 @@ class _LinkText extends StatefulWidget {
 
 class _LinkTextState extends State<_LinkText> {
   final List<TapGestureRecognizer> _recognizers = [];
+  bool _isExpanded = false;
+  static const int _charLimit = 350;
 
   @override
   void dispose() {
@@ -187,71 +189,81 @@ class _LinkTextState extends State<_LinkText> {
     }
     _recognizers.clear();
 
+    final bool isLong = widget.text.length > _charLimit;
+    final String displayText = (isLong && !_isExpanded)
+        ? '${widget.text.substring(0, _charLimit)}...'
+        : widget.text;
+
     // Regex for detecting URLs
     final RegExp urlRegExp = RegExp(
       r'(https?:\/\/[^\s]+|www\.[^\s]+)',
       caseSensitive: false,
     );
 
-    final matches = urlRegExp.allMatches(widget.text);
-    if (matches.isEmpty) {
-      return SelectableText.rich(
-        TextSpan(
-          text: widget.text,
-          style: widget.style,
-          children: widget.trailing != null
-              ? [
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.bottom,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: widget.trailing!,
-                    ),
-                  ),
-                ]
-              : null,
-        ),
-      );
-    }
-
+    final matches = urlRegExp.allMatches(displayText);
     final List<InlineSpan> spans = [];
-    int lastMatchEnd = 0;
 
-    for (final match in matches) {
-      if (match.start > lastMatchEnd) {
+    if (matches.isEmpty) {
+      spans.add(TextSpan(text: displayText, style: widget.style));
+    } else {
+      int lastMatchEnd = 0;
+      for (final match in matches) {
+        if (match.start > lastMatchEnd) {
+          spans.add(
+            TextSpan(
+              text: displayText.substring(lastMatchEnd, match.start),
+              style: widget.style,
+            ),
+          );
+        }
+
+        final urlString = match.group(0)!;
+        final recognizer = TapGestureRecognizer()
+          ..onTap = () => _launchURL(urlString);
+        _recognizers.add(recognizer);
+
         spans.add(
           TextSpan(
-            text: widget.text.substring(lastMatchEnd, match.start),
+            text: urlString,
+            style: widget.style.copyWith(
+              color: widget.linkColor,
+              decoration: TextDecoration.underline,
+              fontWeight: FontWeight.w600,
+            ),
+            recognizer: recognizer,
+          ),
+        );
+
+        lastMatchEnd = match.end;
+      }
+
+      if (lastMatchEnd < displayText.length) {
+        spans.add(
+          TextSpan(
+            text: displayText.substring(lastMatchEnd),
             style: widget.style,
           ),
         );
       }
-
-      final urlString = match.group(0)!;
-      final recognizer = TapGestureRecognizer()
-        ..onTap = () => _launchURL(urlString);
-      _recognizers.add(recognizer);
-
-      spans.add(
-        TextSpan(
-          text: urlString,
-          style: widget.style.copyWith(
-            color: widget.linkColor,
-            decoration: TextDecoration.underline,
-            fontWeight: FontWeight.w600,
-          ),
-          recognizer: recognizer,
-        ),
-      );
-
-      lastMatchEnd = match.end;
     }
 
-    if (lastMatchEnd < widget.text.length) {
+    if (isLong) {
+      final readMoreRecognizer = TapGestureRecognizer()
+        ..onTap = () {
+          setState(() {
+            _isExpanded = !_isExpanded;
+          });
+        };
+      _recognizers.add(readMoreRecognizer);
+
       spans.add(
         TextSpan(
-          text: widget.text.substring(lastMatchEnd),
-          style: widget.style,
+          text: _isExpanded ? ' Read less' : ' Read more',
+          style: widget.style.copyWith(
+            color: widget.style.color?.withValues(alpha: 0.7) ?? widget.linkColor,
+            fontWeight: FontWeight.bold,
+          ),
+          recognizer: readMoreRecognizer,
         ),
       );
     }
