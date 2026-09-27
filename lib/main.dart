@@ -31,14 +31,13 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Optimize RAM usage by setting maximum image cache bounds
   PaintingBinding.instance.imageCache.maximumSize = 100;
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50 MB
+  PaintingBinding.instance.imageCache.maximumSizeBytes =
+      50 * 1024 * 1024; // 50 MB
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await BiometricService.isAppLockEnabled();
@@ -77,38 +76,60 @@ class MainApp extends StatelessWidget {
       title: 'Cuqter',
       themeMode: themeProvider.themeMode,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: themeProvider.primaryColor,
-          brightness: Brightness.light,
-        ).copyWith(
-          primary: themeProvider.primaryColor,
-          secondary: themeProvider.primaryColor.withValues(alpha: 0.2),
-          surface: Colors.white,
-          onSurface: AppColors.text,
-          primaryContainer: themeProvider.primaryColor.withValues(alpha: 0.2),
-          onPrimaryContainer: AppColors.text,
-          surfaceContainerHighest: AppColors.card,
-          onSurfaceVariant: AppColors.text,
-          secondaryContainer: AppColors.accent,
-          onSecondaryContainer: Colors.white,
-        ),
+        colorScheme:
+            ColorScheme.fromSeed(
+              seedColor: themeProvider.primaryColor,
+              brightness: Brightness.light,
+            ).copyWith(
+              primary: themeProvider.primaryColor,
+              secondary: themeProvider.primaryColor.withValues(alpha: 0.2),
+              surface: Colors.white,
+              onSurface: AppColors.text,
+              primaryContainer: themeProvider.primaryColor.withValues(
+                alpha: 0.2,
+              ),
+              onPrimaryContainer: AppColors.text,
+              surfaceContainerHighest: AppColors.card,
+              onSurfaceVariant: AppColors.text,
+              secondaryContainer: AppColors.accent,
+              onSecondaryContainer: Colors.white,
+            ),
         scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF10B981),
+          contentTextStyle: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: themeProvider.primaryColor,
           brightness: Brightness.dark,
-        ).copyWith(
-          primary: themeProvider.primaryColor,
-          surface: Colors.black,
-        ),
+        ).copyWith(primary: themeProvider.primaryColor, surface: Colors.black),
         scaffoldBackgroundColor: Colors.black,
         useMaterial3: true,
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF10B981),
+          contentTextStyle: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
-        
+
         const double scale = 0.90;
         final scaledSize = mediaQuery.size / scale;
 
@@ -163,7 +184,8 @@ class AppLockWrapper extends StatefulWidget {
   State<AppLockWrapper> createState() => _AppLockWrapperState();
 }
 
-class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObserver {
+class _AppLockWrapperState extends State<AppLockWrapper>
+    with WidgetsBindingObserver {
   late bool _isLocked;
   bool _isPaused = false;
 
@@ -171,7 +193,9 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _isLocked = BiometricService.appLockEnabled && FirebaseAuth.instance.currentUser != null;
+    _isLocked =
+        BiometricService.appLockEnabled &&
+        FirebaseAuth.instance.currentUser != null;
     _checkAppLock();
   }
 
@@ -183,7 +207,8 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
       _isPaused = true;
     } else if (state == AppLifecycleState.resumed) {
       if (_isPaused && !_isLocked) {
@@ -239,12 +264,20 @@ class _StartupSplashScreen extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: isDark
               ? const LinearGradient(
-                  colors: [Color(0xFF14142B), Color(0xFF0E0E1E), Color(0xFF1F122B)],
+                  colors: [
+                    Color(0xFF14142B),
+                    Color(0xFF0E0E1E),
+                    Color(0xFF1F122B),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
               : const LinearGradient(
-                  colors: [Color(0xFFD9E2FF), Color(0xFFFFFFFF), Color(0xFFF9D8FF)],
+                  colors: [
+                    Color(0xFFD9E2FF),
+                    Color(0xFFFFFFFF),
+                    Color(0xFFF9D8FF),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),

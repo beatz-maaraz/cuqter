@@ -25,7 +25,10 @@ class AboutPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'About Cuqter',
-          style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -116,7 +119,10 @@ class AboutPage extends StatelessWidget {
                     ? 'Version ${snapshot.data!.version} (${snapshot.data!.buildNumber})'
                     : 'Version 1.4.21'; // Fallback
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -162,21 +168,24 @@ class AboutPage extends StatelessWidget {
               context,
               icon: huge.HugeIcons.strokeRoundedBubbleChat,
               title: 'Cozy Interface',
-              description: 'Highly customized theme system with light/dark options and rich chat wallpapers.',
+              description:
+                  'Highly customized theme system with light/dark options and rich chat wallpapers.',
             ),
             const SizedBox(height: 12),
             _buildFeatureCard(
               context,
               icon: huge.HugeIcons.strokeRoundedSecurityValidation,
               title: 'Secure Delivery',
-              description: 'Real-time database updates with message seen/unseen tick statuses.',
+              description:
+                  'Real-time database updates with message seen/unseen tick statuses.',
             ),
             const SizedBox(height: 12),
             _buildFeatureCard(
               context,
               icon: huge.HugeIcons.strokeRoundedAiBrain01,
               title: 'AI Image Generator',
-              description: 'Create and generate artwork directly into your conversations.',
+              description:
+                  'Create and generate artwork directly into your conversations.',
             ),
             const SizedBox(height: 36),
 
@@ -197,17 +206,26 @@ class AboutPage extends StatelessWidget {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const FaqPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const FaqPage(),
+                            ),
                           );
                         },
                         child: Text(
                           'FAQ',
-                          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                     Center(
-                      child: Container(width: 1, height: 16, color: colorScheme.onSurface.withValues(alpha: 0.2)),
+                      child: Container(
+                        width: 1,
+                        height: 16,
+                        color: colorScheme.onSurface.withValues(alpha: 0.2),
+                      ),
                     ),
                     Align(
                       alignment: Alignment.center,
@@ -215,12 +233,17 @@ class AboutPage extends StatelessWidget {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const ReportProblemPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const ReportProblemPage(),
+                            ),
                           );
                         },
                         child: Text(
                           'Send Feedback',
-                          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -234,20 +257,31 @@ class AboutPage extends StatelessWidget {
                         onPressed: () => _launchUrl('https://cuqter.com/terms'),
                         child: Text(
                           'Terms of Service',
-                          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                     Center(
-                      child: Container(width: 1, height: 16, color: colorScheme.onSurface.withValues(alpha: 0.2)),
+                      child: Container(
+                        width: 1,
+                        height: 16,
+                        color: colorScheme.onSurface.withValues(alpha: 0.2),
+                      ),
                     ),
                     Align(
                       alignment: Alignment.center,
                       child: TextButton(
-                        onPressed: () => _launchUrl('https://cuqter.com/privacy'),
+                        onPressed: () =>
+                            _launchUrl('https://cuqter.com/privacy'),
                         child: Text(
                           'Privacy Policy',
-                          style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -284,7 +318,9 @@ class AboutPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.06)),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.06),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

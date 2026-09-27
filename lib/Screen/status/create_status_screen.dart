@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
-import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/services/status_service.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
@@ -17,7 +17,11 @@ class CreateStatusScreen extends StatefulWidget {
   final String? sharedMediaPath;
   final bool? isSharedMediaVideo;
 
-  const CreateStatusScreen({super.key, this.sharedMediaPath, this.isSharedMediaVideo});
+  const CreateStatusScreen({
+    super.key,
+    this.sharedMediaPath,
+    this.isSharedMediaVideo,
+  });
 
   @override
   State<CreateStatusScreen> createState() => _CreateStatusScreenState();
@@ -35,11 +39,24 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   String? _selectedLocalPath;
   String? _selectedNetworkUrl;
 
+  int _currentGradientIndex = 0;
+  final List<List<Color>> _statusGradients = [
+    [const Color(0xFF8A2387), const Color(0xFFE94057), const Color(0xFFF27121)],
+    [const Color(0xFF00C6FF), const Color(0xFF0072FF)],
+    [const Color(0xFF1D976C), const Color(0xFF93F9B9)],
+    [const Color(0xFFEB5757), const Color(0xFF000000)],
+    [const Color(0xFFC33764), const Color(0xFF1D2671)],
+    [const Color(0xFF11998E), const Color(0xFF38EF7D)],
+  ];
+
   @override
   void initState() {
     super.initState();
     if (widget.sharedMediaPath != null) {
-      _loadSharedMedia(widget.sharedMediaPath!, widget.isSharedMediaVideo ?? false);
+      _loadSharedMedia(
+        widget.sharedMediaPath!,
+        widget.isSharedMediaVideo ?? false,
+      );
     }
   }
 
@@ -127,7 +144,9 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
           _videoController = VideoPlayerController.networkUrl(Uri.parse(path));
         } else {
           if (kIsWeb) {
-            _videoController = VideoPlayerController.networkUrl(Uri.parse(path));
+            _videoController = VideoPlayerController.networkUrl(
+              Uri.parse(path),
+            );
           } else {
             _videoController = VideoPlayerController.file(File(path));
           }
@@ -160,7 +179,10 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      var userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      var userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
       String username = userDoc.data()?['name'] ?? 'Unknown';
       String profilePic = userDoc.data()?['profilepic'] ?? '';
 
@@ -211,7 +233,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
           ext = _videoFile!.path.split('.').last;
           if (ext.isEmpty || ext.length > 5) ext = 'mp4';
         }
-        
+
         Map<String, String>? res;
         if (kIsWeb) {
           Uint8List videoBytes = await _videoFile!.readAsBytes();
@@ -229,7 +251,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
             resourceType: 'video',
           );
         }
-        
+
         if (res != null) {
           mediaUrl = res['url']!;
           mediaType = 'video';
@@ -262,6 +284,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
         mediaUrl: mediaUrl,
         mediaType: mediaType,
         caption: _captionController.text,
+        colorIndex: (mediaType == 'text') ? _currentGradientIndex : 0,
       );
 
       if (mounted) {
@@ -278,203 +301,308 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Determine if we are showing text-only status
+    final bool isTextOnly = _selectedNetworkUrl == null &&
+        _selectedLocalPath == null &&
+        _file == null &&
+        !_isVideo;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('new status'),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (_selectedNetworkUrl == null && _selectedLocalPath == null && _file == null && !_isVideo)
-                          Expanded(
-                            child: Center(
-                              child: TextField(
-                                controller: _captionController,
-                                style: const TextStyle(fontSize: 24),
-                                textAlign: TextAlign.center,
-                                decoration: const InputDecoration(
-                                  hintText: 'Type a text....',
-                                  border: InputBorder.none,
-                                ),
-                                maxLines: null,
-                              ),
-                            ),
-                          )
-                        else
-                          TextField(
-                            controller: _captionController,
-                            style: const TextStyle(fontSize: 24),
-                            textAlign: TextAlign.center,
-                            decoration: const InputDecoration(
-                              hintText: 'Type a text....',
-                              border: InputBorder.none,
-                            ),
-                            maxLines: null,
-                          ),
-                        if (_selectedNetworkUrl != null || _selectedLocalPath != null || _file != null || _isVideo)
-                          const SizedBox(height: 20),
-                        if (_selectedNetworkUrl != null && !_isVideo)
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: NetworkImage(_selectedNetworkUrl!),
-                                  fit: BoxFit.cover,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          )
-                        else if (_selectedLocalPath != null && !_isVideo)
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: FileImage(File(_selectedLocalPath!)),
-                                  fit: BoxFit.cover,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          )
-                        else if (_file != null && !_isVideo)
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: MemoryImage(_file!),
-                                  fit: BoxFit.cover,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          )
-                        else if (_isVideo && _videoController != null && _videoController!.value.isInitialized)
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: AspectRatio(
-                                aspectRatio: _videoController!.value.aspectRatio,
-                                child: VideoPlayer(_videoController!),
-                              ),
-                            ),
-                          ),
+      backgroundColor: Colors.black, // Dark background for immersive media
+      body: Stack(
+        children: [
+          // 1. Background / Media Content
+          if (isTextOnly)
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: _statusGradients[_currentGradientIndex],
+                ),
+              ),
+            )
+          else if (_selectedNetworkUrl != null && !_isVideo)
+            Positioned.fill(
+              child: Image.network(
+                _selectedNetworkUrl!,
+                fit: BoxFit.cover,
+              ),
+            )
+          else if (_selectedLocalPath != null && !_isVideo)
+            Positioned.fill(
+              child: Image.file(
+                File(_selectedLocalPath!),
+                fit: BoxFit.cover,
+              ),
+            )
+          else if (_file != null && !_isVideo)
+            Positioned.fill(
+              child: Image.memory(
+                _file!,
+                fit: BoxFit.cover,
+              ),
+            )
+          else if (_isVideo &&
+              _videoController != null &&
+              _videoController!.value.isInitialized)
+            Positioned.fill(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController!.value.size.width,
+                  height: _videoController!.value.size.height,
+                  child: VideoPlayer(_videoController!),
+                ),
+              ),
+            ),
+
+          // 2. Loading Indicator Overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+            ),
+
+          // 3. Text Input (Always shown if it's text-only, or overlays media if they type something?)
+          // Usually social apps have the text overlay the media. We'll show the text field in the center.
+          if (!_isLoading)
+            SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: TextField(
+                    controller: _captionController,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 4,
+                          color: Colors.black45,
+                        ),
                       ],
                     ),
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      hintText: isTextOnly ? 'Type a status...' : 'Add a caption...',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: isTextOnly ? 32 : 24,
+                      ),
+                      border: InputBorder.none,
+                    ),
+                    maxLines: null,
+                    textInputAction: TextInputAction.done,
                   ),
                 ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _buildPillButton('Text', () {
-                                  setState(() {
-                                    _file = null;
-                                    _videoFile = null;
+              ),
+            ),
+
+          // 4. Top Bar (Close button and Color Palette)
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  if (isTextOnly)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.color_lens, color: Colors.white),
+                        onPressed: () {
+                          setState(() {
+                            _currentGradientIndex = (_currentGradientIndex + 1) % _statusGradients.length;
+                          });
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // 5. Bottom Glassmorphic Toolbar
+          if (!_isLoading)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    )
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildIconButton(
+                            icon: Icons.text_fields,
+                            label: 'Text',
+                            isActive: isTextOnly,
+                            onTap: () {
+                              setState(() {
+                                _file = null;
+                                _videoFile = null;
+                                _selectedLocalPath = null;
+                                _selectedNetworkUrl = null;
+                                _isVideo = false;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _buildIconButton(
+                            icon: Icons.photo_library,
+                            label: 'Gallery',
+                            isActive: _selectedLocalPath != null || _selectedNetworkUrl != null || _file != null,
+                            onTap: _selectMedia,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildIconButton(
+                            icon: Icons.camera_alt,
+                            label: 'Camera',
+                            isActive: false, // Camera is just a trigger
+                            onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const CustomCameraScreen(),
+                                ),
+                              );
+                              if (result != null) {
+                                final XFile file = result['file'];
+                                final bool isVideo = result['type'] == 'video';
+
+                                if (_videoController != null) {
+                                  _videoController!.dispose();
+                                  _videoController = null;
+                                }
+
+                                setState(() {
+                                  _isVideo = isVideo;
+                                  _file = null;
+                                  if (isVideo) {
+                                    _videoFile = file;
                                     _selectedLocalPath = null;
                                     _selectedNetworkUrl = null;
-                                    _isVideo = false;
-                                  });
-                                }),
-                                const SizedBox(width: 8),
-                                _buildPillButton('Gallery', _selectMedia),
-                                const SizedBox(width: 8),
-                                _buildPillButton('Camera', () async {
-                                  final result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
-                                  );
-                                  if (result != null) {
-                                    final XFile file = result['file'];
-                                    final bool isVideo = result['type'] == 'video';
-                                    
-                                    if (_videoController != null) {
-                                      _videoController!.dispose();
-                                      _videoController = null;
-                                    }
-
-                                    setState(() {
-                                      _isVideo = isVideo;
-                                      _file = null;
-                                      if (isVideo) {
-                                        _videoFile = file;
-                                        _selectedLocalPath = null;
-                                        _selectedNetworkUrl = null;
-                                      } else {
-                                        _videoFile = null;
-                                        _selectedLocalPath = file.path;
-                                        _selectedNetworkUrl = null;
-                                      }
-                                    });
-
-                                    if (isVideo) {
-                                      _videoController = kIsWeb 
-                                        ? VideoPlayerController.networkUrl(Uri.parse(file.path)) 
-                                        : VideoPlayerController.file(File(file.path));
-                                      _videoController!
-                                        ..initialize().then((_) {
-                                          if (mounted) setState(() {});
-                                          _videoController!.play();
-                                          _videoController!.setLooping(true);
-                                        });
-                                    }
+                                  } else {
+                                    _videoFile = null;
+                                    _selectedLocalPath = file.path;
+                                    _selectedNetworkUrl = null;
                                   }
-                                }),
-                              ],
+                                });
+
+                                if (isVideo) {
+                                  _videoController = kIsWeb
+                                      ? VideoPlayerController.networkUrl(Uri.parse(file.path))
+                                      : VideoPlayerController.file(File(file.path));
+                                  _videoController!
+                                    ..initialize().then((_) {
+                                      if (mounted) setState(() {});
+                                      _videoController!.play();
+                                      _videoController!.setLooping(true);
+                                    });
+                                }
+                              }
+                            },
+                          ),
+                          const SizedBox(width: 16),
+                          // Send Button
+                          GestureDetector(
+                            onTap: _postStatus,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.send,
+                                color: Colors.white,
+                                size: 22,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: _isLoading ? null : _postStatus,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
+        ],
+      ),
     );
   }
 
-  Widget _buildPillButton(String text, VoidCallback onTap) {
+  Widget _buildIconButton({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.5)),
+          color: isActive ? Colors.white.withOpacity(0.25) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500)),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            if (isActive) ...[
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ]
+          ],
+        ),
       ),
     );
   }
 }
-

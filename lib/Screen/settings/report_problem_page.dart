@@ -22,7 +22,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
     'Feature Request',
     'Interface Layout Issue',
     'Account & Privacy Issue',
-    'General Feedback'
+    'General Feedback',
   ];
 
   @override
@@ -70,10 +70,11 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
         path: 'smahendran6317@gmail.com',
         query: _encodeQueryParameters({
           'subject': 'Cuqter Support: $_selectedReportCategory',
-          'body': 'User Email: ${_emailController.text.trim()}\n\nDescription:\n${_descController.text.trim()}',
+          'body':
+              'User Email: ${_emailController.text.trim()}\n\nDescription:\n${_descController.text.trim()}',
         }),
       );
-      
+
       if (await canLaunchUrl(emailLaunchUri)) {
         await launchUrl(emailLaunchUri);
       }
@@ -93,7 +94,10 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
 
   String _encodeQueryParameters(Map<String, String> params) {
     return params.entries
-        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .map(
+          (e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+        )
         .join('&');
   }
 
@@ -131,7 +135,10 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
               Text(
                 'Thank you for helping us improve Cuqter! Our development team has received your feedback and will review it shortly.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6), height: 1.4),
+                style: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -148,7 +155,10 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                   onPressed: () {
                     Navigator.pop(context); // Close dialog
                   },
-                  child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -167,7 +177,10 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
       appBar: AppBar(
         title: Text(
           'Report a Problem',
-          style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -222,17 +235,25 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
       decoration: BoxDecoration(
         color: colorScheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.06)),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.06),
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButtonFormField<String>(
           initialValue: _selectedReportCategory,
-          icon: Icon(Icons.arrow_drop_down, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+          icon: Icon(
+            Icons.arrow_drop_down,
+            color: colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
           decoration: const InputDecoration(border: InputBorder.none),
           items: _reportCategories.map((String value) {
             return DropdownMenuItem<String>(
               value: value,
-              child: Text(value, style: TextStyle(color: colorScheme.onSurface, fontSize: 14)),
+              child: Text(
+                value,
+                style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+              ),
             );
           }).toList(),
           onChanged: (newValue) {
@@ -252,17 +273,24 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         hintText: 'Enter your email address',
-        hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4)),
+        hintStyle: TextStyle(
+          color: colorScheme.onSurface.withValues(alpha: 0.4),
+        ),
         filled: true,
         fillColor: colorScheme.onSurface.withValues(alpha: 0.04),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.06)),
+          borderSide: BorderSide(
+            color: colorScheme.onSurface.withValues(alpha: 0.06),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
@@ -289,8 +317,11 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
       minLines: 4,
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
-        hintText: 'Explain the issue in detail (e.g. how it happened, steps to reproduce, or feedback on what to change)...',
-        hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4)),
+        hintText:
+            'Explain the issue in detail (e.g. how it happened, steps to reproduce, or feedback on what to change)...',
+        hintStyle: TextStyle(
+          color: colorScheme.onSurface.withValues(alpha: 0.4),
+        ),
         filled: true,
         fillColor: colorScheme.onSurface.withValues(alpha: 0.04),
         contentPadding: const EdgeInsets.all(20),
@@ -300,7 +331,9 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.06)),
+          borderSide: BorderSide(
+            color: colorScheme.onSurface.withValues(alpha: 0.06),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
@@ -357,7 +390,10 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
             const SizedBox(height: 8),
             Text(
               'Uploading report details securely to our support queue',
-              style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 13),
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
+                fontSize: 13,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

@@ -49,8 +49,8 @@ class Message {
       senderId: json['senderId'] ?? '',
       receiverId: json['receiverId'] ?? '',
       text: json['text'] ?? '',
-      timestamp: (json['timestamp'] != null) 
-          ? (json['timestamp']).toDate() 
+      timestamp: (json['timestamp'] != null)
+          ? (json['timestamp']).toDate()
           : DateTime.now(),
       isRead: json['isRead'] ?? false,
       type: json['type'] ?? 'text',

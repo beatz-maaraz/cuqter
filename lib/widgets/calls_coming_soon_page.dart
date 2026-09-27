@@ -75,8 +75,9 @@ class _CallsComingSoonPageState extends State<CallsComingSoonPage>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: colorScheme.primary
-                              .withValues(alpha: isDark ? 0.45 : 0.3),
+                          color: colorScheme.primary.withValues(
+                            alpha: isDark ? 0.45 : 0.3,
+                          ),
                           blurRadius: 40,
                           spreadRadius: 8,
                         ),
@@ -94,8 +95,10 @@ class _CallsComingSoonPageState extends State<CallsComingSoonPage>
 
                 // Coming Soon pill badge
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [

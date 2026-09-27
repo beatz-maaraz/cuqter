@@ -7,10 +7,10 @@ class FullScreenProfilePicPage extends StatelessWidget {
   final String heroTag;
 
   const FullScreenProfilePicPage({
-    Key? key,
+    super.key,
     required this.imageUrl,
     required this.heroTag,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,19 +31,21 @@ class FullScreenProfilePicPage extends StatelessWidget {
                         width: double.infinity,
                         height: double.infinity,
                       )
-                    : (imageUrl.startsWith('/') || imageUrl.contains(':\\') || imageUrl.contains(':/'))
-                        ? Image.file(
-                            File(imageUrl),
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            height: double.infinity,
-                          )
-                        : Image.asset(
-                            imageUrl,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
+                    : (imageUrl.startsWith('/') ||
+                          imageUrl.contains(':\\') ||
+                          imageUrl.contains(':/'))
+                    ? Image.file(
+                        File(imageUrl),
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                      )
+                    : Image.asset(
+                        imageUrl,
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
               ),
             ),
           ),
@@ -57,7 +59,11 @@ class FullScreenProfilePicPage extends StatelessWidget {
                 child: Container(
                   color: Colors.white.withValues(alpha: 0.1),
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),

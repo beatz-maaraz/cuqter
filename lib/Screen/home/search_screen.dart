@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/Screen/profile/userprofile.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -136,13 +135,14 @@ class _SearchScreenState extends State<SearchScreen> {
                           var users =
                               snapshot.data?.docs.where((doc) {
                                 if (_auth.currentUser == null) return false;
-                                if (doc.id == _auth.currentUser!.uid)
+                                if (doc.id == _auth.currentUser!.uid) {
                                   return false;
-                                if (myContacts.contains(doc.id))
+                                }
+                                if (myContacts.contains(doc.id)) {
                                   return false; // Filter out existing friends
+                                }
 
-                                var data =
-                                    doc.data() as Map<String, dynamic>?;
+                                var data = doc.data() as Map<String, dynamic>?;
                                 String username = (data?['username'] ?? '')
                                     .toString()
                                     .toLowerCase();
@@ -213,8 +213,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                                 username: username,
                                                 bio: bio,
                                                 profilepic: profilePic,
-                                                isFriend: false, // Already filtered out
-                                                isRequested: requestedUserIds.contains(users[index].id),
+                                                isFriend:
+                                                    false, // Already filtered out
+                                                isRequested: requestedUserIds
+                                                    .contains(users[index].id),
                                               ),
                                           transitionsBuilder:
                                               (
@@ -271,7 +273,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                               backgroundColor: colorScheme
                                                   .primary
                                                   .withValues(alpha: 0.1),
-                                              backgroundImage: profilePic.isNotEmpty
+                                              backgroundImage:
+                                                  profilePic.isNotEmpty
                                                   ? (profilePic.startsWith(
                                                               'http',
                                                             )
@@ -348,8 +351,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
                                           if (requestedUserIds.contains(
                                             targetUserId,
-                                          ))
+                                          )) {
                                             return; // Already requested
+                                          }
 
                                           String requestId =
                                               '${currentUserId}_$targetUserId';
@@ -390,7 +394,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
                                             await _firestore
                                                 .collection('notifications')
-                                                .doc('friend_request_$requestId')
+                                                .doc(
+                                                  'friend_request_$requestId',
+                                                )
                                                 .set({
                                                   'notificationId':
                                                       'friend_request_$requestId',
@@ -424,7 +430,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(
-                                                SnackBar(
+                                                const SnackBar(
                                                   content: Text(
                                                     'Failed to send request',
                                                   ),

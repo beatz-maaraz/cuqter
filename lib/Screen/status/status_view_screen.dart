@@ -41,10 +41,20 @@ class _StatusViewScreenState extends State<StatusViewScreen>
   final StatusService _statusService = StatusService();
   final MessageService _messageService = MessageService();
   final TextEditingController _messageController = TextEditingController();
+  final FocusNode _replyFocusNode = FocusNode();
   final Set<String> _viewedStatuses = {};
   DateTime? _tapDownTime;
   late AnimationController _animationController;
   VideoPlayerController? _videoController;
+
+  final List<List<Color>> _statusGradients = [
+    [const Color(0xFF8A2387), const Color(0xFFE94057), const Color(0xFFF27121)],
+    [const Color(0xFF00C6FF), const Color(0xFF0072FF)],
+    [const Color(0xFF1D976C), const Color(0xFF93F9B9)],
+    [const Color(0xFFEB5757), const Color(0xFF000000)],
+    [const Color(0xFFC33764), const Color(0xFF1D2671)],
+    [const Color(0xFF11998E), const Color(0xFF38EF7D)],
+  ];
 
   List<Status> get _currentGroup => _allGroups[_currentUserIndex];
 
@@ -64,6 +74,15 @@ class _StatusViewScreenState extends State<StatusViewScreen>
         _nextStatus();
       }
     });
+
+    _replyFocusNode.addListener(() {
+      if (_replyFocusNode.hasFocus) {
+        _pauseStatus();
+      } else {
+        _resumeStatus();
+      }
+    });
+
     _markCurrentAsSeen();
     _setupCurrentStatus();
   }
@@ -194,29 +213,40 @@ class _StatusViewScreenState extends State<StatusViewScreen>
     _animationController.dispose();
     _pageController.dispose();
     _messageController.dispose();
+    _replyFocusNode.dispose();
     _videoController?.dispose();
     super.dispose();
   }
 
-  void _sendReply(Status status) {
-    if (_messageController.text.trim().isEmpty || _currentUserId == null)
+  void _sendReply(Status status, {String? messageOverride}) {
+    final message = messageOverride ?? _messageController.text.trim();
+    if (message.isEmpty || _currentUserId == null) {
       return;
+    }
 
     String chatId = _currentUserId.compareTo(status.uid) > 0
         ? '${_currentUserId}_${status.uid}'
-        : '${status.uid}_${_currentUserId}';
+        : '${status.uid}_$_currentUserId';
 
     _messageService.sendMessage(
       chatId: chatId,
       senderId: _currentUserId,
       receiverId: status.uid,
-      text: _messageController.text.trim(),
+      text: message,
     );
 
-    _messageController.clear();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Reply sent')));
+    if (messageOverride == null) {
+      _messageController.clear();
+      _replyFocusNode.unfocus();
+    }
+
+    // Show quick feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Reply sent'),
+        duration: Duration(seconds: 1),
+      ),
+    );
     _resumeStatus();
   }
 
@@ -324,7 +354,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
     }
 
     final liker = StatusLiker(
-      uid: _currentUserId!,
+      uid: _currentUserId,
       username: currentUserName,
       profilePic: currentUserPic,
       likedAt: DateTime.now(),
@@ -347,71 +377,66 @@ class _StatusViewScreenState extends State<StatusViewScreen>
     );
   }
 
-  void _showStatusDetailsSheet(Status status, {int initialTabIndex = 0}) async {
+  void _showStatusDetailsSheet(Status status) async {
     _pauseStatus();
     await showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (context) {
-        return DefaultTabController(
-          length: 2,
-          initialIndex: initialTabIndex,
-          child: Container(
-            height: MediaQuery.of(context).size.height * 0.55,
-            padding: const EdgeInsets.only(top: 12),
-            child: Column(
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.6,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.65),
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    width: 1,
                   ),
                 ),
-                TabBar(
-                  labelColor: Theme.of(context).colorScheme.primary,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: Theme.of(context).colorScheme.primary,
-                  tabs: [
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedView, size: 18, color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 6),
-                          Text('Views (${status.viewers.map((v) => v.uid).toSet().length})'),
-                        ],
-                      ),
+              ),
+              padding: const EdgeInsets.only(top: 12),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    Tab(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, size: 18, color: Colors.redAccent),
-                          const SizedBox(width: 6),
-                          Text('Likes (${status.likes.length})'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      // Viewers Tab
-                      _buildViewersTab(status),
-                      // Likes Tab
-                      _buildLikesTab(status),
-                    ],
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedView,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Views (${status.viewers.map((v) => v.uid).toSet().length})',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(child: _buildViewersTab(status)),
+                ],
+              ),
             ),
           ),
         );
@@ -440,9 +465,13 @@ class _StatusViewScreenState extends State<StatusViewScreen>
         final viewerLiked = status.likes.any((l) => l.uid == viewer.uid);
 
         return FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('users').doc(viewer.uid).get(),
+          future: FirebaseFirestore.instance
+              .collection('users')
+              .doc(viewer.uid)
+              .get(),
           builder: (context, snapshot) {
-            String name = viewer.username != 'User' && viewer.username != 'Unknown User'
+            String name =
+                viewer.username != 'User' && viewer.username != 'Unknown User'
                 ? viewer.username
                 : 'Loading...';
             String pic = viewer.profilePic;
@@ -459,106 +488,91 @@ class _StatusViewScreenState extends State<StatusViewScreen>
               }
             }
 
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundImage: pic.isNotEmpty
-                    ? (pic.startsWith('http')
-                        ? CachedNetworkImageProvider(pic)
-                        : AssetImage(pic)) as ImageProvider
-                    : const AssetImage('assets/icon/default_profile.png'),
-              ),
-              title: Row(
-                children: [
-                  Text(name),
-                  if (viewerLiked) ...[
-                    const SizedBox(width: 6),
-                    huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, size: 14, color: Colors.redAccent),
-                  ],
-                ],
-              ),
-              subtitle: Text(_formatTimeAgo(viewer.viewedAt)),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UserProfilePage(
-                      userId: viewer.uid,
-                      name: name,
-                      username: username,
-                      bio: bio,
-                      profilepic: pic,
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    width: 1,
+                  ),
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  leading: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 22,
+                      backgroundImage: pic.isNotEmpty
+                          ? (pic.startsWith('http')
+                                    ? CachedNetworkImageProvider(pic)
+                                    : AssetImage(pic))
+                                as ImageProvider
+                          : const AssetImage('assets/icon/default_profile.png'),
                     ),
                   ),
-                );
-              },
+                  title: Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _formatTimeAgo(viewer.viewedAt),
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  trailing: viewerLiked
+                      ? Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const huge.HugeIcon(
+                            icon: huge.HugeIcons.strokeRoundedFavourite,
+                            color: Colors.redAccent,
+                            size: 18,
+                          ),
+                        )
+                      : null,
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserProfilePage(
+                          userId: viewer.uid,
+                          name: name,
+                          username: username,
+                          bio: bio,
+                          profilepic: pic,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
             );
           },
         );
       },
-    );
-  }
-
-  Widget _buildLikesTab(Status status) {
-    if (status.likes.isEmpty) {
-      return const Center(
-        child: Text('No likes yet', style: TextStyle(color: Colors.grey)),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: status.likes.length,
-      itemBuilder: (context, index) {
-        final liker = status.likes[index];
-
-        return FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('users').doc(liker.uid).get(),
-          builder: (context, snapshot) {
-            String name = liker.username != 'User' && liker.username != 'Unknown User'
-                ? liker.username
-                : 'Loading...';
-            String pic = liker.profilePic;
-            String bio = '';
-            String username = liker.username;
-
-            if (snapshot.hasData && snapshot.data!.exists) {
-              final data = snapshot.data!.data() as Map<String, dynamic>?;
-              if (data != null) {
-                name = data['name'] ?? data['username'] ?? 'User';
-                pic = data['profilepic'] ?? pic;
-                bio = data['bio'] ?? '';
-                username = data['username'] ?? username;
-              }
-            }
-
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundImage: pic.isNotEmpty
-                    ? (pic.startsWith('http')
-                        ? CachedNetworkImageProvider(pic)
-                        : AssetImage(pic)) as ImageProvider
-                    : const AssetImage('assets/icon/default_profile.png'),
-              ),
-              title: Text(name),
-              subtitle: Text(_formatTimeAgo(liker.likedAt)),
-              trailing: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFavourite, color: Colors.redAccent, size: 20),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UserProfilePage(
-                      userId: liker.uid,
-                      name: name,
-                      username: username,
-                      bio: bio,
-                      profilepic: pic,
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
+      padding: const EdgeInsets.only(bottom: 20),
     );
   }
 
@@ -567,7 +581,9 @@ class _StatusViewScreenState extends State<StatusViewScreen>
     if (_currentGroup.isEmpty) return const Scaffold();
 
     final currentStatus = _currentGroup[_currentIndex];
-    final isLikedByMe = _currentUserId != null && currentStatus.likes.any((l) => l.uid == _currentUserId);
+    final isLikedByMe =
+        _currentUserId != null &&
+        currentStatus.likes.any((l) => l.uid == _currentUserId);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -673,8 +689,15 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                       else if (status.mediaType == 'text' ||
                           status.mediaUrl.isEmpty)
                         Container(
-                          color:
-                              Colors.primaries[index % Colors.primaries.length],
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors:
+                                  _statusGradients[status.colorIndex %
+                                      _statusGradients.length],
+                            ),
+                          ),
                           child: Center(
                             child: Padding(
                               padding: const EdgeInsets.all(20.0),
@@ -694,17 +717,24 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                           (status.mediaType == 'image' ||
                               status.mediaType == 'video'))
                         Positioned(
-                          bottom: isCurrentUser ? 90 : 100,
+                          bottom: isCurrentUser ? 100 : 90,
                           left: 20,
                           right: 20,
                           child: Container(
-                            padding: const EdgeInsets.all(10),
-                            color: Colors.black54,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                             child: Text(
                               status.caption,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
+                                fontWeight: FontWeight.w500,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -714,6 +744,22 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                   ),
                 );
               },
+            ),
+            // Top Gradient Overlay for Readability
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 120,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black54, Colors.transparent],
+                  ),
+                ),
+              ),
             ),
             Positioned(
               top: 5,
@@ -789,14 +835,16 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                               ? (_currentGroup.last.profilePic.startsWith(
                                           'http',
                                         )
-                                         ? CachedNetworkImageProvider(
-                                             _currentGroup.last.profilePic,
-                                           )
-                                         : AssetImage(
-                                             _currentGroup.last.profilePic,
-                                           ))
-                                     as ImageProvider
-                              : const AssetImage('assets/icon/default_profile.png'),
+                                        ? CachedNetworkImageProvider(
+                                            _currentGroup.last.profilePic,
+                                          )
+                                        : AssetImage(
+                                            _currentGroup.last.profilePic,
+                                          ))
+                                    as ImageProvider
+                              : const AssetImage(
+                                  'assets/icon/default_profile.png',
+                                ),
                         ),
                         const SizedBox(width: 10),
                         Column(
@@ -831,83 +879,82 @@ class _StatusViewScreenState extends State<StatusViewScreen>
             if (_currentUserId != null &&
                 _currentGroup[_currentIndex].uid == _currentUserId)
               Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  color: Colors.black54,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => _showStatusDetailsSheet(_currentGroup[_currentIndex], initialTabIndex: 0),
-                        icon: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedView,
-                          color: Colors.white,
-                          size: 24,
+                bottom: 20,
+                left: 16,
+                right: 16,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          width: 1,
                         ),
-                        label: Text(
-                          '${_currentGroup[_currentIndex].viewers.map((v) => v.uid).toSet().length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () => _showStatusDetailsSheet(
+                              _currentGroup[_currentIndex],
+                            ),
+                            icon: const huge.HugeIcon(
+                              icon: huge.HugeIcons.strokeRoundedView,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            label: Text(
+                              '${_currentGroup[_currentIndex].viewers.map((v) => v.uid).toSet().length}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => _showStatusDetailsSheet(_currentGroup[_currentIndex], initialTabIndex: 1),
-                        icon: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedFavourite,
-                          color: _currentGroup[_currentIndex].likes.isNotEmpty
-                              ? Colors.redAccent
-                              : Colors.white,
-                          size: 24,
-                        ),
-                        label: Text(
-                          '${_currentGroup[_currentIndex].likes.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+
+                          IconButton(
+                            icon: const huge.HugeIcon(
+                              icon: huge.HugeIcons.strokeRoundedShare01,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              final status = _currentGroup[_currentIndex];
+                              String shareText =
+                                  'Check out my status on Cuqter!';
+                              if (status.caption.isNotEmpty) {
+                                shareText += '\n"${status.caption}"';
+                              }
+                              if (status.mediaUrl.isNotEmpty) {
+                                shareText += '\n${status.mediaUrl}';
+                              }
+                              Share.share(shareText);
+                            },
                           ),
-                        ),
+                          IconButton(
+                            icon: const huge.HugeIcon(
+                              icon: huge.HugeIcons.strokeRoundedDelete02,
+                              color: Colors.redAccent,
+                              size: 20,
+                            ),
+                            onPressed: () async {
+                              await _statusService.deleteStatus(
+                                _currentGroup[_currentIndex],
+                              );
+                              if (mounted) {
+                                Navigator.pop(context);
+                              }
+                            },
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedShare01,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          final status = _currentGroup[_currentIndex];
-                          String shareText = 'Check out my status on Cuqter!';
-                          if (status.caption.isNotEmpty) {
-                            shareText += '\n"${status.caption}"';
-                          }
-                          if (status.mediaUrl.isNotEmpty) {
-                            shareText += '\n${status.mediaUrl}';
-                          }
-                          Share.share(shareText);
-                        },
-                      ),
-                      IconButton(
-                        icon: huge.HugeIcon(
-                          icon: huge.HugeIcons.strokeRoundedDelete02,
-                          color: Colors.redAccent,
-                          size: 24,
-                        ),
-                        onPressed: () async {
-                          await _statusService.deleteStatus(
-                            _currentGroup[_currentIndex],
-                          );
-                          if (mounted) {
-                            Navigator.pop(context);
-                          }
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -916,84 +963,154 @@ class _StatusViewScreenState extends State<StatusViewScreen>
             if (_currentUserId == null ||
                 _currentGroup[_currentIndex].uid != _currentUserId)
               Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
+                bottom: 20,
+                left: 16,
+                right: 16,
                 child: GestureDetector(
                   onTap: () {}, // Prevent tap from bubbling to next status
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 16,
-                    ),
-                    color: Colors.transparent,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(25),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: TextField(
-                                controller: _messageController,
-                                style: const TextStyle(color: Colors.white),
-                                onSubmitted: (_) =>
-                                    _sendReply(_currentGroup[_currentIndex]),
-                                decoration: InputDecoration(
-                                  hintText: 'Reply to status...',
-                                  hintStyle: const TextStyle(
-                                    color: Colors.white70,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(25),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.black.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 10,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: TextField(
+                              focusNode: _replyFocusNode,
+                              controller: _messageController,
+                              style: const TextStyle(color: Colors.white),
+                              onSubmitted: (_) =>
+                                  _sendReply(_currentGroup[_currentIndex]),
+                              decoration: InputDecoration(
+                                hintText: 'Reply to status...',
+                                hintStyle: const TextStyle(
+                                  color: Colors.white70,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    width: 1,
                                   ),
                                 ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                  borderSide: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    width: 1,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                  borderSide: const BorderSide(
+                                    color: Colors.white,
+                                    width: 1,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: Colors.black.withValues(alpha: 0.4),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 14,
+                                ),
+                                suffixIcon: _replyFocusNode.hasFocus
+                                    ? Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          ...['😂', '😍', '😢', '🔥'].map(
+                                            (emoji) => GestureDetector(
+                                              onTap: () => _sendReply(
+                                                _currentGroup[_currentIndex],
+                                                messageOverride: emoji,
+                                              ),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6.0,
+                                                    ),
+                                                child: Text(
+                                                  emoji,
+                                                  style: const TextStyle(
+                                                    fontSize: 20,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const huge.HugeIcon(
+                                              icon: huge
+                                                  .HugeIcons
+                                                  .strokeRoundedSent,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                            onPressed: () => _sendReply(
+                                              _currentGroup[_currentIndex],
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : IconButton(
+                                        icon: const huge.HugeIcon(
+                                          icon:
+                                              huge.HugeIcons.strokeRoundedSent,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        onPressed: () => _sendReply(
+                                          _currentGroup[_currentIndex],
+                                        ),
+                                      ),
                               ),
                             ),
                           ),
                         ),
-                        IconButton(
-                          icon: huge.HugeIcon(
-                            icon: huge.HugeIcons.strokeRoundedSent,
-                            color: Colors.blueAccent,
-                            size: 24,
+                      ),
+                      const SizedBox(width: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: IconButton(
+                              padding: const EdgeInsets.all(12),
+                              icon: TweenAnimationBuilder<double>(
+                                key: ValueKey(isLikedByMe),
+                                tween: Tween(begin: 0.7, end: 1.0),
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.elasticOut,
+                                builder: (context, scale, child) {
+                                  return Transform.scale(
+                                    scale: scale,
+                                    child: huge.HugeIcon(
+                                      icon:
+                                          huge.HugeIcons.strokeRoundedFavourite,
+                                      color: isLikedByMe
+                                          ? Colors.redAccent
+                                          : Colors.white,
+                                      size: 22,
+                                    ),
+                                  );
+                                },
+                              ),
+                              onPressed: () => _toggleLike(currentStatus),
+                            ),
                           ),
-                          onPressed: () =>
-                              _sendReply(_currentGroup[_currentIndex]),
                         ),
-                        IconButton(
-                          icon: TweenAnimationBuilder<double>(
-                            key: ValueKey(isLikedByMe),
-                            tween: Tween(begin: 0.7, end: 1.0),
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.elasticOut,
-                            builder: (context, scale, child) {
-                              return Transform.scale(
-                                scale: scale,
-                                child: huge.HugeIcon(
-                                  icon: huge.HugeIcons.strokeRoundedFavourite,
-                                  color: isLikedByMe ? Colors.redAccent : Colors.white,
-                                  size: 26,
-                                ),
-                              );
-                            },
-                          ),
-                          onPressed: () => _toggleLike(currentStatus),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+                      ),
+                    ], // close Row children
+                  ), // close Row
+                ), // close GestureDetector
+              ), // close Positioned
             if (_showHeartOverlay)
               Center(
                 child: TweenAnimationBuilder<double>(
@@ -1003,7 +1120,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                   builder: (context, scale, child) {
                     return Transform.scale(
                       scale: scale,
-                      child: huge.HugeIcon(
+                      child: const huge.HugeIcon(
                         icon: huge.HugeIcons.strokeRoundedFavourite,
                         color: Colors.redAccent,
                         size: 100,

@@ -3,24 +3,24 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cuqter/Screen/chat_screen.dart';
-import 'package:cuqter/Screen/profile_screen.dart';
-import 'package:cuqter/Screen/settings_page.dart';
+import 'package:cuqter/Screen/chat/chat_screen.dart';
+import 'package:cuqter/Screen/profile/profile_screen.dart';
+import 'package:cuqter/Screen/settings/settings_page.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/services/message_service.dart';
 import 'package:cuqter/modules/message.dart';
 import 'package:cuqter/modules/status.dart';
 import 'package:cuqter/services/status_service.dart';
-import 'package:cuqter/Screen/create_status_screen.dart';
-import 'package:cuqter/Screen/status_view_screen.dart';
+import 'package:cuqter/Screen/status/create_status_screen.dart';
+import 'package:cuqter/Screen/status/status_view_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
-import 'package:cuqter/Screen/notification_screen.dart';
-import 'package:cuqter/Screen/search_screen.dart';
-import 'package:cuqter/Screen/contact_screen.dart';
+import 'package:cuqter/Screen/home/notification_screen.dart';
+import 'package:cuqter/Screen/home/search_screen.dart';
+import 'package:cuqter/Screen/profile/contact_screen.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:cuqter/Screen/share_intent_screen.dart';
+import 'package:cuqter/Screen/chat/share_intent_screen.dart';
 
 class Homepage extends StatefulWidget {
   final bool isDesktop;
@@ -57,7 +57,7 @@ class _HomepageState extends State<Homepage> {
   bool _isLoading = false;
   final StatusService _statusService = StatusService();
   StreamSubscription? _intentSub;
-  List<SharedMediaFile> _sharedFiles = [];
+  final List<SharedMediaFile> _sharedFiles = [];
 
   @override
   void initState() {
@@ -102,8 +102,6 @@ class _HomepageState extends State<Homepage> {
       ),
     );
   }
-
-
 
   Stream<int> _getUnreadCountStream(String chatId, String currentUserId) {
     return _unreadCountStreams.putIfAbsent(
@@ -463,10 +461,19 @@ class _HomepageState extends State<Homepage> {
                                 Navigator.push(
                                   context,
                                   PageRouteBuilder(
-                                    pageBuilder: (context, animation, secondaryAnimation) =>
-                                        const NotificationScreen(),
+                                    pageBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                        ) => const NotificationScreen(),
                                     transitionsBuilder:
-                                        (context, animation, secondaryAnimation, child) {
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                          child,
+                                        ) {
                                           return SlideTransition(
                                             position:
                                                 Tween<Offset>(
@@ -484,16 +491,19 @@ class _HomepageState extends State<Homepage> {
                                             ),
                                           );
                                         },
-                                    transitionDuration: const Duration(milliseconds: 250),
+                                    transitionDuration: const Duration(
+                                      milliseconds: 250,
+                                    ),
                                   ),
                                 );
                               },
                               icon: AnimatedNotificationBell(
-                                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
                                 size: 24,
                               ),
                             ),
-
                           ],
                         ),
                       ],
@@ -682,8 +692,8 @@ class _HomepageState extends State<Homepage> {
 
                       return Scrollbar(
                         child: ListView.builder(
-                          padding: const EdgeInsets.only(top: 8, bottom: 90),
                           cacheExtent: 1000.0,
+                          padding: const EdgeInsets.only(top: 8, bottom: 90),
                           physics: const BouncingScrollPhysics(),
                           itemCount: users.length,
                           itemBuilder: (context, index) {
@@ -1100,8 +1110,9 @@ class _HomepageState extends State<Homepage> {
                       Navigator.push(
                         context,
                         PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                              const CreateStatusScreen(),
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  const CreateStatusScreen(),
                           transitionsBuilder:
                               (context, animation, secondaryAnimation, child) {
                                 return FadeTransition(
@@ -1113,10 +1124,10 @@ class _HomepageState extends State<Homepage> {
                         ),
                       );
                     },
-                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    backgroundColor: colorScheme.primaryContainer,
                     child: huge.HugeIcon(
                       icon: huge.HugeIcons.strokeRoundedCamera01,
-                      color: colorScheme.onSurface,
+                      color: colorScheme.onPrimaryContainer,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1126,8 +1137,9 @@ class _HomepageState extends State<Homepage> {
                       Navigator.push(
                         context,
                         PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                              const ContactScreen(),
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  const ContactScreen(),
                           transitionsBuilder:
                               (context, animation, secondaryAnimation, child) {
                                 return SlideTransition(
@@ -1309,7 +1321,9 @@ class _HomepageState extends State<Homepage> {
                                       ? CachedNetworkImageProvider(profilePic)
                                       : AssetImage(profilePic))
                                   as ImageProvider
-                            : const AssetImage('assets/icon/default_profile.png'),
+                            : const AssetImage(
+                                'assets/icon/default_profile.png',
+                              ),
                       ),
                     ),
                     if (myStatuses.isEmpty)
@@ -1427,7 +1441,8 @@ class AnimatedNotificationBell extends StatefulWidget {
   });
 
   @override
-  State<AnimatedNotificationBell> createState() => _AnimatedNotificationBellState();
+  State<AnimatedNotificationBell> createState() =>
+      _AnimatedNotificationBellState();
 }
 
 class _AnimatedNotificationBellState extends State<AnimatedNotificationBell>
@@ -1447,12 +1462,45 @@ class _AnimatedNotificationBellState extends State<AnimatedNotificationBell>
     );
 
     _animation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.25).chain(CurveTween(curve: Curves.easeOut)), weight: 10),
-      TweenSequenceItem(tween: Tween(begin: 0.25, end: -0.25).chain(CurveTween(curve: Curves.easeInOut)), weight: 20),
-      TweenSequenceItem(tween: Tween(begin: -0.25, end: 0.15).chain(CurveTween(curve: Curves.easeInOut)), weight: 20),
-      TweenSequenceItem(tween: Tween(begin: 0.15, end: -0.15).chain(CurveTween(curve: Curves.easeInOut)), weight: 20),
-      TweenSequenceItem(tween: Tween(begin: -0.15, end: 0.0).chain(CurveTween(curve: Curves.easeIn)), weight: 10),
-      TweenSequenceItem(tween: ConstantTween<double>(0.0), weight: 120), // Rest phase
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.0,
+          end: 0.25,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 10,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.25,
+          end: -0.25,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: -0.25,
+          end: 0.15,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.15,
+          end: -0.15,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: -0.15,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 10,
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween<double>(0.0),
+        weight: 120,
+      ), // Rest phase
     ]).animate(_controller);
   }
 

@@ -34,8 +34,9 @@ class _QrScannerPageState extends State<QrScannerPage> {
           _isProcessing = true;
         });
 
-        final BarcodeCapture? capture =
-            await _controller.analyzeImage(image.path);
+        final BarcodeCapture? capture = await _controller.analyzeImage(
+          image.path,
+        );
         if (capture != null && capture.barcodes.isNotEmpty) {
           final String? rawValue = capture.barcodes.first.rawValue;
           if (rawValue != null) {
@@ -152,8 +153,10 @@ class _QrScannerPageState extends State<QrScannerPage> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Invalid Code',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Invalid Code',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: Text(message),
         actions: [
           TextButton(
@@ -164,8 +167,10 @@ class _QrScannerPageState extends State<QrScannerPage> {
               });
               _controller.start();
             },
-            child: const Text('OK',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'OK',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -178,8 +183,10 @@ class _QrScannerPageState extends State<QrScannerPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan QR Code',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Scan QR Code',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
@@ -285,8 +292,10 @@ class _QrScannerPageState extends State<QrScannerPage> {
             right: 20,
             child: Center(
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(20),
@@ -294,9 +303,10 @@ class _QrScannerPageState extends State<QrScannerPage> {
                 child: const Text(
                   'Center code in the scanner frame',
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

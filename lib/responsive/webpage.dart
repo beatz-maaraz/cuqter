@@ -10,10 +10,6 @@ class Webpage extends StatefulWidget {
 class _WebpageState extends State<Webpage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text('Webpage'),
-      ),
-    );
+    return const Scaffold(body: Center(child: Text('Webpage')));
   }
 }

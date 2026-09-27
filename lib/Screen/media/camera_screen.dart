@@ -16,20 +16,21 @@ class CustomCameraScreen extends StatefulWidget {
   State<CustomCameraScreen> createState() => _CustomCameraScreenState();
 }
 
-class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBindingObserver {
+class _CustomCameraScreenState extends State<CustomCameraScreen>
+    with WidgetsBindingObserver {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   bool _isReady = false;
   final ValueNotifier<bool> _isRecordingNotifier = ValueNotifier(false);
   bool get _isRecording => _isRecordingNotifier.value;
-  
+
   int _selectedCameraIndex = 0;
   String _mode = 'PHOTO';
-  
+
   FlashMode _flashMode = FlashMode.auto;
   String? _errorMessage;
   Timer? _recordTimer;
-  
+
   final ValueNotifier<int> _recordDurationNotifier = ValueNotifier(0);
 
   @override
@@ -94,7 +95,8 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
 
         if (statuses[Permission.camera] != PermissionStatus.granted) {
           setState(() {
-            _errorMessage = "Camera permission is required to use this feature.";
+            _errorMessage =
+                "Camera permission is required to use this feature.";
           });
           return;
         }
@@ -112,7 +114,8 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
       debugPrint('Error initializing cameras: $e');
       setState(() {
         if (e.toString().contains("MissingPluginException")) {
-          _errorMessage = "Native dependency missing.\nPlease completely STOP and RESTART the app.";
+          _errorMessage =
+              "Native dependency missing.\nPlease completely STOP and RESTART the app.";
         } else {
           _errorMessage = "Camera initialization failed:\n$e";
         }
@@ -120,7 +123,9 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
     }
   }
 
-  Future<void> _initCameraController(CameraDescription cameraDescription) async {
+  Future<void> _initCameraController(
+    CameraDescription cameraDescription,
+  ) async {
     if (_controller != null) {
       await _controller!.dispose();
     }
@@ -184,7 +189,9 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
       debugPrint('Flash not supported: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Flash is not supported on this camera.')),
+          const SnackBar(
+            content: Text('Flash is not supported on this camera.'),
+          ),
         );
       }
     }
@@ -194,11 +201,14 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
     if (kIsWeb) return file;
     try {
       if (Platform.isAndroid) {
-        final Directory folder = Directory('/storage/emulated/0/Android/media/com.example.cuqter/Cuqter/Cuqter Camera');
+        final Directory folder = Directory(
+          '/storage/emulated/0/Android/media/com.example.cuqter/Cuqter/Cuqter Camera',
+        );
         if (!await folder.exists()) {
           await folder.create(recursive: true);
         }
-        final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+        final String fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
         final String newPath = '${folder.path}/$fileName';
         await File(file.path).copy(newPath);
         return XFile(newPath);
@@ -210,13 +220,15 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
   }
 
   Future<void> _capturePhoto() async {
-    if (_controller == null || !_controller!.value.isInitialized || _controller!.value.isTakingPicture) {
+    if (_controller == null ||
+        !_controller!.value.isInitialized ||
+        _controller!.value.isTakingPicture) {
       return;
     }
     try {
       final XFile photo = await _controller!.takePicture();
       final XFile savedPhoto = await _saveToCuqterFolder(photo);
-      
+
       if (mounted) {
         if (Navigator.canPop(context)) {
           Navigator.pop(context, {'file': savedPhoto, 'type': 'photo'});
@@ -232,14 +244,16 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
   }
 
   Future<void> _startVideoRecording() async {
-    if (_controller == null || !_controller!.value.isInitialized || _controller!.value.isRecordingVideo) {
+    if (_controller == null ||
+        !_controller!.value.isInitialized ||
+        _controller!.value.isRecordingVideo) {
       return;
     }
     try {
       await _controller!.startVideoRecording();
       _isRecordingNotifier.value = true;
       _recordDurationNotifier.value = 0;
-      
+
       _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         _recordDurationNotifier.value++;
       });
@@ -255,12 +269,12 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
     try {
       final XFile video = await _controller!.stopVideoRecording();
       _recordTimer?.cancel();
-      
+
       final XFile savedVideo = await _saveToCuqterFolder(video);
 
       _isRecordingNotifier.value = false;
       _recordDurationNotifier.value = 0;
-      
+
       if (mounted) {
         if (Navigator.canPop(context)) {
           Navigator.pop(context, {'file': savedVideo, 'type': 'video'});
@@ -280,22 +294,41 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
     final XFile? media = _mode == 'PHOTO'
         ? await picker.pickImage(source: ImageSource.gallery)
         : await picker.pickVideo(source: ImageSource.gallery);
-        
+
     if (media != null && mounted) {
-      Navigator.pop(context, {'file': media, 'type': _mode == 'PHOTO' ? 'photo' : 'video'});
+      Navigator.pop(context, {
+        'file': media,
+        'type': _mode == 'PHOTO' ? 'photo' : 'video',
+      });
     }
   }
 
   Widget _getFlashIcon() {
     switch (_flashMode) {
       case FlashMode.auto:
-        return huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFlash, color: Colors.white, size: 22);
+        return const huge.HugeIcon(
+          icon: huge.HugeIcons.strokeRoundedFlash,
+          color: Colors.white,
+          size: 22,
+        );
       case FlashMode.always:
-        return huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFlashlight, color: Colors.white, size: 22);
+        return const huge.HugeIcon(
+          icon: huge.HugeIcons.strokeRoundedFlashlight,
+          color: Colors.white,
+          size: 22,
+        );
       case FlashMode.off:
-        return huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFlashOff, color: Colors.white, size: 22);
+        return const huge.HugeIcon(
+          icon: huge.HugeIcons.strokeRoundedFlashOff,
+          color: Colors.white,
+          size: 22,
+        );
       default:
-        return huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedFlash, color: Colors.white, size: 22);
+        return const huge.HugeIcon(
+          icon: huge.HugeIcons.strokeRoundedFlash,
+          color: Colors.white,
+          size: 22,
+        );
     }
   }
 
@@ -316,7 +349,11 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, color: Colors.redAccent, size: 64),
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.redAccent,
+                  size: 64,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   _errorMessage!,
@@ -327,7 +364,7 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Go Back'),
-                )
+                ),
               ],
             ),
           ),
@@ -335,7 +372,8 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
       );
     }
 
-    final bool isCameraReady = _isReady && _controller != null && _controller!.value.isInitialized;
+    final bool isCameraReady =
+        _isReady && _controller != null && _controller!.value.isInitialized;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -343,41 +381,36 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
         duration: const Duration(milliseconds: 300),
         switchInCurve: Curves.easeIn,
         switchOutCurve: Curves.easeOut,
-        child: isCameraReady 
-          ? _buildCameraContent(context)
-          : _buildLoadingScreen(),
+        child: isCameraReady
+            ? _buildCameraContent(context)
+            : _buildLoadingScreen(),
       ),
     );
   }
 
   Widget _buildLoadingScreen() {
-    return Container(
-      key: const ValueKey('loadingScreen'),
-      color: Colors.black,
-    );
+    return Container(key: const ValueKey('loadingScreen'), color: Colors.black);
   }
 
   Widget _buildCameraContent(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final scale = size.aspectRatio * _controller!.value.aspectRatio;
-    
+
     return Stack(
       key: const ValueKey('cameraScreen'),
       fit: StackFit.expand,
       children: [
         // Camera Preview
-          Positioned.fill(
-            child: Transform.scale(
-              scale: scale < 1 ? 1 / scale : scale,
-              child: Center(
-                child: CameraPreview(_controller!),
-              ),
-            ),
+        Positioned.fill(
+          child: Transform.scale(
+            scale: scale < 1 ? 1 / scale : scale,
+            child: Center(child: CameraPreview(_controller!)),
           ),
-          
-          // Custom UI Overlays
-          _buildGridOverlay(),
-          _buildTopBar(),
+        ),
+
+        // Custom UI Overlays
+        _buildGridOverlay(),
+        _buildTopBar(),
         _buildBottomControls(),
       ],
     );
@@ -385,11 +418,7 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
 
   Widget _buildGridOverlay() {
     return Positioned.fill(
-      child: IgnorePointer(
-        child: CustomPaint(
-          painter: GridPainter(),
-        ),
-      ),
+      child: IgnorePointer(child: CustomPaint(painter: GridPainter())),
     );
   }
 
@@ -402,9 +431,14 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 12, left: 16, right: 16),
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 8,
+              bottom: 12,
+              left: 16,
+              right: 16,
+            ),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
             ),
             child: Stack(
               alignment: Alignment.center,
@@ -430,11 +464,15 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
                               const SizedBox(width: 8),
                               Text(
                                 _formatDuration(duration),
-                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           );
-                        }
+                        },
                       );
                     }
                     return const SizedBox(height: 24);
@@ -470,144 +508,197 @@ class _CustomCameraScreenState extends State<CustomCameraScreen> with WidgetsBin
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Mode Toggle (PHOTO / VIDEO) with animated slider
-              Container(
-                margin: const EdgeInsets.only(bottom: 24),
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: SizedBox(
-                  width: 160,
-                  child: Stack(
-                    children: [
-                      AnimatedAlign(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOutCubic,
-                        alignment: _mode == 'PHOTO' ? Alignment.centerLeft : Alignment.centerRight,
-                        child: FractionallySizedBox(
-                          widthFactor: 0.5,
-                          child: Container(
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: SizedBox(
+                      width: 160,
+                      child: Stack(
+                        children: [
+                          AnimatedAlign(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOutCubic,
+                            alignment: _mode == 'PHOTO'
+                                ? Alignment.centerLeft
+                                : Alignment.centerRight,
+                            child: FractionallySizedBox(
+                              widthFactor: 0.5,
+                              child: Container(
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildModeText('PHOTO', setLocalState),
-                          _buildModeText('VIDEO', setLocalState),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildModeText('PHOTO', setLocalState),
+                              _buildModeText('VIDEO', setLocalState),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Control Bar
-              ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.only(bottom: 40, top: 20, left: 30, right: 30),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Gallery Button
-                        GestureDetector(
-                          onTap: _openGallery,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.white, width: 1.5),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedImage01, color: Colors.white, size: 24),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text('Gallery', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500)),
-                            ],
-                          ),
+                  ),
+
+                  // Control Bar
+                  ClipRRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.only(
+                          bottom: 40,
+                          top: 20,
+                          left: 30,
+                          right: 30,
                         ),
-                        
-                        // Shutter Button
-                        GestureDetector(
-                          onTap: () {
-                            if (_mode == 'PHOTO') {
-                              _capturePhoto();
-                            } else {
-                              if (_isRecording) {
-                                _stopVideoRecording();
-                                setLocalState(() {}); // update UI
-                              } else {
-                                _startVideoRecording();
-                                setLocalState(() {}); // update UI
-                              }
-                            }
-                          },
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 70,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white.withOpacity(0.5), width: 3),
-                                ),
-                                child: Center(
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    width: isRec ? 30 : 54,
-                                    height: isRec ? 30 : 54,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.4),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Gallery Button
+                            GestureDetector(
+                              onTap: _openGallery,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: _mode == 'VIDEO' ? Colors.red : Colors.white,
-                                      borderRadius: BorderRadius.circular(isRec ? 8 : 27),
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 1.5,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const huge.HugeIcon(
+                                      icon: huge.HugeIcons.strokeRoundedImage01,
+                                      color: Colors.white,
+                                      size: 24,
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(height: 6),
+                                  const Text(
+                                    'Gallery',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 8),
-                              Text('Shutter', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11)),
-                            ],
-                          ),
-                        ),
-                        
-                        // Switch Camera Button
-                        GestureDetector(
-                          onTap: _switchCamera,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                child: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedCameraRotated01, color: Colors.white, size: 28),
+                            ),
+
+                            // Shutter Button
+                            GestureDetector(
+                              onTap: () {
+                                if (_mode == 'PHOTO') {
+                                  _capturePhoto();
+                                } else {
+                                  if (_isRecording) {
+                                    _stopVideoRecording();
+                                    setLocalState(() {}); // update UI
+                                  } else {
+                                    _startVideoRecording();
+                                    setLocalState(() {}); // update UI
+                                  }
+                                }
+                              },
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 70,
+                                    height: 70,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        width: 3,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        width: isRec ? 30 : 54,
+                                        height: isRec ? 30 : 54,
+                                        decoration: BoxDecoration(
+                                          color: _mode == 'VIDEO'
+                                              ? Colors.red
+                                              : Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            isRec ? 8 : 27,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Shutter',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 6),
-                              const Text('Flip', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500)),
-                            ],
-                          ),
+                            ),
+
+                            // Switch Camera Button
+                            GestureDetector(
+                              onTap: _switchCamera,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    child: const huge.HugeIcon(
+                                      icon: huge
+                                          .HugeIcons
+                                          .strokeRoundedCameraRotated01,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Text(
+                                    'Flip',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           );
-         }
-        );
-       },
+        },
       ),
     );
   }
@@ -645,20 +736,34 @@ class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.4)
+      ..color = Colors.white.withValues(alpha: 0.4)
       ..strokeWidth = 1.0;
 
     // Draw vertical lines
-    canvas.drawLine(Offset(size.width / 3, 0), Offset(size.width / 3, size.height), paint);
-    canvas.drawLine(Offset(size.width * 2 / 3, 0), Offset(size.width * 2 / 3, size.height), paint);
+    canvas.drawLine(
+      Offset(size.width / 3, 0),
+      Offset(size.width / 3, size.height),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width * 2 / 3, 0),
+      Offset(size.width * 2 / 3, size.height),
+      paint,
+    );
 
     // Draw horizontal lines
-    canvas.drawLine(Offset(0, size.height / 3), Offset(size.width, size.height / 3), paint);
-    canvas.drawLine(Offset(0, size.height * 2 / 3), Offset(size.width, size.height * 2 / 3), paint);
+    canvas.drawLine(
+      Offset(0, size.height / 3),
+      Offset(size.width, size.height / 3),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(0, size.height * 2 / 3),
+      Offset(size.width, size.height * 2 / 3),
+      paint,
+    );
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-

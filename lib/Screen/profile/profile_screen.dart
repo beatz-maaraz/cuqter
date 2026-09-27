@@ -1,23 +1,18 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
-import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/widgets/full_screen_profile_pic_page.dart';
-import 'package:cuqter/Screen/media/camera_screen.dart';
-import 'package:cuqter/media.dart';
 import 'package:cuqter/Screen/profile/contact_screen.dart';
-import 'package:cuqter/Account/login.dart';
+import 'package:cuqter/Screen/profile/edit_profile_screen.dart';
 import 'package:cuqter/Screen/settings/settings_page.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -32,7 +27,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool isLoading = false;
   String _selectedProfilePic = '';
   String? _currentCloudinaryPublicId;
-  String _currentUsername = '';
 
   @override
   void initState() {
@@ -40,6 +34,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController.text = _auth.currentUser?.displayName ?? '';
     _loadCachedProfile();
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _usernameController.dispose();
+    _bioController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCachedProfile() async {
@@ -60,7 +62,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
           if (cachedUsername != null && cachedUsername.isNotEmpty) {
             _usernameController.text = cachedUsername;
-            _currentUsername = cachedUsername;
           }
           if (cachedBio != null) {
             _bioController.text = cachedBio;
@@ -74,16 +75,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     } catch (e) {
-      print('Error loading cached profile: $e');
+      debugPrint('Error loading cached profile: $e');
     }
   }
 
   Future<void> _loadUserData() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
     try {
-      var snap = await _firestore
-          .collection('users')
-          .doc(_auth.currentUser!.uid)
-          .get();
+      var snap = await _firestore.collection('users').doc(user.uid).get();
       if (snap.exists && snap.data() != null) {
         var data = snap.data() as Map<String, dynamic>;
         final String name = data['name'] ?? '';
@@ -96,7 +96,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() {
             _nameController.text = name;
             _usernameController.text = username;
-            _currentUsername = username;
             _bioController.text = bio;
             _selectedProfilePic = profilepic;
             _currentCloudinaryPublicId = cloudinaryPublicId;
@@ -119,883 +118,626 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
-      print(e);
+      debugPrint('Error loading user data: $e');
     }
   }
 
-  Future<void> _updateProfile() async {
-    setState(() {
-      isLoading = true;
-    });
-    try {
-      final String newUsername = _usernameController.text.trim().toLowerCase();
-      if (newUsername.isEmpty) {
-        throw 'Username cannot be empty';
-      }
 
-      // Check username uniqueness if they changed it
-      if (newUsername != _currentUsername.toLowerCase()) {
-        final QuerySnapshot result = await _firestore
-            .collection('users')
-            .where('username', isEqualTo: newUsername)
-            .get();
-        if (result.docs.isNotEmpty) {
-          throw 'Username is already taken';
-        }
-      }
 
-      var snap = await _firestore
-          .collection('users')
-          .doc(_auth.currentUser!.uid)
-          .get();
-      String? oldPublicId;
-      if (snap.exists && snap.data() != null) {
-        var data = snap.data() as Map<String, dynamic>;
-        oldPublicId = data['cloudinary_public_id'];
-      }
 
-      await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
-        'name': _nameController.text,
-        'username': newUsername,
-        'bio': _bioController.text,
-        'profilepic': _selectedProfilePic,
-        'cloudinary_public_id': _currentCloudinaryPublicId,
-      });
-
-      // Sync updated profile pic and username to active statuses
-      final batch = _firestore.batch();
-      final statusesSnapshot = await _firestore
-          .collection('statuses')
-          .where('uid', isEqualTo: _auth.currentUser!.uid)
-          .get();
-      for (var doc in statusesSnapshot.docs) {
-        batch.update(doc.reference, {
-          'profilePic': _selectedProfilePic,
-          'username': newUsername,
-        });
-      }
-      await batch.commit();
-
-      _currentUsername = newUsername;
-
-      // Update cache
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cached_profile_name', _nameController.text);
-      await prefs.setString('cached_profile_username', newUsername);
-      await prefs.setString('cached_profile_bio', _bioController.text);
-      await prefs.setString('cached_profile_pic', _selectedProfilePic);
-      if (_currentCloudinaryPublicId != null) {
-        await prefs.setString(
-          'cached_cloudinary_public_id',
-          _currentCloudinaryPublicId!,
-        );
-      } else {
-        await prefs.remove('cached_cloudinary_public_id');
-      }
-
-      if (oldPublicId != null &&
-          oldPublicId.isNotEmpty &&
-          oldPublicId != _currentCloudinaryPublicId) {
-        await CloudinaryService.deleteMedia(oldPublicId);
-      }
-
+  void _copyUsernameToClipboard() {
+    final username = _usernameController.text.trim();
+    if (username.isNotEmpty) {
+      Clipboard.setData(ClipboardData(text: '@$username'));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
-    }
-    setState(() {
-      isLoading = false;
-    });
-  }
-
-  Future<void> _removeProfilePicture() async {
-    try {
-      setState(() {
-        isLoading = true;
-      });
-      String? oldPublicId = _currentCloudinaryPublicId;
-
-      setState(() {
-        _selectedProfilePic = '';
-        _currentCloudinaryPublicId = null;
-      });
-
-      await _firestore.collection('users').doc(_auth.currentUser!.uid).update(
-        {'profilepic': '', 'cloudinary_public_id': null},
-      );
-
-      final batch = _firestore.batch();
-      final statusesSnapshot = await _firestore
-          .collection('statuses')
-          .where('uid', isEqualTo: _auth.currentUser!.uid)
-          .get();
-      for (var doc in statusesSnapshot.docs) {
-        batch.update(doc.reference, {'profilePic': ''});
-      }
-      await batch.commit();
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cached_profile_pic', '');
-      await prefs.remove('cached_cloudinary_public_id');
-
-      if (oldPublicId != null && oldPublicId.isNotEmpty) {
-        await CloudinaryService.deleteMedia(oldPublicId);
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile picture removed')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error removing picture: $e')),
-      );
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  Widget _buildChooseOptionItem({
-    required dynamic icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: color.withValues(alpha: 0.3),
-                width: 1.2,
-              ),
-            ),
-            child: Center(
-              child: huge.HugeIcon(
-                icon: icon,
-                color: color,
-                size: 24,
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _pickAndUploadCustomImage(ImageSource source, {bool isNativePicker = false}) async {
-    try {
-      Uint8List? imageBytes;
-      if (source == ImageSource.camera) {
-        final result = await Navigator.push<Map<String, dynamic>>(
-          context,
-          MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
-        );
-        if (result != null && result['file'] != null) {
-          final XFile file = result['file'] as XFile;
-          imageBytes = await file.readAsBytes();
-        }
-      } else if (isNativePicker) {
-        // Mobile own native gallery / Google Photos / Files app
-        final XFile? file = await ImagePicker().pickImage(
-          source: ImageSource.gallery,
-          imageQuality: 90,
-        );
-        if (file != null) {
-          imageBytes = await file.readAsBytes();
-        }
-      } else {
-        // Internal App Gallery (AssetManagerScreen)
-        final result = await showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => const AssetManagerScreen(
-            isPicker: true,
-            onlyImages: true,
-            initialTab: 'Images',
-          ),
-        );
-        if (result != null && result is AppAsset) {
-          imageBytes = await File(result.imageUrl).readAsBytes();
-        }
-      }
-
-      if (imageBytes == null) return;
-
-      setState(() {
-        isLoading = true;
-      });
-
-      final uploadResult = await CloudinaryService.uploadImage(imageBytes);
-      if (uploadResult != null) {
-        final String newUrl = uploadResult['url']!;
-        final String newPublicId = uploadResult['public_id']!;
-        String? oldPublicId = _currentCloudinaryPublicId;
-
-        setState(() {
-          _selectedProfilePic = newUrl;
-          _currentCloudinaryPublicId = newPublicId;
-        });
-
-        await _firestore.collection('users').doc(_auth.currentUser!.uid).update(
-          {'profilepic': newUrl, 'cloudinary_public_id': newPublicId},
-        );
-
-        // Sync new profile pic to active statuses
-        final batch = _firestore.batch();
-        final statusesSnapshot = await _firestore
-            .collection('statuses')
-            .where('uid', isEqualTo: _auth.currentUser!.uid)
-            .get();
-        for (var doc in statusesSnapshot.docs) {
-          batch.update(doc.reference, {'profilePic': newUrl});
-        }
-        await batch.commit();
-
-        // Update cache
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('cached_profile_pic', newUrl);
-        await prefs.setString('cached_cloudinary_public_id', newPublicId);
-
-        if (oldPublicId != null && oldPublicId.isNotEmpty) {
-          await CloudinaryService.deleteMedia(oldPublicId);
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile picture updated successfully!'),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to upload image to Cloudinary.'),
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  void _showProfilePicPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        final colorScheme = Theme.of(context).colorScheme;
-        return Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(28),
-            ),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+        SnackBar(
+          content: Row(
             children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colorScheme.onSurface.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Choose',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (_selectedProfilePic.isNotEmpty)
-                    IconButton(
-                      tooltip: 'Remove profile picture',
-                      onPressed: () {
-                        Navigator.pop(sheetContext);
-                        _removeProfilePicture();
-                      },
-                      icon: const huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedDelete02,
-                        color: Colors.red,
-                        size: 22,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildChooseOptionItem(
-                    icon: huge.HugeIcons.strokeRoundedCamera01,
-                    label: 'Camera',
-                    color: colorScheme.primary,
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      _pickAndUploadCustomImage(ImageSource.camera);
-                    },
-                  ),
-                  _buildChooseOptionItem(
-                    icon: huge.HugeIcons.strokeRoundedImage01,
-                    label: 'Gallery',
-                    color: Colors.purple,
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      _pickAndUploadCustomImage(ImageSource.gallery);
-                    },
-                  ),
-                  _buildChooseOptionItem(
-                    icon: huge.HugeIcons.strokeRoundedFolder01,
-                    label: 'Other',
-                    color: Colors.orange,
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      _pickAndUploadCustomImage(ImageSource.gallery, isNativePicker: true);
-                    },
-                  ),
-                ],
-              ),
+              const Icon(Icons.copy, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text('Copied @$username to clipboard!'),
             ],
           ),
-        );
-      },
-    );
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
   }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final user = _auth.currentUser;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: const Text(
-          'My Profile',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      const SettingsPage(),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: child,
-                    );
-                  },
-                ),
-              );
-            },
-            icon: huge.HugeIcon(
-              icon: huge.HugeIcons.strokeRoundedSettings01,
-              color: colorScheme.onSurface,
-              size: 24,
-            ),
-          ),
-        ],
-      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.only(
-                  left: 24, right: 24, top: 16, bottom: 90),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            if (_selectedProfilePic.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      FullScreenProfilePicPage(
-                                        imageUrl: _selectedProfilePic,
-                                        heroTag:
-                                            'profile_pic_hero_current_user',
-                                      ),
-                                ),
-                              );
-                            } else {
-                              _showProfilePicPicker();
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
+          : StreamBuilder<DocumentSnapshot>(
+              stream: user != null
+                  ? _firestore.collection('users').doc(user.uid).snapshots()
+                  : null,
+              builder: (context, snapshot) {
+                List<dynamic> contacts = [];
+                if (snapshot.hasData && snapshot.data?.exists == true) {
+                  var data = snapshot.data!.data() as Map<String, dynamic>?;
+                  if (data != null) {
+                    contacts = data['contacts'] as List<dynamic>? ?? [];
+                  }
+                }
+
+                return CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    // Dynamic Ambient Header
+                    SliverToBoxAdapter(
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          // Header Mesh Gradient
+                          Container(
+                            height: 230,
+                            width: double.infinity,
                             decoration: BoxDecoration(
-                              color: colorScheme.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Hero(
-                              tag: 'profile_pic_hero_current_user',
-                              child: CircleAvatar(
-                                radius: 60,
-                                backgroundColor: colorScheme.primaryContainer,
-                                backgroundImage: _selectedProfilePic.isNotEmpty
-                                    ? (_selectedProfilePic.startsWith('http')
-                                          ? CachedNetworkImageProvider(
-                                              _selectedProfilePic,
-                                            )
-                                          : AssetImage(_selectedProfilePic)
-                                                as ImageProvider)
-                                    : const AssetImage('assets/icon/default_profile.png'),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  colorScheme.primary,
+                                  colorScheme.primaryContainer,
+                                  colorScheme.surfaceContainerHighest.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                ],
+                              ),
+                              borderRadius: const BorderRadius.vertical(
+                                bottom: Radius.circular(40),
                               ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 4,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: _showProfilePicPicker,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: colorScheme.surface,
-                                  width: 3,
+                            child: SafeArea(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
                                 ),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                size: 19,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const SizedBox(height: 24),
-
-                  // Name and Bio Box
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(
-                        alpha: 0.3,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: colorScheme.onSurface.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          _nameController.text,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '@${_usernameController.text}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSurface.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Divider(),
-                        ),
-                        Text(
-                          _bioController.text.isNotEmpty
-                              ? _bioController.text
-                              : 'Cuqter Member',
-                          style: const TextStyle(fontSize: 16),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Friends and Followers Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            side: BorderSide(
-                              color: colorScheme.primary.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              PageRouteBuilder(
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        const ContactScreen(),
-                                transitionsBuilder:
-                                    (
-                                      context,
-                                      animation,
-                                      secondaryAnimation,
-                                      child,
-                                    ) {
-                                      return SlideTransition(
-                                        position:
-                                            Tween<Offset>(
-                                              begin: const Offset(1.0, 0.0),
-                                              end: Offset.zero,
-                                            ).animate(
-                                              CurvedAnimation(
-                                                parent: animation,
-                                                curve: Curves.easeOutCubic,
-                                              ),
-                                            ),
-                                        child: FadeTransition(
-                                          opacity: animation,
-                                          child: child,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Padding(
+                                      padding: EdgeInsets.only(
+                                        left: 12,
+                                        top: 10,
+                                      ),
+                                      child: Text(
+                                        'Profile',
+                                        style: TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          letterSpacing: -0.5,
                                         ),
-                                      );
-                                    },
-                                transitionDuration: const Duration(
-                                  milliseconds: 250,
+                                      ),
+                                    ),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: IconButton(
+                                        tooltip: 'Settings',
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            PageRouteBuilder(
+                                              transitionDuration:
+                                                  const Duration(
+                                                    milliseconds: 350,
+                                                  ),
+                                              reverseTransitionDuration:
+                                                  const Duration(
+                                                    milliseconds: 300,
+                                                  ),
+                                              pageBuilder:
+                                                  (
+                                                    context,
+                                                    animation,
+                                                    secondaryAnimation,
+                                                  ) => const SettingsPage(),
+                                              transitionsBuilder: (
+                                                context,
+                                                animation,
+                                                secondaryAnimation,
+                                                child,
+                                              ) {
+                                                final curvedAnimation =
+                                                    CurvedAnimation(
+                                                      parent: animation,
+                                                      curve:
+                                                          Curves.easeOutCubic,
+                                                      reverseCurve:
+                                                          Curves.easeInCubic,
+                                                    );
+                                                return SlideTransition(
+                                                  position: Tween<Offset>(
+                                                    begin: const Offset(
+                                                      0.05,
+                                                      0.0,
+                                                    ),
+                                                    end: Offset.zero,
+                                                  ).animate(curvedAnimation),
+                                                  child: FadeTransition(
+                                                    opacity: curvedAnimation,
+                                                    child: child,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        },
+                                        icon: const huge.HugeIcon(
+                                          icon: huge
+                                              .HugeIcons
+                                              .strokeRoundedSettings01,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            );
-                          },
-                          child: const Text(
-                            'Friends',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            side: BorderSide(
-                              color: colorScheme.primary.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          onPressed: () {
-                            // Action for followers if any
-                          },
-                          child: const Text(
-                            'Followers',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
 
-                  // Close Friend Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        side: BorderSide(
-                          color: colorScheme.onSurface.withValues(alpha: 0.2),
-                        ),
+                          // Profile Avatar Floating Stack
+                          Positioned(
+                            top: 140,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Glowing Halo BoxShadow
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colorScheme.primary.withValues(
+                                          alpha: 0.35,
+                                        ),
+                                        blurRadius: 28,
+                                        spreadRadius: 6,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          colorScheme.primary,
+                                          colorScheme.tertiaryContainer,
+                                          colorScheme.secondary,
+                                        ],
+                                      ),
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.surface,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          if (_selectedProfilePic.isNotEmpty) {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    FullScreenProfilePicPage(
+                                                      imageUrl:
+                                                          _selectedProfilePic,
+                                                      heroTag:
+                                                          'profile_pic_hero_current_user',
+                                                    ),
+                                              ),
+                                            );
+                                          } else {
+                                            _navigateToEditProfileScreen();
+                                          }
+                                        },
+                                        child: Hero(
+                                          tag: 'profile_pic_hero_current_user',
+                                          child: CircleAvatar(
+                                            radius: 54,
+                                            backgroundColor:
+                                                colorScheme
+                                                    .surfaceContainerHighest,
+                                            backgroundImage:
+                                                _selectedProfilePic.isNotEmpty
+                                                ? (_selectedProfilePic
+                                                      .startsWith('http')
+                                                      ? CachedNetworkImageProvider(
+                                                          _selectedProfilePic,
+                                                        )
+                                                      : AssetImage(
+                                                          _selectedProfilePic,
+                                                        )
+                                                            as ImageProvider)
+                                                : const AssetImage(
+                                                    'assets/icon/default_profile.png',
+                                                  ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // Camera Upload Action Badge
+                                Positioned(
+                                  bottom: 4,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: _navigateToEditProfileScreen,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: colorScheme.surface,
+                                          width: 3.5,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt_rounded,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // Active Online Status Badge
+                                Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: colorScheme.surface,
+                                        width: 3,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      onPressed: () {
-                        // Action for close friend
-                      },
-                      icon: huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedLockPassword,
-                        size: 22,
-                        color: colorScheme.onSurface,
-                      ),
-                      label: Text(
-                        'close friend',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
+                    ),
+
+                    // Spacer for Avatar Overflow
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 70),
+                    ),
+
+                    // Profile User Identity Header
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          children: [
+                            // Display Name + Verified Badge
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _nameController.text.isNotEmpty
+                                      ? _nameController.text
+                                      : 'Cuqter User',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: huge.HugeIcon(
+                                    icon: huge
+                                        .HugeIcons
+                                        .strokeRoundedCheckmarkBadge01,
+                                    color: colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+
+                            // Username Copyable Chip
+                            GestureDetector(
+                              onTap: _copyUsernameToClipboard,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '@${_usernameController.text}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    huge.HugeIcon(
+                                      icon: huge.HugeIcons.strokeRoundedCopy01,
+                                      color: colorScheme.primary,
+                                      size: 14,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Bio Quote Container
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                _bioController.text.isNotEmpty
+                                    ? _bioController.text
+                                    : '✨ Loving every moment on Cuqter!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  height: 1.4,
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.85,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Real Database Friends Stat (Friends Only)
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ContactScreen(),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                  horizontal: 20,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceContainerHighest
+                                      .withValues(alpha: 0.35),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: huge.HugeIcon(
+                                        icon:
+                                            huge
+                                                .HugeIcons
+                                                .strokeRoundedUserGroup,
+                                        color: colorScheme.primary,
+                                        size: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${contacts.whereType<String>().where((id) => id.trim().isNotEmpty && id != user?.uid).toSet().length}',
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Friends',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: colorScheme.onSurface
+                                                .withValues(alpha: 0.6),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Spacer(),
+                                    huge.HugeIcon(
+                                      icon:
+                                          huge
+                                              .HugeIcons
+                                              .strokeRoundedArrowRight01,
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Primary Action Row (Edit Profile)
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  backgroundColor: colorScheme.primary,
+                                  foregroundColor: colorScheme.onPrimary,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                onPressed: _navigateToEditProfileScreen,
+                                icon: const huge.HugeIcon(
+                                  icon: huge.HugeIcons.strokeRoundedEdit02,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                label: const Text(
+                                  'Edit Profile',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
 
-                  // Edit Profile
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: _showEditDialog,
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text('Edit Profile'),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 40),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
     );
   }
 
-  void _showEditDialog() {
-    String dialogSelectedPic = _selectedProfilePic;
-    bool isChecking = false;
-    bool? isAvailable;
-    String? usernameErrorText;
-    Timer? debounceTimer;
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final bool isSaveDisabled =
-              isChecking ||
-              usernameErrorText != null ||
-              _usernameController.text.trim().isEmpty ||
-              (isAvailable == false &&
-                  _usernameController.text.trim().toLowerCase() !=
-                      _currentUsername.toLowerCase());
 
-          return AlertDialog(
-            title: const Text('Edit Profile'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _usernameController,
-                    decoration: InputDecoration(
-                      labelText: 'Username',
-                      prefixText: '@',
-                      errorText: usernameErrorText,
-                      helperText:
-                          isAvailable == true && usernameErrorText == null
-                          ? 'Username is available'
-                          : null,
-                      helperStyle: const TextStyle(color: Colors.green),
-                      suffixIcon: isChecking
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: Padding(
-                                padding: EdgeInsets.all(12.0),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            )
-                          : (isAvailable == true
-                                ? const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                  )
-                                : (isAvailable == false ||
-                                          usernameErrorText != null
-                                      ? const Icon(
-                                          Icons.error,
-                                          color: Colors.red,
-                                        )
-                                      : null)),
-                    ),
-                    onChanged: (val) {
-                      if (debounceTimer?.isActive ?? false)
-                        debounceTimer?.cancel();
 
-                      if (val.contains(' ')) {
-                        setDialogState(() {
-                          isAvailable = null;
-                          usernameErrorText = 'Spaces are not allowed';
-                        });
-                        return;
-                      }
 
-                      final trimmed = val.trim().toLowerCase();
-                      if (trimmed.isEmpty) {
-                        setDialogState(() {
-                          isAvailable = null;
-                          usernameErrorText = 'Username cannot be empty';
-                        });
-                        return;
-                      }
-
-                      final regExp = RegExp(r'^[a-zA-Z0-9._]+$');
-                      if (!regExp.hasMatch(trimmed)) {
-                        setDialogState(() {
-                          isAvailable = null;
-                          usernameErrorText =
-                              'Only letters, numbers, underscores, and dots';
-                        });
-                        return;
-                      }
-
-                      if (trimmed == _currentUsername.toLowerCase()) {
-                        setDialogState(() {
-                          isAvailable = true;
-                          usernameErrorText = null;
-                        });
-                        return;
-                      }
-
-                      setDialogState(() {
-                        isChecking = true;
-                        isAvailable = null;
-                        usernameErrorText = null;
-                      });
-
-                      debounceTimer = Timer(
-                        const Duration(milliseconds: 500),
-                        () async {
-                          try {
-                            final query = await FirebaseFirestore.instance
-                                .collection('users')
-                                .where('username', isEqualTo: trimmed)
-                                .get();
-
-                            if (!context.mounted) return;
-
-                            if (_usernameController.text.trim().toLowerCase() !=
-                                trimmed) {
-                              return;
-                            }
-
-                            setDialogState(() {
-                              isChecking = false;
-                              if (query.docs.isNotEmpty) {
-                                isAvailable = false;
-                                usernameErrorText = 'Username is already taken';
-                              } else {
-                                isAvailable = true;
-                                usernameErrorText = null;
-                              }
-                            });
-                          } catch (e) {
-                            if (!context.mounted) return;
-                            if (_usernameController.text.trim().toLowerCase() !=
-                                trimmed) {
-                              return;
-                            }
-                            setDialogState(() {
-                              isChecking = false;
-                              usernameErrorText = 'Error checking username';
-                            });
-                          }
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _bioController,
-                    decoration: const InputDecoration(labelText: 'Bio'),
-                  ),
-                ],
-              ),
+  Future<void> _navigateToEditProfileScreen() async {
+    final result = await Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            EditProfileScreen(
+              initialName: _nameController.text,
+              initialUsername: _usernameController.text,
+              initialBio: _bioController.text,
+              initialProfilePic: _selectedProfilePic,
+              initialCloudinaryPublicId: _currentCloudinaryPublicId,
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  if (debounceTimer?.isActive ?? false) debounceTimer?.cancel();
-                  Navigator.pop(context);
-                },
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: isSaveDisabled
-                    ? null
-                    : () {
-                        if (debounceTimer?.isActive ?? false)
-                          debounceTimer?.cancel();
-                        setState(() {
-                          _selectedProfilePic = dialogSelectedPic;
-                          if (_selectedProfilePic.startsWith('assets/')) {
-                            _currentCloudinaryPublicId = null;
-                          }
-                        });
-                        Navigator.pop(context);
-                        _updateProfile();
-                      },
-                child: const Text('Save'),
-              ),
-            ],
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.05, 0.0),
+              end: Offset.zero,
+            ).animate(curvedAnimation),
+            child: FadeTransition(
+              opacity: curvedAnimation,
+              child: child,
+            ),
           );
         },
       ),
     );
+    if (result == true) {
+      _loadUserData();
+    }
   }
 }
-
-

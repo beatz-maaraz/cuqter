@@ -4,7 +4,7 @@ import 'package:cuqter/resources/auth_method.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cuqter/Screen/profile/profile_screen.dart';
+import 'package:cuqter/Screen/profile/edit_profile_screen.dart';
 import 'package:cuqter/Screen/settings/chat_settings_page.dart';
 import 'package:cuqter/Screen/settings/security_settings_page.dart';
 import 'package:cuqter/Screen/settings/notification_settings_page.dart';
@@ -15,7 +15,12 @@ import 'package:cuqter/Screen/settings/network_usage_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
+import 'dart:ui' as ui;
+import 'dart:io';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:pretty_qr_code/pretty_qr_code.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDialog;
@@ -30,7 +35,9 @@ class _SettingsPageState extends State<SettingsPage> {
   String _email = '';
   String _profilepic = '';
   String _username = '';
-  bool _isLoading = false;
+  String _bio = '';
+  String? _cloudinaryPublicId;
+  final bool _isLoading = false;
 
   @override
   void initState() {
@@ -49,7 +56,9 @@ class _SettingsPageState extends State<SettingsPage> {
       final prefs = await SharedPreferences.getInstance();
       final String? cachedName = prefs.getString('cached_profile_name');
       final String? cachedPic = prefs.getString('cached_profile_pic');
-      
+      final String? cachedBio = prefs.getString('cached_profile_bio');
+      final String? cachedPublicId = prefs.getString('cached_cloudinary_public_id');
+
       if (mounted) {
         setState(() {
           if (cachedName != null && cachedName.isNotEmpty) {
@@ -58,10 +67,16 @@ class _SettingsPageState extends State<SettingsPage> {
           if (cachedPic != null && cachedPic.isNotEmpty) {
             _profilepic = cachedPic;
           }
+          if (cachedBio != null) {
+            _bio = cachedBio;
+          }
+          if (cachedPublicId != null) {
+            _cloudinaryPublicId = cachedPublicId;
+          }
         });
       }
     } catch (e) {
-      print('Error loading cached profile in settings: $e');
+      debugPrint('Error loading cached profile in settings: $e');
     }
   }
 
@@ -69,13 +84,18 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
         if (mounted) {
           setState(() {
             if (doc.exists) {
               _name = doc.data()?['name'] ?? 'User';
               _profilepic = doc.data()?['profilepic'] ?? '';
               _username = doc.data()?['username'] ?? '';
+              _bio = doc.data()?['bio'] ?? '';
+              _cloudinaryPublicId = doc.data()?['cloudinary_public_id'];
             }
             _email = user.email ?? '';
           });
@@ -86,14 +106,18 @@ class _SettingsPageState extends State<SettingsPage> {
           final String name = doc.data()?['name'] ?? 'User';
           final String profilepic = doc.data()?['profilepic'] ?? '';
           final String bio = doc.data()?['bio'] ?? '';
-          final String? cloudinaryPublicId = doc.data()?['cloudinary_public_id'];
-          
+          final String? cloudinaryPublicId = doc
+              .data()?['cloudinary_public_id'];
+
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('cached_profile_name', name);
           await prefs.setString('cached_profile_bio', bio);
           await prefs.setString('cached_profile_pic', profilepic);
           if (cloudinaryPublicId != null) {
-            await prefs.setString('cached_cloudinary_public_id', cloudinaryPublicId);
+            await prefs.setString(
+              'cached_cloudinary_public_id',
+              cloudinaryPublicId,
+            );
           } else {
             await prefs.remove('cached_cloudinary_public_id');
           }
@@ -102,6 +126,34 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       // Handle error conceptually
     }
+  }
+
+  Future<T?> _pushSmoothRoute<T>(Widget targetPage) {
+    return Navigator.push<T>(
+      context,
+      PageRouteBuilder<T>(
+        transitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.05, 0.0),
+              end: Offset.zero,
+            ).animate(curvedAnimation),
+            child: FadeTransition(
+              opacity: curvedAnimation,
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -125,7 +177,8 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: widget.isDialog
             ? IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+                onPressed: () =>
+                    Navigator.of(context, rootNavigator: true).pop(),
               )
             : null,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
@@ -140,104 +193,73 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 30),
                 _buildSectionLabel(context, 'ACCOUNT PREFERENCES'),
                 const SizedBox(height: 10),
-                _buildGroupedSection(children: [
-                   _buildSettingsTile(
-                    icon: huge.HugeIcons.strokeRoundedUser,
-                    title: 'Profile Manage',
-                    subtitle: 'Identity, privacy & blocked friends',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ProfileManage()),
-                      ).then((_) => _loadUserData());
-                    },
-                  ),
-                  _buildSettingsTile(
-                    icon: huge.HugeIcons.strokeRoundedNotification01,
-                    title: 'Notifications',
-                    subtitle: 'Tone and frequency control',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const NotificationSettingsPage()),
-                      );
-                    },
-                  ),
-                   _buildSettingsTile(
-                     icon: huge.HugeIcons.strokeRoundedSecurityValidation,
-                     title: 'Security',
-                     subtitle: 'Authentication and privacy',
-                     onTap: () {
-                       Navigator.push(
-                         context,
-                         MaterialPageRoute(builder: (context) => const SecuritySettingsPage()),
-                       );
-                     },
-                   ),
-                   _buildSettingsTile(
-                     icon: huge.HugeIcons.strokeRoundedBubbleChat,
-                     title: 'Chats',
-                     subtitle: 'Wallpaper, preferences and history',
-                     onTap: () {
-                       Navigator.push(
-                         context,
-                         MaterialPageRoute(builder: (context) => const ChatSettingsPage()),
-                       );
-                     },
-                   ),
+                _buildGroupedSection(
+                  children: [
+                    _buildSettingsTile(
+                      icon: huge.HugeIcons.strokeRoundedUser,
+                      title: 'Profile Manage',
+                      subtitle: 'Privacy, visibility & blocked contacts',
+                      onTap: () {
+                        _pushSmoothRoute(
+                          const ProfileManage(),
+                        ).then((_) => _loadUserData());
+                      },
+                    ),
+                    _buildSettingsTile(
+                      icon: huge.HugeIcons.strokeRoundedNotification01,
+                      title: 'Notifications',
+                      subtitle: 'Tone and frequency control',
+                      onTap: () => _pushSmoothRoute(const NotificationSettingsPage()),
+                    ),
+                    _buildSettingsTile(
+                      icon: huge.HugeIcons.strokeRoundedSecurityValidation,
+                      title: 'Security',
+                      subtitle: 'Authentication and privacy',
+                      onTap: () => _pushSmoothRoute(const SecuritySettingsPage()),
+                    ),
+                    _buildSettingsTile(
+                      icon: huge.HugeIcons.strokeRoundedBubbleChat,
+                      title: 'Chats',
+                      subtitle: 'Wallpaper, preferences and history',
+                      onTap: () => _pushSmoothRoute(const ChatSettingsPage()),
+                    ),
                     _buildSettingsTile(
                       icon: huge.HugeIcons.strokeRoundedPaintBoard,
                       title: 'Appearance',
                       subtitle: 'Dark mode, custom colors, text size',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const AppearanceSettingsPage()),
-                        );
-                      },
+                      onTap: () => _pushSmoothRoute(const AppearanceSettingsPage()),
                     ),
-                 ]),
-                  const SizedBox(height: 30),
-                  _buildSectionLabel(context, 'STORAGE & DATA'),
-                  const SizedBox(height: 10),
-                  _buildGroupedSection(children: [
+                  ],
+                ),
+                const SizedBox(height: 30),
+                _buildSectionLabel(context, 'STORAGE & DATA'),
+                const SizedBox(height: 10),
+                _buildGroupedSection(
+                  children: [
                     _buildSettingsTile(
                       icon: huge.HugeIcons.strokeRoundedHardDrive,
                       title: 'Storage & Data',
                       subtitle: 'Network usage, cache and downloads',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const StorageSettingsPage()),
-                        );
-                      },
+                      onTap: () => _pushSmoothRoute(const StorageSettingsPage()),
                     ),
                     _buildSettingsTile(
                       icon: huge.HugeIcons.strokeRoundedUpload01,
                       title: 'Network Usage',
                       subtitle: 'Detailed messaging and calling statistics',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const NetworkUsagePage()),
-                        );
-                      },
+                      onTap: () => _pushSmoothRoute(const NetworkUsagePage()),
                     ),
-                  ]),
-                  const SizedBox(height: 30),
-                  _buildSectionLabel(context, 'ABOUT'),
-                  const SizedBox(height: 10),
-                  _buildGroupedSection(children: [
+                  ],
+                ),
+                const SizedBox(height: 30),
+                _buildSectionLabel(context, 'ABOUT'),
+                const SizedBox(height: 10),
+                _buildGroupedSection(
+                  children: [
                     _buildSettingsTile(
                       icon: huge.HugeIcons.strokeRoundedHelpCircle,
                       title: 'About Cuqter',
                       subtitle: 'Help, FAQ, and app details',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const AboutPage()),
-                        );
-                      },
+                      onTap: () => _pushSmoothRoute(const AboutPage()),
                     ),
                     _buildSettingsTile(
                       icon: huge.HugeIcons.strokeRoundedShare01,
@@ -245,30 +267,36 @@ class _SettingsPageState extends State<SettingsPage> {
                       subtitle: 'Invite friends to chat on Cuqter',
                       onTap: () {
                         SharePlus.instance.share(
-                          ShareParams(text: 'Hey! I am using Cuqter to chat and share media securely. Download it now to connect with me! https://cuqter.com'),
+                          ShareParams(
+                            text:
+                                'Hey! I am using Cuqter to chat and share media securely. Download it now to connect with me! https://cuqter.com',
+                          ),
                         );
                       },
                     ),
-                  ]),
-                 const SizedBox(height: 40),
+                  ],
+                ),
+                const SizedBox(height: 40),
                 _buildSignOutButton(context, colorScheme),
                 const SizedBox(height: 20),
-                 Center(
-                   child: FutureBuilder<PackageInfo>(
-                     future: PackageInfo.fromPlatform(),
-                     builder: (context, snapshot) {
-                       final version = snapshot.hasData ? snapshot.data!.version : '1.4.21';
-                       return Text(
-                         'VERSION $version • CUQTER UI',
-                         style: TextStyle(
-                           fontSize: 10,
-                           color: colorScheme.onSurface.withValues(alpha: 0.4),
-                           letterSpacing: 1.2,
-                         ),
-                       );
-                     },
-                   ),
-                 ),
+                Center(
+                  child: FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.hasData
+                          ? snapshot.data!.version
+                          : '1.4.21';
+                      return Text(
+                        'VERSION $version • CUQTER UI',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: colorScheme.onSurface.withValues(alpha: 0.4),
+                          letterSpacing: 1.2,
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 const SizedBox(height: 20),
               ],
             ),
@@ -278,28 +306,20 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildProfileHeader(ColorScheme colorScheme) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const ProfileScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-                    CurvedAnimation(parent: animation, curve: Curves.easeOut),
-                  ),
-                  child: child,
-                ),
-              );
-            },
+        _pushSmoothRoute(
+          EditProfileScreen(
+            initialName: _name,
+            initialUsername: _username,
+            initialBio: _bio,
+            initialProfilePic: _profilepic,
+            initialCloudinaryPublicId: _cloudinaryPublicId,
           ),
         ).then((_) => _loadUserData());
       },
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          color: colorScheme.onSurface.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
@@ -311,13 +331,19 @@ class _SettingsPageState extends State<SettingsPage> {
                   backgroundColor: colorScheme.primaryContainer,
                   backgroundImage: _profilepic.isNotEmpty
                       ? (_profilepic.startsWith('http')
-                          ? CachedNetworkImageProvider(_profilepic)
-                          : AssetImage(_profilepic) as ImageProvider)
+                            ? CachedNetworkImageProvider(_profilepic)
+                            : AssetImage(_profilepic) as ImageProvider)
                       : null,
-                  child: _profilepic.isEmpty ? Text(
-                    _name.isNotEmpty ? _name[0].toUpperCase() : '?',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
-                  ) : null,
+                  child: _profilepic.isEmpty
+                      ? Text(
+                          _name.isNotEmpty ? _name[0].toUpperCase() : '?',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        )
+                      : null,
                 ),
                 Positioned(
                   bottom: 0,
@@ -329,7 +355,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       shape: BoxShape.circle,
                       border: Border.all(color: colorScheme.surface, width: 2),
                     ),
-                    child: const Icon(Icons.edit, size: 12, color: Colors.white),
+                    child: const Icon(
+                      Icons.edit,
+                      size: 12,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -341,15 +371,24 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Text(
                     _name,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     _email,
-                    style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -384,181 +423,277 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showQrCodeDialog(BuildContext context, ColorScheme colorScheme) {
-    final user = FirebaseAuth.instance.currentUser;
-    final uid = user?.uid ?? 'unknown';
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     // Use username-based URL if available, fallback to uid
     final profileSlug = _username.isNotEmpty ? _username : uid;
     final qrData = 'https://cuqter.com/$profileSlug';
-    final String hexColor = colorScheme.primary.toARGB32().toRadixString(16).padLeft(8, '0');
-    final String rgbHex = hexColor.length >= 8 ? hexColor.substring(2) : hexColor;
-    final qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(qrData)}&color=$rgbHex';
+    final GlobalKey qrKey = GlobalKey();
+    UniqueKey refreshKey = UniqueKey();
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'My QR Code',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Scan this code to add me on Cuqter',
-                style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5)),
-              ),
-              const SizedBox(height: 24),
-              // QR Code container
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: CachedNetworkImage(
-                    imageUrl: qrUrl,
-                    width: 200,
-                    height: 200,
-                    placeholder: (context, url) => Container(
-                      width: 200,
-                      height: 200,
-                      color: Colors.grey.shade100,
-                      child: const Center(child: CircularProgressIndicator()),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      width: 200,
-                      height: 200,
-                      color: Colors.grey.shade100,
-                      child: const Icon(Icons.qr_code_rounded, size: 64, color: Colors.grey),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Profile link
-              GestureDetector(
-                onTap: () {
-                  SharePlus.instance.share(ShareParams(text: 'Add me on Cuqter! $qrData'));
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedLink01,
-                        color: colorScheme.primary,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
                       Text(
-                        qrData.replaceFirst('https://', ''),
+                        'My QR Code',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: () {
+                          setState(() {
+                            refreshKey = UniqueKey();
+                          });
+                        },
                       ),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Profile summary
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: colorScheme.primaryContainer,
-                    backgroundImage: _profilepic.isNotEmpty
-                        ? (_profilepic.startsWith('http')
-                            ? CachedNetworkImageProvider(_profilepic)
-                            : AssetImage(_profilepic) as ImageProvider)
-                        : null,
-                    child: _profilepic.isEmpty ? Text(
-                      _name.isNotEmpty ? _name[0].toUpperCase() : '?',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer),
-                    ) : null,
+                  const SizedBox(height: 8),
+                  Text(
+                    'Scan this code to add me on Cuqter',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 24),
+                  // QR Code container
+                  RepaintBoundary(
+                    key: qrKey,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: SizedBox(
+                          key: refreshKey,
+                          width: 200,
+                          height: 200,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              PrettyQrView.data(
+                                data: qrData,
+                                errorCorrectLevel: QrErrorCorrectLevel.H,
+                                decoration: PrettyQrDecoration(
+                                  shape: PrettyQrSmoothSymbol(
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                              if (_profilepic.isNotEmpty)
+                                Container(
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                  ),
+                                  padding: const EdgeInsets.all(4),
+                                  child: CircleAvatar(
+                                    radius: 20,
+                                    backgroundImage: _profilepic.startsWith('http')
+                                        ? CachedNetworkImageProvider(_profilepic)
+                                        : AssetImage(_profilepic) as ImageProvider,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Profile link
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        final boundary = qrKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+                        if (boundary != null) {
+                          final image = await boundary.toImage(pixelRatio: 3.0);
+                          final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+                          final pngBytes = byteData!.buffer.asUint8List();
+                          
+                          final tempDir = await getTemporaryDirectory();
+                          final file = File('${tempDir.path}/cuqter_qr.png');
+                          await file.writeAsBytes(pngBytes);
+                          
+                          await Share.shareXFiles(
+                            [XFile(file.path)],
+                            text: 'Add me on Cuqter! $qrData',
+                          );
+                        } else {
+                          Share.share('Add me on Cuqter! $qrData');
+                        }
+                      } catch (e) {
+                        Share.share('Add me on Cuqter! $qrData');
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.onSurface.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.outline.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          huge.HugeIcon(
+                            icon: huge.HugeIcons.strokeRoundedLink01,
+                            color: colorScheme.primary,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            qrData.replaceFirst('https://', ''),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Profile summary
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        _name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: colorScheme.primaryContainer,
+                        backgroundImage: _profilepic.isNotEmpty
+                            ? (_profilepic.startsWith('http')
+                                  ? CachedNetworkImageProvider(_profilepic)
+                                  : AssetImage(_profilepic) as ImageProvider)
+                            : null,
+                        child: _profilepic.isEmpty
+                            ? Text(
+                                _name.isNotEmpty ? _name[0].toUpperCase() : '?',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onPrimaryContainer,
+                                ),
+                              )
+                            : null,
                       ),
-                      if (_username.isNotEmpty)
-                        Text(
-                          '@$_username',
-                          style: TextStyle(fontSize: 12, color: colorScheme.primary, fontWeight: FontWeight.w500),
-                        )
-                      else
-                        Text(
-                          _email,
-                          style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          if (_username.isNotEmpty)
+                            Text(
+                              '@$_username',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            )
+                          else
+                            Text(
+                              _email,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            side: BorderSide(
+                              color: colorScheme.outline.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close, size: 16),
+                          label: const Text(
+                            'Close',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            SharePlus.instance.share(
+                              ShareParams(text: 'Add me on Cuqter! $qrData'),
+                            );
+                          },
+                          icon: const Icon(Icons.share_rounded, size: 16),
+                          label: const Text(
+                            'Share',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, size: 16),
-                      label: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        SharePlus.instance.share(ShareParams(text: 'Add me on Cuqter! $qrData'));
-                      },
-                      icon: const Icon(Icons.share_rounded, size: 16),
-                      label: const Text('Share', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -584,11 +719,11 @@ class _SettingsPageState extends State<SettingsPage> {
       decoration: BoxDecoration(
         color: colorScheme.onSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 
@@ -626,27 +761,16 @@ class _SettingsPageState extends State<SettingsPage> {
           color: colorScheme.onSurface.withValues(alpha: 0.6),
         ),
       ),
-      trailing: trailing ?? huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedArrowRight01, size: 20, color: colorScheme.onSurface.withValues(alpha: 0.3)),
+      trailing:
+          trailing ??
+          huge.HugeIcon(
+            icon: huge.HugeIcons.strokeRoundedArrowRight01,
+            size: 20,
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
     );
   }
 
-  Widget _buildBadge(BuildContext context, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-        ),
-      ),
-    );
-  }
 
   Widget _buildSignOutButton(BuildContext context, ColorScheme colorScheme) {
     return SizedBox(
@@ -657,11 +781,20 @@ class _SettingsPageState extends State<SettingsPage> {
           foregroundColor: colorScheme.error,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         onPressed: () => _showSignOutDialog(context),
-        icon: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedLogout01, color: colorScheme.error, size: 20),
-        label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
+        icon: huge.HugeIcon(
+          icon: huge.HugeIcons.strokeRoundedLogout01,
+          color: colorScheme.error,
+          size: 20,
+        ),
+        label: const Text(
+          'Sign Out',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
@@ -669,7 +802,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showSignOutDialog(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -685,7 +818,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   color: colorScheme.errorContainer.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedLogout01, color: colorScheme.error, size: 32),
+                child: huge.HugeIcon(
+                  icon: huge.HugeIcons.strokeRoundedLogout01,
+                  color: colorScheme.error,
+                  size: 32,
+                ),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -696,32 +833,45 @@ class _SettingsPageState extends State<SettingsPage> {
               Text(
                 'You\'re about to end your session. You\'ll need to enter your credentials again to access your account.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
+                style: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B2D26), // Matching the red from design
+                    backgroundColor: const Color(
+                      0xFF8B2D26,
+                    ), // Matching the red from design
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   onPressed: () async {
                     Navigator.of(context).popUntil((route) => route.isFirst);
-                    
+
                     final user = FirebaseAuth.instance.currentUser;
                     if (user != null) {
-                      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-                        'isOnline': false,
-                        'lastSeen': FieldValue.serverTimestamp(),
-                      }).catchError((_) {});
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
+                          .update({
+                            'isOnline': false,
+                            'lastSeen': FieldValue.serverTimestamp(),
+                          })
+                          .catchError((_) {});
                     }
-                    
+
                     await AuthMethod().signOut();
                   },
-                  child: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Sign Out',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -729,13 +879,20 @@ class _SettingsPageState extends State<SettingsPage> {
                 width: double.infinity,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    backgroundColor: colorScheme.onSurface.withValues(
+                      alpha: 0.05,
+                    ),
                     foregroundColor: colorScheme.onSurface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -745,4 +902,3 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 }
-

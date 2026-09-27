@@ -13,10 +13,10 @@ class MessageService {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => Message.fromJson(doc.id, doc.data()))
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => Message.fromJson(doc.id, doc.data()))
+              .toList();
+        });
   }
 
   /// Get unread messages (new messages)
@@ -30,10 +30,10 @@ class MessageService {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => Message.fromJson(doc.id, doc.data()))
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => Message.fromJson(doc.id, doc.data()))
+              .toList();
+        });
   }
 
   /// Get read messages (seen messages)
@@ -47,10 +47,10 @@ class MessageService {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => Message.fromJson(doc.id, doc.data()))
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => Message.fromJson(doc.id, doc.data()))
+              .toList();
+        });
   }
 
   /// Mark a message as read
@@ -68,7 +68,10 @@ class MessageService {
   }
 
   /// Mark all messages in a chat as read for current user
-  Future<void> markAllMessagesAsRead(String chatId, String currentUserId) async {
+  Future<void> markAllMessagesAsRead(
+    String chatId,
+    String currentUserId,
+  ) async {
     try {
       final batch = _firestore.batch();
       final snapshot = await _firestore
@@ -148,7 +151,8 @@ class MessageService {
 
       if (replyToId != null) messageData['replyToId'] = replyToId;
       if (replyToText != null) messageData['replyToText'] = replyToText;
-      if (replyToSenderId != null) messageData['replyToSenderId'] = replyToSenderId;
+      if (replyToSenderId != null)
+        messageData['replyToSenderId'] = replyToSenderId;
       if (replyToType != null) messageData['replyToType'] = replyToType;
 
       await _firestore
@@ -159,10 +163,10 @@ class MessageService {
 
       // Ensure both users are in each other's contacts so they appear on the homepage
       await _firestore.collection('users').doc(senderId).set({
-        'contacts': FieldValue.arrayUnion([receiverId])
+        'contacts': FieldValue.arrayUnion([receiverId]),
       }, SetOptions(merge: true));
       await _firestore.collection('users').doc(receiverId).set({
-        'contacts': FieldValue.arrayUnion([senderId])
+        'contacts': FieldValue.arrayUnion([senderId]),
       }, SetOptions(merge: true));
     } catch (e) {
       print('Error sending message: $e');
@@ -179,9 +183,12 @@ class MessageService {
         .limit(1)
         .snapshots()
         .map((snapshot) {
-      if (snapshot.docs.isEmpty) return null;
-      return Message.fromJson(snapshot.docs.first.id, snapshot.docs.first.data());
-    });
+          if (snapshot.docs.isEmpty) return null;
+          return Message.fromJson(
+            snapshot.docs.first.id,
+            snapshot.docs.first.data(),
+          );
+        });
   }
 
   /// Log a call in user's call history
@@ -198,12 +205,12 @@ class MessageService {
           .doc(currentUserId)
           .collection('call_history')
           .add({
-        'peerId': peerId,
-        'type': type,
-        'status': status,
-        'roomId': roomId,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+            'peerId': peerId,
+            'type': type,
+            'status': status,
+            'roomId': roomId,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
     } catch (e) {
       print('Error logging call: $e');
     }

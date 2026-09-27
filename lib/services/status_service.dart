@@ -13,6 +13,7 @@ class StatusService {
     required String mediaUrl,
     required String mediaType,
     required String caption,
+    int colorIndex = 0,
   }) async {
     try {
       final docRef = _firestore.collection('statuses').doc();
@@ -24,6 +25,7 @@ class StatusService {
         mediaUrl: mediaUrl,
         mediaType: mediaType,
         caption: caption,
+        colorIndex: colorIndex,
         createdAt: DateTime.now(),
         expiresAt: DateTime.now().add(const Duration(hours: 24)),
       );
@@ -42,18 +44,22 @@ class StatusService {
         .orderBy('expiresAt', descending: false)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => Status.fromMap(doc.data()))
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => Status.fromMap(doc.data()))
+              .toList();
+        });
   }
+
   /// Delete a status
   Future<void> deleteStatus(Status status) async {
     try {
       if (status.mediaUrl.isNotEmpty && status.mediaType != 'text') {
         String? publicId = CloudinaryService.extractPublicId(status.mediaUrl);
         if (publicId != null) {
-          await CloudinaryService.deleteMedia(publicId, resourceType: status.mediaType);
+          await CloudinaryService.deleteMedia(
+            publicId,
+            resourceType: status.mediaType,
+          );
         }
       }
       await _deleteStatusNotifications(status.statusId);
@@ -70,13 +76,16 @@ class StatusService {
           .collection('statuses')
           .where('expiresAt', isLessThanOrEqualTo: now)
           .get();
-          
+
       for (var doc in snapshot.docs) {
         final status = Status.fromMap(doc.data());
         if (status.mediaUrl.isNotEmpty && status.mediaType != 'text') {
           String? publicId = CloudinaryService.extractPublicId(status.mediaUrl);
           if (publicId != null) {
-            await CloudinaryService.deleteMedia(publicId, resourceType: status.mediaType);
+            await CloudinaryService.deleteMedia(
+              publicId,
+              resourceType: status.mediaType,
+            );
           }
         }
         await _deleteStatusNotifications(status.statusId);
@@ -105,7 +114,7 @@ class StatusService {
   Future<void> markStatusAsSeen(String statusId, StatusViewer viewer) async {
     try {
       await _firestore.collection('statuses').doc(statusId).update({
-        'viewers': FieldValue.arrayUnion([viewer.toMap()])
+        'viewers': FieldValue.arrayUnion([viewer.toMap()]),
       });
     } catch (e) {
       print('Error marking status as seen: $e');
@@ -160,11 +169,13 @@ class StatusService {
 
         // Remove notification
         final notificationId = 'status_like_${statusId}_${liker.uid}';
-        await _firestore.collection('notifications').doc(notificationId).delete();
+        await _firestore
+            .collection('notifications')
+            .doc(notificationId)
+            .delete();
       }
     } catch (e) {
       print('Error toggling status like: $e');
     }
   }
 }
-

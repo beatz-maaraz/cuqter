@@ -19,10 +19,10 @@ class GroupedCallLog {
   int get count => docs.length;
 
   bool get hasMissedCall => docs.any((doc) {
-        final status =
-            (doc.data() as Map<String, dynamic>)['status']?.toString() ?? '';
-        return status == 'missed' || status == 'declined';
-      });
+    final status =
+        (doc.data() as Map<String, dynamic>)['status']?.toString() ?? '';
+    return status == 'missed' || status == 'declined';
+  });
 }
 
 class CallsHistoryPage extends StatefulWidget {
@@ -41,6 +41,19 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
   String _activeFilter = 'All'; // 'All' or 'Missed'
   bool _isSelectionMode = false;
   final Set<String> _selectedDocIds = {};
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: 0);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   String _formatTimestamp(Timestamp? timestamp) {
     if (timestamp == null) return '';
@@ -49,14 +62,20 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
 
     String timeStr = TimeOfDay.fromDateTime(date).format(context);
 
-    if (date.year == now.year && date.month == now.month && date.day == now.day) {
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day) {
       return timeStr;
     }
     return '${DateFormat('MMM d').format(date)}, $timeStr';
   }
 
   void _startNewCall(
-      BuildContext context, String peerId, String peerName, bool isVideo) {
+    BuildContext context,
+    String peerId,
+    String peerName,
+    bool isVideo,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -114,7 +133,9 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Deleted ${_selectedDocIds.length} call log(s)')),
+        SnackBar(
+          content: Text('Deleted ${_selectedDocIds.length} call log(s)'),
+        ),
       );
 
       setState(() {
@@ -123,9 +144,9 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting logs: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error deleting logs: $e')));
     }
   }
 
@@ -157,10 +178,7 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
               const SizedBox(height: 16),
               const Text(
                 'Clear Call History?',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
               Text(
@@ -236,19 +254,23 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
       await batch.commit();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Call history cleared')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Call history cleared')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error clearing history: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error clearing history: $e')));
     }
   }
 
   void _showCallDetailsModal(
-      BuildContext context, GroupedCallLog groupedLog, String peerName, String profilePic) {
+    BuildContext context,
+    GroupedCallLog groupedLog,
+    String peerName,
+    String profilePic,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
 
     showModalBottomSheet(
@@ -296,15 +318,15 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                     child: CircleAvatar(
                       radius: 38,
                       backgroundColor: colorScheme.primaryContainer,
-                      backgroundImage: profilePic.isNotEmpty &&
-                              profilePic.startsWith('http')
+                      backgroundImage:
+                          profilePic.isNotEmpty && profilePic.startsWith('http')
                           ? ResizeImage(
                               CachedNetworkImageProvider(profilePic),
                               width: 160,
                               height: 160,
                             )
                           : const AssetImage('assets/icon/default_profile.png')
-                              as ImageProvider,
+                                as ImageProvider,
                     ),
                   ),
                 ),
@@ -331,7 +353,10 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colorScheme.primaryContainer,
                         foregroundColor: colorScheme.onPrimaryContainer,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -339,21 +364,32 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                       ),
                       onPressed: () {
                         Navigator.pop(sheetContext);
-                        _startNewCall(context, groupedLog.peerId, peerName, false);
+                        _startNewCall(
+                          context,
+                          groupedLog.peerId,
+                          peerName,
+                          false,
+                        );
                       },
                       icon: huge.HugeIcon(
                         icon: huge.HugeIcons.strokeRoundedCall02,
                         color: colorScheme.onPrimaryContainer,
                         size: 18,
                       ),
-                      label: const Text('Voice Call', style: TextStyle(fontWeight: FontWeight.w600)),
+                      label: const Text(
+                        'Voice Call',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colorScheme.primary,
                         foregroundColor: colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -361,19 +397,30 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                       ),
                       onPressed: () {
                         Navigator.pop(sheetContext);
-                        _startNewCall(context, groupedLog.peerId, peerName, true);
+                        _startNewCall(
+                          context,
+                          groupedLog.peerId,
+                          peerName,
+                          true,
+                        );
                       },
                       icon: huge.HugeIcon(
                         icon: huge.HugeIcons.strokeRoundedVideo01,
                         color: colorScheme.onPrimary,
                         size: 18,
                       ),
-                      label: const Text('Video Call', style: TextStyle(fontWeight: FontWeight.w600)),
+                      label: const Text(
+                        'Video Call',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                Divider(
+                  height: 1,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
                 Expanded(
                   child: ListView.builder(
                     controller: scrollController,
@@ -387,7 +434,8 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
 
                       final isVideo = type == 'video';
                       final isOutgoing = status == 'outgoing';
-                      final isMissed = status == 'missed' || status == 'declined';
+                      final isMissed =
+                          status == 'missed' || status == 'declined';
 
                       IconData iconData;
                       Color iconColor;
@@ -396,15 +444,21 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                       if (isMissed) {
                         iconData = Icons.call_missed;
                         iconColor = Colors.red;
-                        statusLabel = isVideo ? 'Missed Video Call' : 'Missed Voice Call';
+                        statusLabel = isVideo
+                            ? 'Missed Video Call'
+                            : 'Missed Voice Call';
                       } else if (isOutgoing) {
                         iconData = Icons.call_made;
                         iconColor = Colors.green;
-                        statusLabel = isVideo ? 'Outgoing Video Call' : 'Outgoing Voice Call';
+                        statusLabel = isVideo
+                            ? 'Outgoing Video Call'
+                            : 'Outgoing Voice Call';
                       } else {
                         iconData = Icons.call_received;
                         iconColor = Colors.blue;
-                        statusLabel = isVideo ? 'Incoming Video Call' : 'Incoming Voice Call';
+                        statusLabel = isVideo
+                            ? 'Incoming Video Call'
+                            : 'Incoming Voice Call';
                       }
 
                       return ListTile(
@@ -416,7 +470,9 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                           statusLabel,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: isMissed ? Colors.red : colorScheme.onSurface,
+                            color: isMissed
+                                ? Colors.red
+                                : colorScheme.onSurface,
                           ),
                         ),
                         subtitle: Text(
@@ -480,6 +536,14 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
     return GestureDetector(
       onTap: () {
         if (_activeFilter != label) {
+          int page = label == 'All' ? 0 : 1;
+          if (_pageController.hasClients) {
+            _pageController.animateToPage(
+              page,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
           setState(() {
             _activeFilter = label;
           });
@@ -493,23 +557,31 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
           color: isSelected ? colorScheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Text(
-          label,
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.fastOutSlowIn,
           style: TextStyle(
-            color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+            color: isSelected
+                ? colorScheme.onPrimary
+                : colorScheme.onSurfaceVariant,
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
           ),
+          child: Text(label),
         ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, List<String> allCurrentDocIds) {
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    List<String> allCurrentDocIds,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
 
     if (_isSelectionMode) {
-      final bool allSelected = allCurrentDocIds.isNotEmpty &&
+      final bool allSelected =
+          allCurrentDocIds.isNotEmpty &&
           allCurrentDocIds.every((id) => _selectedDocIds.contains(id));
 
       return AppBar(
@@ -609,17 +681,23 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                 ],
               ),
             ),
-            PopupMenuItem(
+            const PopupMenuItem(
               value: 'clear_all',
               child: Row(
                 children: [
-                  const huge.HugeIcon(
+                  huge.HugeIcon(
                     icon: huge.HugeIcons.strokeRoundedDelete02,
                     color: Colors.red,
                     size: 20,
                   ),
-                  const SizedBox(width: 12),
-                  const Text('Clear All History', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+                  SizedBox(width: 12),
+                  Text(
+                    'Clear All History',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -651,7 +729,8 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
               .orderBy('timestamp', descending: true)
               .snapshots(),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData) {
               return Scaffold(
                 backgroundColor: colorScheme.surface,
                 appBar: _buildAppBar(context, const []),
@@ -668,7 +747,7 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
 
             final docs = snapshot.data?.docs ?? [];
 
-            // Apply Filter (All vs Missed)
+            // Wait, to keep Select All working, we pass the current active filter's docs to AppBar:
             var filteredDocs = docs;
             if (_activeFilter == 'Missed') {
               filteredDocs = docs.where((doc) {
@@ -677,319 +756,345 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                 return status == 'missed' || status == 'declined';
               }).toList();
             }
-
-            final allFilteredDocIds = filteredDocs.map((d) => d.id).toList();
-
-            if (filteredDocs.isEmpty) {
-              return Scaffold(
-                backgroundColor: colorScheme.surface,
-                appBar: _buildAppBar(context, allFilteredDocIds),
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      huge.HugeIcon(
-                        icon: huge.HugeIcons.strokeRoundedCall02,
-                        size: 64,
-                        color: colorScheme.outline,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _activeFilter == 'Missed'
-                            ? 'No missed calls'
-                            : 'No call history yet',
-                        style: TextStyle(
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            // Group consecutive calls for the same peerId under each date section
-            final dateGroups = <String, List<GroupedCallLog>>{};
-
-            for (var doc in filteredDocs) {
-              final data = doc.data() as Map<String, dynamic>;
-              final timestamp = data['timestamp'] as Timestamp?;
-              final peerId = data['peerId'] ?? '';
-
-              String dateLabel = 'Unknown';
-              if (timestamp != null) {
-                DateTime date = timestamp.toDate();
-                DateTime now = DateTime.now();
-                DateTime yesterday = now.subtract(const Duration(days: 1));
-                if (date.year == now.year &&
-                    date.month == now.month &&
-                    date.day == now.day) {
-                  dateLabel = 'Today';
-                } else if (date.year == yesterday.year &&
-                    date.month == yesterday.month &&
-                    date.day == yesterday.day) {
-                  dateLabel = 'Yesterday';
-                } else {
-                  dateLabel = DateFormat('MMMM d, yyyy').format(date);
-                }
-              }
-
-              if (!dateGroups.containsKey(dateLabel)) {
-                dateGroups[dateLabel] = [];
-              }
-
-              final listForDate = dateGroups[dateLabel]!;
-              if (listForDate.isNotEmpty && listForDate.last.peerId == peerId) {
-                listForDate.last.docs.add(doc);
-              } else {
-                listForDate.add(GroupedCallLog(peerId: peerId, docs: [doc]));
-              }
-            }
-
-            final listItems = [];
-            for (var dateLabel in dateGroups.keys) {
-              listItems.add(dateLabel);
-              listItems.addAll(dateGroups[dateLabel]!);
-            }
+            final allFilteredDocIdsForAppBar = filteredDocs
+                .map((d) => d.id)
+                .toList();
 
             return Scaffold(
               backgroundColor: colorScheme.surface,
-              appBar: _buildAppBar(context, allFilteredDocIds),
-              body: ListView.builder(
-                key: ValueKey('list_$_activeFilter'),
+              appBar: _buildAppBar(context, allFilteredDocIdsForAppBar),
+              body: PageView(
+                controller: _pageController,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(top: 8, bottom: 90),
-                itemCount: listItems.length,
-                itemBuilder: (context, index) {
-                  final item = listItems[index];
-
-                  if (item is String) {
-                    return Padding(
-                      padding: const EdgeInsets.only(
-                          left: 20, top: 16, bottom: 8, right: 20),
-                      child: Text(
-                        item,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: colorScheme.primary,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    );
+                onPageChanged: (index) {
+                  final newFilter = index == 0 ? 'All' : 'Missed';
+                  if (_activeFilter != newFilter) {
+                    setState(() {
+                      _activeFilter = newFilter;
+                    });
                   }
-
-                  final groupedLog = item as GroupedCallLog;
-                  final latestData =
-                      groupedLog.latestDoc.data() as Map<String, dynamic>;
-                  final peerId = groupedLog.peerId;
-                  final latestStatus = latestData['status'] ?? 'incoming';
-                  final latestTimestamp = latestData['timestamp'] as Timestamp?;
-
-                  final allDocIds = groupedLog.docs.map((d) => d.id).toSet();
-                  final isGroupSelected =
-                      allDocIds.every((id) => _selectedDocIds.contains(id));
-
-                  final userData = userMap[peerId];
-                  final peerName = userData?['name'] ?? 'User';
-                  final profilePic = userData?['profilepic'] ?? '';
-                  final isOutgoing = latestStatus == 'outgoing';
-                  final isMissed =
-                      latestStatus == 'missed' || latestStatus == 'declined';
-
-                  IconData statusIcon;
-                  Color statusColor;
-                  if (isMissed) {
-                    statusIcon = Icons.call_missed;
-                    statusColor = Colors.red;
-                  } else if (isOutgoing) {
-                    statusIcon = Icons.call_made;
-                    statusColor = Colors.green;
-                  } else {
-                    statusIcon = Icons.call_received;
-                    statusColor = Colors.blue;
-                  }
-
-                  return Container(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: isGroupSelected
-                          ? colorScheme.primaryContainer.withValues(alpha: 0.25)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isGroupSelected
-                            ? colorScheme.primary
-                            : Colors.transparent,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 2),
-                      onTap: () {
-                        if (_isSelectionMode) {
-                          setState(() {
-                            if (isGroupSelected) {
-                              _selectedDocIds.removeAll(allDocIds);
-                              if (_selectedDocIds.isEmpty) {
-                                _isSelectionMode = false;
-                              }
-                            } else {
-                              _selectedDocIds.addAll(allDocIds);
-                            }
-                          });
-                        } else {
-                          _showCallDetailsModal(
-                              context, groupedLog, peerName, profilePic);
-                        }
-                      },
-                      onLongPress: () {
-                        setState(() {
-                          _isSelectionMode = true;
-                          _selectedDocIds.addAll(allDocIds);
-                        });
-                      },
-                      leading: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_isSelectionMode)
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  if (isGroupSelected) {
-                                    _selectedDocIds.removeAll(allDocIds);
-                                    if (_selectedDocIds.isEmpty) {
-                                      _isSelectionMode = false;
-                                    }
-                                  } else {
-                                    _selectedDocIds.addAll(allDocIds);
-                                  }
-                                });
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 10),
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isGroupSelected
-                                      ? colorScheme.primary
-                                      : Colors.transparent,
-                                  border: Border.all(
-                                    color: isGroupSelected
-                                        ? colorScheme.primary
-                                        : colorScheme.onSurface
-                                            .withValues(alpha: 0.35),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: isGroupSelected
-                                    ? const Icon(
-                                        Icons.check,
-                                        size: 14,
-                                        color: Colors.white,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          GestureDetector(
-                            onTap: () {
-                              if (profilePic.isNotEmpty) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        FullScreenProfilePicPage(
-                                      imageUrl: profilePic,
-                                      heroTag: 'call_profile_pic_$peerId',
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                            child: CircleAvatar(
-                              radius: 24,
-                              backgroundColor: colorScheme.primaryContainer,
-                              backgroundImage: profilePic.isNotEmpty &&
-                                      profilePic.startsWith('http')
-                                  ? ResizeImage(
-                                      CachedNetworkImageProvider(profilePic),
-                                      width: 160,
-                                      height: 160,
-                                    )
-                                  : const AssetImage(
-                                          'assets/icon/default_profile.png')
-                                      as ImageProvider,
-                            ),
-                          ),
-                        ],
-                      ),
-                      title: Text(
-                        groupedLog.count > 1
-                            ? '$peerName (${groupedLog.count})'
-                            : peerName,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: isMissed ? Colors.red : colorScheme.onSurface,
-                        ),
-                      ),
-                      subtitle: Row(
-                        children: [
-                          Icon(
-                            statusIcon,
-                            size: 15,
-                            color: statusColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _formatTimestamp(latestTimestamp),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                      trailing: _isSelectionMode
-                          ? null
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: huge.HugeIcon(
-                                    icon: huge.HugeIcons.strokeRoundedCall02,
-                                    color: colorScheme.primary,
-                                    size: 22,
-                                  ),
-                                  onPressed: () {
-                                    _startNewCall(
-                                        context, peerId, peerName, false);
-                                  },
-                                ),
-                                IconButton(
-                                  icon: huge.HugeIcon(
-                                    icon: huge.HugeIcons.strokeRoundedVideo01,
-                                    color: colorScheme.primary,
-                                    size: 22,
-                                  ),
-                                  onPressed: () {
-                                    _startNewCall(
-                                        context, peerId, peerName, true);
-                                  },
-                                ),
-                              ],
-                            ),
-                    ),
-                  );
                 },
+                children: [
+                  _buildCallList(docs, 'All', userMap, colorScheme),
+                  _buildCallList(docs, 'Missed', userMap, colorScheme),
+                ],
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildCallList(
+    List<QueryDocumentSnapshot> docs,
+    String filterType,
+    Map<String, Map<String, dynamic>> userMap,
+    ColorScheme colorScheme,
+  ) {
+    var filteredDocs = docs;
+    if (filterType == 'Missed') {
+      filteredDocs = docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final status = data['status']?.toString() ?? '';
+        return status == 'missed' || status == 'declined';
+      }).toList();
+    }
+
+    if (filteredDocs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            huge.HugeIcon(
+              icon: huge.HugeIcons.strokeRoundedCall02,
+              size: 64,
+              color: colorScheme.outline,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              filterType == 'Missed'
+                  ? 'No missed calls'
+                  : 'No call history yet',
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final dateGroups = <String, List<GroupedCallLog>>{};
+
+    for (var doc in filteredDocs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final timestamp = data['timestamp'] as Timestamp?;
+      final peerId = data['peerId'] ?? '';
+
+      String dateLabel = 'Unknown';
+      if (timestamp != null) {
+        DateTime date = timestamp.toDate();
+        DateTime now = DateTime.now();
+        DateTime yesterday = now.subtract(const Duration(days: 1));
+        if (date.year == now.year &&
+            date.month == now.month &&
+            date.day == now.day) {
+          dateLabel = 'Today';
+        } else if (date.year == yesterday.year &&
+            date.month == yesterday.month &&
+            date.day == yesterday.day) {
+          dateLabel = 'Yesterday';
+        } else {
+          dateLabel = DateFormat('MMMM d, yyyy').format(date);
+        }
+      }
+
+      if (!dateGroups.containsKey(dateLabel)) {
+        dateGroups[dateLabel] = [];
+      }
+
+      final listForDate = dateGroups[dateLabel]!;
+      if (listForDate.isNotEmpty && listForDate.last.peerId == peerId) {
+        listForDate.last.docs.add(doc);
+      } else {
+        listForDate.add(GroupedCallLog(peerId: peerId, docs: [doc]));
+      }
+    }
+
+    final listItems = [];
+    for (var dateLabel in dateGroups.keys) {
+      listItems.add(dateLabel);
+      listItems.addAll(dateGroups[dateLabel]!);
+    }
+
+    return ListView.builder(
+      key: ValueKey('list_$filterType'),
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(top: 8, bottom: 90),
+      itemCount: listItems.length,
+      itemBuilder: (context, index) {
+        final item = listItems[index];
+
+        if (item is String) {
+          return Padding(
+            padding: const EdgeInsets.only(
+              left: 20,
+              top: 16,
+              bottom: 8,
+              right: 20,
+            ),
+            child: Text(
+              item,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: colorScheme.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          );
+        }
+
+        final groupedLog = item as GroupedCallLog;
+        final latestData = groupedLog.latestDoc.data() as Map<String, dynamic>;
+        final peerId = groupedLog.peerId;
+        final latestStatus = latestData['status'] ?? 'incoming';
+        final latestTimestamp = latestData['timestamp'] as Timestamp?;
+
+        final allDocIds = groupedLog.docs.map((d) => d.id).toSet();
+        final isGroupSelected = allDocIds.every(
+          (id) => _selectedDocIds.contains(id),
+        );
+
+        final userData = userMap[peerId];
+        final peerName = userData?['name'] ?? 'User';
+        final profilePic = userData?['profilepic'] ?? '';
+        final isOutgoing = latestStatus == 'outgoing';
+        final isMissed = latestStatus == 'missed' || latestStatus == 'declined';
+
+        IconData statusIcon;
+        Color statusColor;
+        if (isMissed) {
+          statusIcon = Icons.call_missed;
+          statusColor = Colors.red;
+        } else if (isOutgoing) {
+          statusIcon = Icons.call_made;
+          statusColor = Colors.green;
+        } else {
+          statusIcon = Icons.call_received;
+          statusColor = Colors.blue;
+        }
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+          decoration: BoxDecoration(
+            color: isGroupSelected
+                ? colorScheme.primaryContainer.withValues(alpha: 0.25)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isGroupSelected ? colorScheme.primary : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 2,
+            ),
+            onTap: () {
+              if (_isSelectionMode) {
+                setState(() {
+                  if (isGroupSelected) {
+                    _selectedDocIds.removeAll(allDocIds);
+                    if (_selectedDocIds.isEmpty) {
+                      _isSelectionMode = false;
+                    }
+                  } else {
+                    _selectedDocIds.addAll(allDocIds);
+                  }
+                });
+              } else {
+                _showCallDetailsModal(
+                  context,
+                  groupedLog,
+                  peerName,
+                  profilePic,
+                );
+              }
+            },
+            onLongPress: () {
+              setState(() {
+                _isSelectionMode = true;
+                _selectedDocIds.addAll(allDocIds);
+              });
+            },
+            leading: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isSelectionMode)
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isGroupSelected) {
+                          _selectedDocIds.removeAll(allDocIds);
+                          if (_selectedDocIds.isEmpty) {
+                            _isSelectionMode = false;
+                          }
+                        } else {
+                          _selectedDocIds.addAll(allDocIds);
+                        }
+                      });
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 10),
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isGroupSelected
+                            ? colorScheme.primary
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: isGroupSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurface.withValues(alpha: 0.35),
+                          width: 2,
+                        ),
+                      ),
+                      child: isGroupSelected
+                          ? const Icon(
+                              Icons.check,
+                              size: 14,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                  ),
+                GestureDetector(
+                  onTap: () {
+                    if (profilePic.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FullScreenProfilePicPage(
+                            imageUrl: profilePic,
+                            heroTag: 'call_profile_pic_$peerId',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: colorScheme.primaryContainer,
+                    backgroundImage:
+                        profilePic.isNotEmpty && profilePic.startsWith('http')
+                        ? ResizeImage(
+                            CachedNetworkImageProvider(profilePic),
+                            width: 160,
+                            height: 160,
+                          )
+                        : const AssetImage('assets/icon/default_profile.png')
+                              as ImageProvider,
+                  ),
+                ),
+              ],
+            ),
+            title: Text(
+              groupedLog.count > 1
+                  ? '$peerName (${groupedLog.count})'
+                  : peerName,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: isMissed ? Colors.red : colorScheme.onSurface,
+              ),
+            ),
+            subtitle: Row(
+              children: [
+                Icon(statusIcon, size: 15, color: statusColor),
+                const SizedBox(width: 6),
+                Text(
+                  _formatTimestamp(latestTimestamp),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            trailing: _isSelectionMode
+                ? null
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedCall02,
+                          color: colorScheme.primary,
+                          size: 22,
+                        ),
+                        onPressed: () {
+                          _startNewCall(context, peerId, peerName, false);
+                        },
+                      ),
+                      IconButton(
+                        icon: huge.HugeIcon(
+                          icon: huge.HugeIcons.strokeRoundedVideo01,
+                          color: colorScheme.primary,
+                          size: 22,
+                        ),
+                        onPressed: () {
+                          _startNewCall(context, peerId, peerName, true);
+                        },
+                      ),
+                    ],
+                  ),
+          ),
         );
       },
     );

@@ -1,20 +1,23 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-pickImage(ImageSource source) async {
-  final ImagePicker _picker = ImagePicker();
-  
-  final XFile? image = await _picker.pickImage(source: source);
+Future<Uint8List?> pickImage(ImageSource source) async {
+  final ImagePicker picker = ImagePicker();
+
+  final XFile? image = await picker.pickImage(source: source);
   if (image != null) {
     return await image.readAsBytes();
   }
   print('No image selected');
+  return null;
 }
 
 Future<XFile?> pickVideoFile(ImageSource source) async {
-  final ImagePicker _picker = ImagePicker();
-  
-  final XFile? video = await _picker.pickVideo(source: source);
+  final ImagePicker picker = ImagePicker();
+
+  final XFile? video = await picker.pickVideo(source: source);
   if (video != null) {
     return video;
   }
@@ -23,9 +26,9 @@ Future<XFile?> pickVideoFile(ImageSource source) async {
 }
 
 Future<XFile?> pickMediaFile() async {
-  final ImagePicker _picker = ImagePicker();
-  
-  final XFile? media = await _picker.pickMedia();
+  final ImagePicker picker = ImagePicker();
+
+  final XFile? media = await picker.pickMedia();
   if (media != null) {
     return media;
   }
@@ -33,8 +36,12 @@ Future<XFile?> pickMediaFile() async {
   return null;
 }
 
-showSnackBar(String content, context) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(content)),
-  );
+void showSnackBar(String content, context) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Text(
+      content,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
+  ));
 }

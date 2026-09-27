@@ -35,11 +35,14 @@ class UpdateService {
       });
 
       // Use zero interval in debug so you always get fresh values.
-      await _rc!.setConfigSettings(RemoteConfigSettings(
-        fetchTimeout: const Duration(seconds: 10),
-        minimumFetchInterval:
-            kDebugMode ? Duration.zero : const Duration(hours: 1),
-      ));
+      await _rc!.setConfigSettings(
+        RemoteConfigSettings(
+          fetchTimeout: const Duration(seconds: 10),
+          minimumFetchInterval: kDebugMode
+              ? Duration.zero
+              : const Duration(hours: 1),
+        ),
+      );
 
       final activated = await _rc!.fetchAndActivate();
       debugPrint('[UpdateService] fetchAndActivate → activated=$activated');
@@ -58,11 +61,15 @@ class UpdateService {
       debugPrint('[UpdateService] forceUpdate=$forceUpdate');
 
       if (latestVersion.isEmpty) {
-        debugPrint('[UpdateService] latest_version is empty — skipping update check.');
+        debugPrint(
+          '[UpdateService] latest_version is empty — skipping update check.',
+        );
         return null;
       }
       if (downloadUrl.isEmpty) {
-        debugPrint('[UpdateService] Both download_url and update_url are empty — skipping update check.');
+        debugPrint(
+          '[UpdateService] Both download_url and update_url are empty — skipping update check.',
+        );
         return null;
       }
 
@@ -71,7 +78,9 @@ class UpdateService {
       debugPrint('[UpdateService] currentVersion="$currentVersion"');
 
       if (_isNewer(latestVersion, currentVersion)) {
-        debugPrint('[UpdateService] Update available: $currentVersion → $latestVersion');
+        debugPrint(
+          '[UpdateService] Update available: $currentVersion → $latestVersion',
+        );
         return UpdateInfo(
           currentVersion: currentVersion,
           latestVersion: latestVersion,
@@ -111,8 +120,13 @@ class UpdateService {
     // Strip build numbers and pre-release tags (e.g. "1.3.8+3" -> "1.3.8", "1.4.0-beta" -> "1.4.0")
     clean = clean.split('+')[0].split('-')[0].trim();
 
-    final parts = clean.split('.').map((s) => int.tryParse(s.trim()) ?? 0).toList();
-    while (parts.length < 3) parts.add(0);
+    final parts = clean
+        .split('.')
+        .map((s) => int.tryParse(s.trim()) ?? 0)
+        .toList();
+    while (parts.length < 3) {
+      parts.add(0);
+    }
     return parts;
   }
 }

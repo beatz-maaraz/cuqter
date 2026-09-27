@@ -7,7 +7,7 @@ class ChatProvider extends ChangeNotifier {
   final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
 
-  // TOGGLE THIS: 
+  // TOGGLE THIS:
   // - useDirectApiKey = true: Talks to Google AI (Online)
   // - useDirectApiKey = false: Talks to Your Computer (Online)
   // - isOfflineMode = true: Talks to Local AI (Offline via Ollama)
@@ -16,13 +16,13 @@ class ChatProvider extends ChangeNotifier {
 
   // Configuration for Your Python Server
   // Using physical IP of this Windows machine makes it accessible to Mobiles via Wi-Fi as well as Windows
-  static const String _serverUrl = "http://192.168.217.1:8000"; 
-  // static const String _serverUrl = "http://10.0.2.2:8000"; 
+  static const String _serverUrl = "http://192.168.217.1:8000";
+  // static const String _serverUrl = "http://10.0.2.2:8000";
 
   // Configuration for Direct Gemini API
   static const String _geminiApiKey = "AIzaSyBRTAHDq_EltmgEo030MzDMj85QVxYv_Jw";
   GenerativeModel? _directModel;
-  
+
   GenerativeModel _getDirectModel() {
     return _directModel ??= GenerativeModel(
       model: 'gemini-1.5-pro',
@@ -49,10 +49,7 @@ class ChatProvider extends ChangeNotifier {
         await _sendServerMessage(text);
       }
     } catch (e) {
-      _messages.add({
-        'role': 'bot',
-        'text': 'Error: Failed to connect. ($e)',
-      });
+      _messages.add({'role': 'bot', 'text': 'Error: Failed to connect. ($e)'});
       if (kDebugMode) print('Error sending message: $e');
     } finally {
       _isLoading = false;
@@ -64,21 +61,23 @@ class ChatProvider extends ChangeNotifier {
     try {
       final content = [Content.text(text)];
       final response = await _getDirectModel().generateContent(content);
-      
+
       final responseText = response.text;
       if (responseText != null && responseText.trim().isNotEmpty) {
         _messages.add({'role': 'bot', 'text': responseText});
       } else {
         _messages.add({
-          'role': 'bot', 
-          'text': 'Empty response. This might happen if the prompt was blocked or could not be processed.'
+          'role': 'bot',
+          'text':
+              'Empty response. This might happen if the prompt was blocked or could not be processed.',
         });
       }
     } catch (e) {
       if (e.toString().contains('API_KEY_INVALID')) {
         _messages.add({
           'role': 'bot',
-          'text': 'Error: Invalid Gemini API Key. Please check the _geminiApiKey in chat_provider.dart.',
+          'text':
+              'Error: Invalid Gemini API Key. Please check the _geminiApiKey in chat_provider.dart.',
         });
       } else {
         rethrow; // Let sendMessage handle generic errors
@@ -102,7 +101,10 @@ class ChatProvider extends ChangeNotifier {
       final data = jsonDecode(response.body);
       _messages.add({'role': 'bot', 'text': data['response']});
     } else {
-      _messages.add({'role': 'bot', 'text': 'Backend Error: ${response.statusCode}'});
+      _messages.add({
+        'role': 'bot',
+        'text': 'Backend Error: ${response.statusCode}',
+      });
     }
   }
 
@@ -122,7 +124,10 @@ class ChatProvider extends ChangeNotifier {
       final data = jsonDecode(response.body);
       _messages.add({'role': 'bot', 'text': data['response']});
     } else {
-      _messages.add({'role': 'bot', 'text': 'Offline AI Error: ${response.statusCode}'});
+      _messages.add({
+        'role': 'bot',
+        'text': 'Offline AI Error: ${response.statusCode}',
+      });
     }
   }
 

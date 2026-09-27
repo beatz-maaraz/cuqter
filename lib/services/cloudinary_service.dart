@@ -12,14 +12,16 @@ class CloudinaryService {
   /// - 'public_id': the public ID of the uploaded image
   static Future<Map<String, String>?> uploadImage(Uint8List fileBytes) async {
     try {
-      final String cloudName = CloudinaryConfig.cloudName;
-      final String uploadPreset = CloudinaryConfig.uploadPreset;
+      const String cloudName = CloudinaryConfig.cloudName;
+      const String uploadPreset = CloudinaryConfig.uploadPreset;
 
       if (cloudName == 'YOUR_CLOUD_NAME' ||
           cloudName.isEmpty ||
           uploadPreset == 'YOUR_UPLOAD_PRESET' ||
           uploadPreset.isEmpty) {
-        debugPrint('Cloudinary credentials/preset not set. Please update lib/utils/cloudinary_config.dart.');
+        debugPrint(
+          'Cloudinary credentials/preset not set. Please update lib/utils/cloudinary_config.dart.',
+        );
         return null;
       }
 
@@ -57,7 +59,6 @@ class CloudinaryService {
     }
   }
 
-
   /// Upload any file to Cloudinary with custom folder and resource type
   /// resourceType can be 'image', 'video', or 'raw'
   static Future<Map<String, String>?> uploadFile({
@@ -68,22 +69,29 @@ class CloudinaryService {
     required String resourceType,
     void Function(double progress)? onProgress,
   }) async {
-    assert(fileBytes != null || filePath != null, 'Either fileBytes or filePath must be provided');
+    assert(
+      fileBytes != null || filePath != null,
+      'Either fileBytes or filePath must be provided',
+    );
     try {
-      final String cloudName = CloudinaryConfig.cloudName;
-      final String uploadPreset = CloudinaryConfig.uploadPreset;
+      const String cloudName = CloudinaryConfig.cloudName;
+      const String uploadPreset = CloudinaryConfig.uploadPreset;
 
       if (cloudName == 'YOUR_CLOUD_NAME' ||
           cloudName.isEmpty ||
           uploadPreset == 'YOUR_UPLOAD_PRESET' ||
           uploadPreset.isEmpty) {
-        debugPrint('Cloudinary credentials/preset not set. Please update lib/utils/cloudinary_config.dart.');
+        debugPrint(
+          'Cloudinary credentials/preset not set. Please update lib/utils/cloudinary_config.dart.',
+        );
         return null;
       }
 
       var request = MultipartRequestWithProgress(
         'POST',
-        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/$resourceType/upload'),
+        Uri.parse(
+          'https://api.cloudinary.com/v1_1/$cloudName/$resourceType/upload',
+        ),
         onProgress: (sent, total) {
           if (onProgress != null && total > 0) {
             onProgress(sent / total);
@@ -93,7 +101,7 @@ class CloudinaryService {
 
       request.fields['upload_preset'] = uploadPreset;
       request.fields['folder'] = folderPath;
-      
+
       String publicId = fileName;
       if (resourceType != 'raw') {
         final int lastDot = fileName.lastIndexOf('.');
@@ -113,11 +121,7 @@ class CloudinaryService {
         );
       } else if (fileBytes != null) {
         request.files.add(
-          http.MultipartFile.fromBytes(
-            'file',
-            fileBytes,
-            filename: fileName,
-          ),
+          http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
         );
       }
 
@@ -141,19 +145,24 @@ class CloudinaryService {
   }
 
   /// Delete media from Cloudinary using the Admin/Upload destroy API with signature
-  static Future<bool> deleteMedia(String publicId, {String resourceType = 'image'}) async {
+  static Future<bool> deleteMedia(
+    String publicId, {
+    String resourceType = 'image',
+  }) async {
     try {
-      final String cloudName = CloudinaryConfig.cloudName;
-      final String apiKey = CloudinaryConfig.apiKey;
-      final String apiSecret = CloudinaryConfig.apiSecret;
+      const String cloudName = CloudinaryConfig.cloudName;
+      const String apiKey = CloudinaryConfig.apiKey;
+      const String apiSecret = CloudinaryConfig.apiSecret;
 
-      if (cloudName == 'YOUR_CLOUD_NAME' || apiKey == 'YOUR_API_KEY' || apiSecret == 'YOUR_API_SECRET') {
+      if (cloudName == 'YOUR_CLOUD_NAME' ||
+          apiKey == 'YOUR_API_KEY' ||
+          apiSecret == 'YOUR_API_SECRET') {
         debugPrint('Cloudinary credentials not set, skipping deletion.');
         return false;
       }
 
       final int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      
+
       // Parameters to sign (sorted alphabetically)
       final Map<String, dynamic> params = {
         'public_id': publicId,
@@ -164,7 +173,9 @@ class CloudinaryService {
       final String signature = _generateSignature(params, apiSecret);
 
       final response = await http.post(
-        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/$resourceType/destroy'),
+        Uri.parse(
+          'https://api.cloudinary.com/v1_1/$cloudName/$resourceType/destroy',
+        ),
         body: {
           'public_id': publicId,
           'timestamp': timestamp.toString(),
@@ -192,7 +203,10 @@ class CloudinaryService {
     }
   }
 
-  static String _generateSignature(Map<String, dynamic> params, String apiSecret) {
+  static String _generateSignature(
+    Map<String, dynamic> params,
+    String apiSecret,
+  ) {
     var sortedKeys = params.keys.toList()..sort();
     List<String> parts = [];
     for (var key in sortedKeys) {
@@ -200,7 +214,7 @@ class CloudinaryService {
     }
     String parameterString = parts.join("&");
     String stringToSign = "$parameterString$apiSecret";
-    
+
     var bytes = utf8.encode(stringToSign);
     return sha1.convert(bytes).toString();
   }
@@ -213,7 +227,7 @@ class CloudinaryService {
       if (index == -1) {
         index = url.indexOf('profile/');
       }
-      
+
       if (index != -1) {
         String sub = url.substring(index);
         final lastDot = sub.lastIndexOf('.');
@@ -222,7 +236,7 @@ class CloudinaryService {
         }
         return Uri.decodeFull(sub);
       }
-      
+
       // Fallback to original parsing if folder markers are not found
       final uploadIndex = url.indexOf('/upload/');
       if (uploadIndex != -1) {
@@ -231,7 +245,9 @@ class CloudinaryService {
         List<String> segments = sub.split('/');
         int skipCount = 0;
         for (var segment in segments) {
-          if (segment.contains(',') || segment.contains('=') || RegExp(r'^v\d+$').hasMatch(segment)) {
+          if (segment.contains(',') ||
+              segment.contains('=') ||
+              RegExp(r'^v\d+$').hasMatch(segment)) {
             skipCount++;
           } else {
             break;
@@ -257,10 +273,10 @@ class MultipartRequestWithProgress extends http.MultipartRequest {
   final void Function(int bytesSent, int totalBytes) onProgress;
 
   MultipartRequestWithProgress(
-    String method,
-    Uri url, {
+    super.method,
+    super.url, {
     required this.onProgress,
-  }) : super(method, url);
+  });
 
   @override
   http.ByteStream finalize() {

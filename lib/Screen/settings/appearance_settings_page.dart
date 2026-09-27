@@ -92,7 +92,10 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
       appBar: AppBar(
         title: Text(
           'Appearance',
-          style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -138,8 +141,12 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     );
   }
 
-  Widget _buildLivePreview(ColorScheme colorScheme, ThemeProvider themeProvider) {
-    final isDark = themeProvider.themeMode == ThemeMode.dark ||
+  Widget _buildLivePreview(
+    ColorScheme colorScheme,
+    ThemeProvider themeProvider,
+  ) {
+    final isDark =
+        themeProvider.themeMode == ThemeMode.dark ||
         (themeProvider.themeMode == ThemeMode.system &&
             MediaQuery.of(context).platformBrightness == Brightness.dark);
 
@@ -173,11 +180,12 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                             child: Image.asset(
                               'assets/icon/icon.png',
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Icon(
-                                Icons.chat_bubble_rounded,
-                                color: colorScheme.primary,
-                                size: 16,
-                              ),
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Icon(
+                                    Icons.chat_bubble_rounded,
+                                    color: colorScheme.primary,
+                                    size: 16,
+                                  ),
                             ),
                           )
                         : Icon(
@@ -223,15 +231,12 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                     color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ],
               ),
               child: const Text(
                 'How does the new theme setup look to you?',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.black87),
               ),
             ),
           ),
@@ -252,10 +257,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
               ),
               child: const Text(
                 'Wow, the dynamic brand color is awesome! 🎨✨',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.white),
               ),
             ),
           ),
@@ -264,7 +266,10 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     );
   }
 
-  Widget _buildThemeSelector(ThemeProvider themeProvider, ColorScheme colorScheme) {
+  Widget _buildThemeSelector(
+    ThemeProvider themeProvider,
+    ColorScheme colorScheme,
+  ) {
     return Row(
       children: [
         _buildThemeCard(
@@ -329,7 +334,9 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
             children: [
               huge.HugeIcon(
                 icon: icon,
-                color: isSelected ? Colors.white : colorScheme.onSurface.withValues(alpha: 0.6),
+                color: isSelected
+                    ? Colors.white
+                    : colorScheme.onSurface.withValues(alpha: 0.6),
                 size: 24,
               ),
               const SizedBox(height: 8),
@@ -348,13 +355,18 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     );
   }
 
-  Widget _buildAccentColorPicker(ThemeProvider themeProvider, ColorScheme colorScheme) {
+  Widget _buildAccentColorPicker(
+    ThemeProvider themeProvider,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
         color: colorScheme.onSurface.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
       ),
       child: Wrap(
         alignment: WrapAlignment.center,
@@ -362,7 +374,8 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
         runSpacing: 14,
         children: _accentColors.map((colorInfo) {
           final color = colorInfo['color'] as Color;
-          final isSelected = themeProvider.primaryColor.toARGB32() == color.toARGB32();
+          final isSelected =
+              themeProvider.primaryColor.toARGB32() == color.toARGB32();
           return GestureDetector(
             onTap: () => themeProvider.updatePrimaryColor(color),
             child: AnimatedContainer(
@@ -373,7 +386,9 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                 color: color,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? colorScheme.onSurface : Colors.transparent,
+                  color: isSelected
+                      ? colorScheme.onSurface
+                      : Colors.transparent,
                   width: 3.0,
                 ),
                 boxShadow: [
@@ -385,11 +400,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                 ],
               ),
               child: isSelected
-                  ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 20,
-                    )
+                  ? const Icon(Icons.check, color: Colors.white, size: 20)
                   : null,
             ),
           );
@@ -419,7 +430,9 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                 color: colorScheme.onSurface.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.08),
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.onSurface.withValues(alpha: 0.08),
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -434,15 +447,20 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                             width: 44,
                             height: 44,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(colors: colors),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(Icons.chat_bubble_rounded, color: textColor, size: 22),
-                            ),
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(colors: colors),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.chat_bubble_rounded,
+                                    color: textColor,
+                                    size: 22,
+                                  ),
+                                ),
                           ),
                         )
                       : Container(
@@ -469,7 +487,9 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                     iconData['name'].split(' ').last,
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       color: colorScheme.onSurface,
                     ),
                   ),
@@ -540,8 +560,16 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildMockAppIcon('Camera', Colors.grey.shade800, Icons.camera_alt),
-                        _buildMockAppIcon('Mail', Colors.blue.shade800, Icons.mail),
+                        _buildMockAppIcon(
+                          'Camera',
+                          Colors.grey.shade800,
+                          Icons.camera_alt,
+                        ),
+                        _buildMockAppIcon(
+                          'Mail',
+                          Colors.blue.shade800,
+                          Icons.mail,
+                        ),
                         // Cuqter App Mock Launcher Icon
                         Column(
                           mainAxisSize: MainAxisSize.min,
@@ -554,7 +582,9 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                                       borderRadius: BorderRadius.circular(13),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: activeColors.first.withValues(alpha: 0.4),
+                                          color: activeColors.first.withValues(
+                                            alpha: 0.4,
+                                          ),
                                           blurRadius: 6,
                                           offset: const Offset(0, 3),
                                         ),
@@ -565,11 +595,13 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                                       child: Image.asset(
                                         'assets/icon/icon.png',
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Icon(
-                                          Icons.chat_bubble_rounded,
-                                          color: activeTextColor,
-                                          size: 24,
-                                        ),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Icon(
+                                                  Icons.chat_bubble_rounded,
+                                                  color: activeTextColor,
+                                                  size: 24,
+                                                ),
                                       ),
                                     ),
                                   )
@@ -585,7 +617,9 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                                       borderRadius: BorderRadius.circular(13),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: activeColors.first.withValues(alpha: 0.4),
+                                          color: activeColors.first.withValues(
+                                            alpha: 0.4,
+                                          ),
                                           blurRadius: 6,
                                           offset: const Offset(0, 3),
                                         ),
@@ -617,7 +651,12 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
                             ),
                           ],
                         ),
-                        _buildMockAppIcon('Photos', Colors.white, Icons.photo_library, iconColor: Colors.amber.shade700),
+                        _buildMockAppIcon(
+                          'Photos',
+                          Colors.white,
+                          Icons.photo_library,
+                          iconColor: Colors.amber.shade700,
+                        ),
                       ],
                     ),
                   ),
@@ -630,7 +669,12 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
     );
   }
 
-  Widget _buildMockAppIcon(String label, Color bgColor, IconData icon, {Color iconColor = Colors.white}) {
+  Widget _buildMockAppIcon(
+    String label,
+    Color bgColor,
+    IconData icon, {
+    Color iconColor = Colors.white,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -648,11 +692,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage> {
               ),
             ],
           ),
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 24,
-          ),
+          child: Icon(icon, color: iconColor, size: 24),
         ),
         const SizedBox(height: 6),
         Text(

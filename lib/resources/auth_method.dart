@@ -6,9 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class AuthMethod {
-
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -22,7 +20,10 @@ class AuthMethod {
   }) async {
     String res = "Some error occurred";
     try {
-      if (name.isNotEmpty && username.isNotEmpty && email.isNotEmpty && password.isNotEmpty) {
+      if (name.isNotEmpty &&
+          username.isNotEmpty &&
+          email.isNotEmpty &&
+          password.isNotEmpty) {
         // Check if username is already taken
         final QuerySnapshot usernameResult = await _firestore
             .collection('users')
@@ -42,9 +43,11 @@ class AuthMethod {
         }
 
         UserCredential cred = await _auth.createUserWithEmailAndPassword(
-            email: email.trim(), password: password);
+          email: email.trim(),
+          password: password,
+        );
 
-        model.user _user = model.user(
+        model.user user = model.user(
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password: password,
@@ -53,7 +56,7 @@ class AuthMethod {
           profilepic: profilepic,
         );
 
-        Map<String, dynamic> userData = _user.toJson();
+        Map<String, dynamic> userData = user.toJson();
         if (cloudinaryPublicId != null) {
           userData['cloudinary_public_id'] = cloudinaryPublicId;
         }
@@ -71,7 +74,7 @@ class AuthMethod {
       } else if (err.code == 'email-already-in-use') {
         res = 'The account already exists for that email.';
       } else {
-         res = err.message ?? "An error occurred";
+        res = err.message ?? "An error occurred";
       }
       if (kDebugMode) {
         print(err.toString());
@@ -85,12 +88,15 @@ class AuthMethod {
     return res;
   }
 
-  Future<String> loginuser({required String emailOrUsername, required String password,}) async {
+  Future<String> loginuser({
+    required String emailOrUsername,
+    required String password,
+  }) async {
     String res = "Some error occurred";
     try {
       if (emailOrUsername.isNotEmpty && password.isNotEmpty) {
         String email = emailOrUsername.trim();
-        
+
         // If it's a username (no '@'), retrieve associated email from Firestore
         if (!email.contains('@')) {
           final QuerySnapshot result = await _firestore
@@ -101,11 +107,14 @@ class AuthMethod {
           if (result.docs.isEmpty) {
             return "Username not found.";
           }
-          email = (result.docs.first.data() as Map<String, dynamic>)['email'] ?? '';
+          email =
+              (result.docs.first.data() as Map<String, dynamic>)['email'] ?? '';
         }
 
         await _auth.signInWithEmailAndPassword(
-            email: email, password: password.trim());
+          email: email,
+          password: password.trim(),
+        );
         res = "success";
       } else {
         res = "Please enter all the fields";
@@ -180,7 +189,8 @@ class AuthMethod {
         cred = await _auth.signInWithPopup(googleProvider);
       } else {
         final GoogleSignIn googleSignIn = GoogleSignIn(
-          serverClientId: '921725231252-gtmrmn6jmlt4m9p64n9n2m8th5ue6sqg.apps.googleusercontent.com',
+          serverClientId:
+              '921725231252-gtmrmn6jmlt4m9p64n9n2m8th5ue6sqg.apps.googleusercontent.com',
         );
         final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
@@ -188,7 +198,8 @@ class AuthMethod {
           return "cancelled";
         }
 
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
         final AuthCredential credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
@@ -200,7 +211,10 @@ class AuthMethod {
       User? user = cred.user;
 
       if (user != null) {
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        DocumentSnapshot userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
 
         String name = user.displayName ?? "User";
         String email = user.email ?? "";
@@ -236,7 +250,10 @@ class AuthMethod {
             profilepic: profilePic,
           );
 
-          await _firestore.collection('users').doc(user.uid).set(newUser.toJson());
+          await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .set(newUser.toJson());
 
           try {
             final prefs = await SharedPreferences.getInstance();
@@ -252,10 +269,19 @@ class AuthMethod {
           if (data != null) {
             try {
               final prefs = await SharedPreferences.getInstance();
-              await prefs.setString('cached_profile_name', data['name'] ?? name);
-              await prefs.setString('cached_profile_username', data['username'] ?? '');
+              await prefs.setString(
+                'cached_profile_name',
+                data['name'] ?? name,
+              );
+              await prefs.setString(
+                'cached_profile_username',
+                data['username'] ?? '',
+              );
               await prefs.setString('cached_profile_bio', data['bio'] ?? '');
-              await prefs.setString('cached_profile_pic', data['profilepic'] ?? profilePic);
+              await prefs.setString(
+                'cached_profile_pic',
+                data['profilepic'] ?? profilePic,
+              );
             } catch (e) {
               if (kDebugMode) print('Error caching details: $e');
             }
@@ -291,7 +317,10 @@ class AuthMethod {
 
   Future<DocumentSnapshot> getUserDetails() async {
     User currentUser = _auth.currentUser!;
-    DocumentSnapshot snap = await _firestore.collection('users').doc(currentUser.uid).get();
+    DocumentSnapshot snap = await _firestore
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
     return snap;
   }
 }

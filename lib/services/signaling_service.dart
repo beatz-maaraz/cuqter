@@ -30,8 +30,8 @@ class SignalingService {
           'stun:stun2.l.google.com:19302',
           'stun:stun3.l.google.com:19302',
           'stun:stun4.l.google.com:19302',
-        ]
-      }
+        ],
+      },
     ],
     'sdpSemantics': 'unified-plan',
   };
@@ -80,23 +80,19 @@ class SignalingService {
 
     // Add the RTCSessionDescription to the room with offer constraints
     Map<String, dynamic> offerOptions = {
-      'mandatory': {
-        'OfferToReceiveAudio': true,
-        'OfferToReceiveVideo': true,
-      },
+      'mandatory': {'OfferToReceiveAudio': true, 'OfferToReceiveVideo': true},
       'optional': [],
     };
-    RTCSessionDescription offer = await peerConnection!.createOffer(offerOptions);
+    RTCSessionDescription offer = await peerConnection!.createOffer(
+      offerOptions,
+    );
     await peerConnection!.setLocalDescription(offer);
 
     Map<String, dynamic> roomWithOffer = {
-      'offer': {
-        'type': offer.type,
-        'sdp': offer.sdp,
-      }
+      'offer': {'type': offer.type, 'sdp': offer.sdp},
     };
     await roomRef.update(roomWithOffer);
-    
+
     if (onRoomCreated != null) {
       onRoomCreated!(currentRoomId!);
     }
@@ -108,7 +104,7 @@ class SignalingService {
         return;
       }
       var data = event.snapshot.value as Map<dynamic, dynamic>;
-      
+
       var remoteDesc = await peerConnection?.getRemoteDescription();
       if (remoteDesc != null) {
         return; // Already set
@@ -118,8 +114,11 @@ class SignalingService {
         var answer = data['answer'];
         var sdp = answer['sdp'];
         var type = answer['type'];
-        
-        RTCSessionDescription answerDescription = RTCSessionDescription(sdp, type);
+
+        RTCSessionDescription answerDescription = RTCSessionDescription(
+          sdp,
+          type,
+        );
         await peerConnection?.setRemoteDescription(answerDescription);
       }
     });
@@ -143,7 +142,7 @@ class SignalingService {
     currentRoomId = roomId;
     DatabaseReference roomRef = _database.ref('calls/$roomId');
     var roomSnapshot = await roomRef.get();
-    
+
     if (!roomSnapshot.exists) {
       debugPrint('Room not found');
       return;
@@ -176,10 +175,7 @@ class SignalingService {
     await peerConnection!.setLocalDescription(answer);
 
     await roomRef.update({
-      'answer': {
-        'type': answer.type,
-        'sdp': answer.sdp,
-      }
+      'answer': {'type': answer.type, 'sdp': answer.sdp},
     });
 
     // Listen for remote ICE candidates

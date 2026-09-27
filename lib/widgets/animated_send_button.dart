@@ -21,7 +21,8 @@ class AnimatedSendButton extends StatefulWidget {
   State<AnimatedSendButton> createState() => _AnimatedSendButtonState();
 }
 
-class _AnimatedSendButtonState extends State<AnimatedSendButton> with SingleTickerProviderStateMixin {
+class _AnimatedSendButtonState extends State<AnimatedSendButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _rotationAnimation;
@@ -36,22 +37,34 @@ class _AnimatedSendButtonState extends State<AnimatedSendButton> with SingleTick
 
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 0.7).chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween(
+          begin: 1.0,
+          end: 0.7,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 20.0,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 0.7, end: 1.0).chain(CurveTween(curve: Curves.elasticOut)),
+        tween: Tween(
+          begin: 0.7,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
         weight: 80.0,
       ),
     ]).animate(_controller);
 
     _rotationAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: -0.2).chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween(
+          begin: 0.0,
+          end: -0.2,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 20.0,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: -0.2, end: 0.0).chain(CurveTween(curve: Curves.elasticOut)),
+        tween: Tween(
+          begin: -0.2,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
         weight: 80.0,
       ),
     ]).animate(_controller);

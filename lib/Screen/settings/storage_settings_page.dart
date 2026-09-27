@@ -32,7 +32,7 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
   int _audioCount = 0;
   int _docCount = 0;
   int _cacheCount = 0;
-  
+
   bool _isLoading = true;
   bool _useLessData = false;
   bool _autoDownloadMedia = true;
@@ -49,7 +49,8 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
       final prefs = await SharedPreferences.getInstance();
       setState(() {
         _useLessData = prefs.getBool('storage_use_less_data') ?? false;
-        _autoDownloadMedia = prefs.getBool('storage_auto_download_media') ?? true;
+        _autoDownloadMedia =
+            prefs.getBool('storage_auto_download_media') ?? true;
       });
     } catch (e) {
       debugPrint('Error loading preferences: $e');
@@ -101,7 +102,8 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
           _cacheSize = cacheDetails.size;
           _cacheCount = cacheDetails.count;
 
-          _totalSize = _photoSize + _videoSize + _audioSize + _docSize + _cacheSize;
+          _totalSize =
+              _photoSize + _videoSize + _audioSize + _docSize + _cacheSize;
           _isLoading = false;
         });
       }
@@ -122,7 +124,10 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
     try {
       final dir = Directory(path);
       if (await dir.exists()) {
-        await for (final file in dir.list(recursive: true, followLinks: false)) {
+        await for (final file in dir.list(
+          recursive: true,
+          followLinks: false,
+        )) {
           if (file is File) {
             totalSize += await file.length();
             fileCount++;
@@ -141,7 +146,10 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
     try {
       final tempDir = await getTemporaryDirectory();
       if (await tempDir.exists()) {
-        await for (final file in tempDir.list(recursive: true, followLinks: false)) {
+        await for (final file in tempDir.list(
+          recursive: true,
+          followLinks: false,
+        )) {
           if (file is File) {
             totalSize += await file.length();
             fileCount++;
@@ -179,7 +187,7 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
           }
         }
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Temporary cache cleared successfully')),
@@ -188,9 +196,9 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
     } catch (e) {
       debugPrint('Error clearing cache: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to clear cache: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to clear cache: $e')));
       }
     }
 
@@ -232,7 +240,9 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
               Text(
                 'This will permanently delete all downloaded files (photos, videos, audio, and documents) saved by Cuqter on your device. You can download them again from chats at any time.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
+                style: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -247,7 +257,10 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                     ),
                   ),
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Delete All', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Delete All',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -255,7 +268,8 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                 width: double.infinity,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    backgroundColor: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                     foregroundColor: colorScheme.onSurface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -263,7 +277,10 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                     ),
                   ),
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -277,14 +294,19 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
         final photoPath = await LocalStorageService.getLocalFolderPath('image');
         final videoPath = await LocalStorageService.getLocalFolderPath('video');
         final audioPath = await LocalStorageService.getLocalFolderPath('audio');
-        final docPath = await LocalStorageService.getLocalFolderPath('document');
+        final docPath = await LocalStorageService.getLocalFolderPath(
+          'document',
+        );
 
         final paths = [photoPath, videoPath, audioPath, docPath];
         for (var path in paths) {
           if (path != null) {
             final dir = Directory(path);
             if (await dir.exists()) {
-              await for (final file in dir.list(recursive: true, followLinks: false)) {
+              await for (final file in dir.list(
+                recursive: true,
+                followLinks: false,
+              )) {
                 if (file is File) {
                   try {
                     await file.delete();
@@ -320,7 +342,10 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
       appBar: AppBar(
         title: Text(
           'Storage & Data',
-          style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -337,91 +362,100 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                 const SizedBox(height: 30),
                 _buildSectionLabel('STORAGE BREAKDOWN'),
                 const SizedBox(height: 10),
-                _buildGroupedSection(children: [
-                  _buildStorageBreakdownTile(
-                    icon: huge.HugeIcons.strokeRoundedImage01,
-                    title: 'Photos',
-                    size: _photoSize,
-                    fileCount: _photoCount,
-                    color: Colors.blueAccent,
-                  ),
-                  _buildStorageBreakdownTile(
-                    icon: huge.HugeIcons.strokeRoundedVideo01,
-                    title: 'Videos',
-                    size: _videoSize,
-                    fileCount: _videoCount,
-                    color: Colors.redAccent,
-                  ),
-                  _buildStorageBreakdownTile(
-                    icon: huge.HugeIcons.strokeRoundedCall,
-                    title: 'Voice & Audio',
-                    size: _audioSize,
-                    fileCount: _audioCount,
-                    color: Colors.greenAccent,
-                  ),
-                  _buildStorageBreakdownTile(
-                    icon: huge.HugeIcons.strokeRoundedDocumentCode,
-                    title: 'Documents & Files',
-                    size: _docSize,
-                    fileCount: _docCount,
-                    color: Colors.orangeAccent,
-                  ),
-                  _buildStorageBreakdownTile(
-                    icon: huge.HugeIcons.strokeRoundedDatabase,
-                    title: 'Cached Data',
-                    size: _cacheSize,
-                    fileCount: _cacheCount,
-                    color: Colors.purpleAccent,
-                  ),
-                ]),
+                _buildGroupedSection(
+                  children: [
+                    _buildStorageBreakdownTile(
+                      icon: huge.HugeIcons.strokeRoundedImage01,
+                      title: 'Photos',
+                      size: _photoSize,
+                      fileCount: _photoCount,
+                      color: Colors.blueAccent,
+                    ),
+                    _buildStorageBreakdownTile(
+                      icon: huge.HugeIcons.strokeRoundedVideo01,
+                      title: 'Videos',
+                      size: _videoSize,
+                      fileCount: _videoCount,
+                      color: Colors.redAccent,
+                    ),
+                    _buildStorageBreakdownTile(
+                      icon: huge.HugeIcons.strokeRoundedCall,
+                      title: 'Voice & Audio',
+                      size: _audioSize,
+                      fileCount: _audioCount,
+                      color: Colors.greenAccent,
+                    ),
+                    _buildStorageBreakdownTile(
+                      icon: huge.HugeIcons.strokeRoundedDocumentCode,
+                      title: 'Documents & Files',
+                      size: _docSize,
+                      fileCount: _docCount,
+                      color: Colors.orangeAccent,
+                    ),
+                    _buildStorageBreakdownTile(
+                      icon: huge.HugeIcons.strokeRoundedDatabase,
+                      title: 'Cached Data',
+                      size: _cacheSize,
+                      fileCount: _cacheCount,
+                      color: Colors.purpleAccent,
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 30),
                 _buildSectionLabel('NETWORK & DATA CONTROLS'),
                 const SizedBox(height: 10),
-                _buildGroupedSection(children: [
-                  _buildSwitchTile(
-                    icon: huge.HugeIcons.strokeRoundedDownload02,
-                    title: 'Auto-Download Media',
-                    subtitle: 'Automatically save incoming media to local storage',
-                    value: _autoDownloadMedia,
-                    onChanged: (val) {
-                      setState(() {
-                        _autoDownloadMedia = val;
-                      });
-                      _savePreference('storage_auto_download_media', val);
-                    },
-                  ),
-                  _buildSwitchTile(
-                    icon: huge.HugeIcons.strokeRoundedDatabase,
-                    title: 'Use Less Data',
-                    subtitle: 'Optimize media upload quality for poor connections',
-                    value: _useLessData,
-                    onChanged: (val) {
-                      setState(() {
-                        _useLessData = val;
-                      });
-                      _savePreference('storage_use_less_data', val);
-                    },
-                  ),
-                ]),
+                _buildGroupedSection(
+                  children: [
+                    _buildSwitchTile(
+                      icon: huge.HugeIcons.strokeRoundedDownload02,
+                      title: 'Auto-Download Media',
+                      subtitle:
+                          'Automatically save incoming media to local storage',
+                      value: _autoDownloadMedia,
+                      onChanged: (val) {
+                        setState(() {
+                          _autoDownloadMedia = val;
+                        });
+                        _savePreference('storage_auto_download_media', val);
+                      },
+                    ),
+                    _buildSwitchTile(
+                      icon: huge.HugeIcons.strokeRoundedDatabase,
+                      title: 'Use Less Data',
+                      subtitle:
+                          'Optimize media upload quality for poor connections',
+                      value: _useLessData,
+                      onChanged: (val) {
+                        setState(() {
+                          _useLessData = val;
+                        });
+                        _savePreference('storage_use_less_data', val);
+                      },
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 30),
                 _buildSectionLabel('MANAGEMENT ACTIONS'),
                 const SizedBox(height: 10),
-                _buildGroupedSection(children: [
-                  _buildActionTile(
-                    icon: huge.HugeIcons.strokeRoundedClean,
-                    title: 'Clear Temporary Cache',
-                    subtitle: 'Free up local space without deleting downloaded files',
-                    onTap: _clearCache,
-                    textColor: colorScheme.primary,
-                  ),
-                  _buildActionTile(
-                    icon: huge.HugeIcons.strokeRoundedDelete02,
-                    title: 'Delete All Downloaded Media',
-                    subtitle: 'Permanently remove downloads from your device',
-                    onTap: _clearLocalDownloads,
-                    textColor: colorScheme.error,
-                  ),
-                ]),
+                _buildGroupedSection(
+                  children: [
+                    _buildActionTile(
+                      icon: huge.HugeIcons.strokeRoundedClean,
+                      title: 'Clear Temporary Cache',
+                      subtitle:
+                          'Free up local space without deleting downloaded files',
+                      onTap: _clearCache,
+                      textColor: colorScheme.primary,
+                    ),
+                    _buildActionTile(
+                      icon: huge.HugeIcons.strokeRoundedDelete02,
+                      title: 'Delete All Downloaded Media',
+                      subtitle: 'Permanently remove downloads from your device',
+                      onTap: _clearLocalDownloads,
+                      textColor: colorScheme.error,
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 40),
               ],
             ),
@@ -456,9 +490,7 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: Column(
-          children: children,
-        ),
+        child: Column(children: children),
       ),
     );
   }
@@ -570,9 +602,7 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
     if (ratio == 0) return const SizedBox.shrink();
     return Expanded(
       flex: (ratio * 1000).round().clamp(1, 1000),
-      child: Container(
-        color: color,
-      ),
+      child: Container(color: color),
     );
   }
 
@@ -593,17 +623,16 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
 
   Widget _buildLegendItem(String label, int size, Color color) {
     if (size == 0) return const SizedBox.shrink();
-    final percentage = _totalSize > 0 ? (size / _totalSize * 100).toStringAsFixed(1) : '0';
+    final percentage = _totalSize > 0
+        ? (size / _totalSize * 100).toStringAsFixed(1)
+        : '0';
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
         Text(
@@ -611,7 +640,9 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
           ),
         ),
       ],
@@ -635,7 +666,8 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
         ),
       ),
       child: ListTile(
-        onTap: () => _showBreakdownDetailSheet(title, icon, size, fileCount, color),
+        onTap: () =>
+            _showBreakdownDetailSheet(title, icon, size, fileCount, color),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
@@ -730,7 +762,10 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         'Storage breakdown details',
@@ -758,7 +793,9 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                         child: CircularProgressIndicator(
                           value: value,
                           strokeWidth: 12,
-                          backgroundColor: colorScheme.onSurface.withValues(alpha: 0.05),
+                          backgroundColor: colorScheme.onSurface.withValues(
+                            alpha: 0.05,
+                          ),
                           valueColor: AlwaysStoppedAnimation<Color>(color),
                           strokeCap: StrokeCap.round,
                         ),
@@ -778,7 +815,9 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                             'of total app space',
                             style: TextStyle(
                               fontSize: 10,
-                              color: colorScheme.onSurface.withValues(alpha: 0.5),
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              ),
                             ),
                           ),
                         ],
@@ -822,7 +861,10 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
                     ),
                   ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -851,11 +893,7 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          huge.HugeIcon(
-            icon: icon,
-            color: colorScheme.primary,
-            size: 20,
-          ),
+          huge.HugeIcon(icon: icon, color: colorScheme.primary, size: 20),
           const SizedBox(height: 12),
           Text(
             label,
@@ -868,10 +906,7 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -901,7 +936,11 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
             color: colorScheme.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: huge.HugeIcon(icon: icon, color: colorScheme.primary, size: 20),
+          child: huge.HugeIcon(
+            icon: icon,
+            color: colorScheme.primary,
+            size: 20,
+          ),
         ),
         title: Text(
           title,
@@ -909,7 +948,10 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(fontSize: 11, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+          style: TextStyle(
+            fontSize: 11,
+            color: colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
         ),
         value: value,
         onChanged: onChanged,
@@ -945,11 +987,18 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
         ),
         title: Text(
           title,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textColor),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: textColor,
+          ),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(fontSize: 11, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+          style: TextStyle(
+            fontSize: 11,
+            color: colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
         ),
         onTap: onTap,
       ),

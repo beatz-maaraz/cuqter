@@ -39,10 +39,7 @@ class _ResizableSidebarState extends State<ResizableSidebar> {
             minWidth: widget.minWidth,
             maxWidth: widget.maxWidth,
           ),
-          child: SizedBox(
-            width: _width,
-            child: widget.child,
-          ),
+          child: SizedBox(width: _width, child: widget.child),
         ),
         MouseRegion(
           cursor: SystemMouseCursors.resizeColumn,
@@ -55,7 +52,10 @@ class _ResizableSidebarState extends State<ResizableSidebar> {
             },
             onHorizontalDragUpdate: (details) {
               setState(() {
-                _width = (_width + details.delta.dx).clamp(widget.minWidth, widget.maxWidth);
+                _width = (_width + details.delta.dx).clamp(
+                  widget.minWidth,
+                  widget.maxWidth,
+                );
               });
             },
             onHorizontalDragEnd: (_) {
@@ -73,8 +73,8 @@ class _ResizableSidebarState extends State<ResizableSidebar> {
                   height: double.infinity,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: _isDragging 
-                        ? colorScheme.primary 
+                    color: _isDragging
+                        ? colorScheme.primary
                         : colorScheme.outline.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(2),
                   ),

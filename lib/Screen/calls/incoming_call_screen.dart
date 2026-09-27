@@ -17,12 +17,12 @@ class IncomingCallScreen extends StatefulWidget {
   final bool isVideoCall;
 
   const IncomingCallScreen({
-    Key? key,
+    super.key,
     required this.callerName,
     required this.callerId,
     required this.roomId,
     required this.isVideoCall,
-  }) : super(key: key);
+  });
 
   @override
   State<IncomingCallScreen> createState() => _IncomingCallScreenState();
@@ -38,7 +38,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Play ringtone for incoming call
     if (!kIsWeb) {
       try {
@@ -58,12 +58,12 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
           .ref('incoming_calls/${_auth.currentUser!.uid}')
           .onValue
           .listen((event) {
-        if (event.snapshot.value == null && mounted && !_isActionTaken) {
-          // Caller hung up
-          _stopRingtone();
-          Navigator.pop(context);
-        }
-      });
+            if (event.snapshot.value == null && mounted && !_isActionTaken) {
+              // Caller hung up
+              _stopRingtone();
+              Navigator.pop(context);
+            }
+          });
     }
   }
 
@@ -93,9 +93,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     if (_auth.currentUser != null) {
       _database.ref('incoming_calls/${_auth.currentUser!.uid}').remove();
     }
-    
+
     if (!mounted) return;
-    
+
     // Replace current screen with CallScreen
     Navigator.pushReplacement(
       context,
@@ -137,7 +137,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   }
 
   void _showReplyOptionsModal(BuildContext context) {
-    final TextEditingController customMessageController = TextEditingController();
+    final TextEditingController customMessageController =
+        TextEditingController();
     final MessageService messageService = MessageService();
     final String currentUserId = _auth.currentUser?.uid ?? '';
 
@@ -151,7 +152,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     Future<void> sendReplyAndOpenChat(String replyText) async {
       if (replyText.trim().isEmpty) return;
       if (_isActionTaken) return;
-      
+
       _isActionTaken = true;
       _stopRingtone();
 
@@ -243,7 +244,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => sendReplyAndOpenChat(text),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         child: Row(
                           children: [
                             const huge.HugeIcon(
@@ -278,10 +282,15 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: 'Type custom message...',
-                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
                         filled: true,
                         fillColor: Colors.white.withValues(alpha: 0.08),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
@@ -292,7 +301,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    onPressed: () => sendReplyAndOpenChat(customMessageController.text),
+                    onPressed: () =>
+                        sendReplyAndOpenChat(customMessageController.text),
                     style: IconButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                     ),
@@ -326,19 +336,27 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
               Column(
                 children: [
                   StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance.collection('users').doc(widget.callerId).snapshots(),
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(widget.callerId)
+                        .snapshots(),
                     builder: (context, snapshot) {
                       String? profilePic;
                       if (snapshot.hasData && snapshot.data!.exists) {
-                        var data = snapshot.data!.data() as Map<String, dynamic>?;
+                        var data =
+                            snapshot.data!.data() as Map<String, dynamic>?;
                         profilePic = data?['profilepic'];
                       }
                       return CircleAvatar(
                         radius: 64,
                         backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        backgroundImage: profilePic != null && profilePic.isNotEmpty
+                        backgroundImage:
+                            profilePic != null && profilePic.isNotEmpty
                             ? NetworkImage(profilePic)
-                            : const AssetImage('assets/icon/default_profile.png') as ImageProvider,
+                            : const AssetImage(
+                                    'assets/icon/default_profile.png',
+                                  )
+                                  as ImageProvider,
                       );
                     },
                   ),
@@ -370,7 +388,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                   GestureDetector(
                     onTap: () => _showReplyOptionsModal(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(30),
@@ -472,7 +493,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                                 ],
                               ),
                               child: huge.HugeIcon(
-                                icon: widget.isVideoCall ? huge.HugeIcons.strokeRoundedVideo01 : huge.HugeIcons.strokeRoundedCall,
+                                icon: widget.isVideoCall
+                                    ? huge.HugeIcons.strokeRoundedVideo01
+                                    : huge.HugeIcons.strokeRoundedCall,
                                 color: Colors.white,
                                 size: 32,
                               ),

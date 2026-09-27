@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/services/biometric_service.dart';
+import 'package:cuqter/utils/custom_snackbar.dart';
 
 class SecuritySettingsPage extends StatefulWidget {
   const SecuritySettingsPage({super.key});
@@ -38,13 +39,19 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       final user = _auth.currentUser;
       if (user != null) {
         // Try reloading user status in background without blocking
-        user.reload().then((_) {
-          if (mounted) setState(() {});
-        }).catchError((e) {
-          debugPrint('User reload error: $e');
-        });
+        user
+            .reload()
+            .then((_) {
+              if (mounted) setState(() {});
+            })
+            .catchError((e) {
+              debugPrint('User reload error: $e');
+            });
 
-        final userDoc = await _firestore.collection('users').doc(user.uid).get();
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
         if (userDoc.exists) {
           final data = userDoc.data();
           if (data != null) {
@@ -73,10 +80,10 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
 
     if (!authSuccess) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Biometric authentication required to change App Lock'),
-          ),
+        showCustomSnackBar(
+          context,
+          'Biometric authentication required to change App Lock',
+          isError: true,
         );
       }
       return;
@@ -130,7 +137,9 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     final user = _auth.currentUser;
     if (user == null || user.email == null || user.email!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No email address associated with this account')),
+        const SnackBar(
+          content: Text('No email address associated with this account'),
+        ),
       );
       return;
     }
@@ -169,9 +178,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       await user.sendEmailVerification();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Verification email sent to ${user.email}'),
-          ),
+          SnackBar(content: Text('Verification email sent to ${user.email}')),
         );
       }
     } catch (e) {
@@ -231,7 +238,11 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error deleting account: $e. Re-authentication may be required.')),
+                      SnackBar(
+                        content: Text(
+                          'Error deleting account: $e. Re-authentication may be required.',
+                        ),
+                      ),
                     );
                   }
                 }
@@ -302,15 +313,27 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                         ? 'Email address is verified'
                         : 'Tap to send verification email',
                     trailing: user?.emailVerified == true
-                        ? Icon(Icons.check_circle, color: colorScheme.primary, size: 20)
+                        ? Icon(
+                            Icons.check_circle,
+                            color: colorScheme.primary,
+                            size: 20,
+                          )
                         : (_isSendingVerification
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : Icon(Icons.error_outline, color: colorScheme.error, size: 20)),
-                    onTap: user?.emailVerified == true ? null : _sendEmailVerification,
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.error_outline,
+                                  color: colorScheme.error,
+                                  size: 20,
+                                )),
+                    onTap: user?.emailVerified == true
+                        ? null
+                        : _sendEmailVerification,
                   ),
                 ]),
                 const SizedBox(height: 24),
@@ -388,7 +411,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
               color: isVerified ? colorScheme.primary : colorScheme.tertiary,
               shape: BoxShape.circle,
             ),
-            child: huge.HugeIcon(
+            child: const huge.HugeIcon(
               icon: huge.HugeIcons.strokeRoundedSecurityValidation,
               color: Colors.white,
               size: 28,
@@ -400,7 +423,9 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isVerified ? 'Account Protected' : 'Security Attention Required',
+                  isVerified
+                      ? 'Account Protected'
+                      : 'Security Attention Required',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -445,7 +470,9 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       decoration: BoxDecoration(
         color: colorScheme.onSurface.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
       ),
       child: Column(children: children),
     );
@@ -483,7 +510,8 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
           color: colorScheme.onSurface.withValues(alpha: 0.6),
         ),
       ),
-      trailing: trailing ??
+      trailing:
+          trailing ??
           huge.HugeIcon(
             icon: huge.HugeIcons.strokeRoundedArrowRight01,
             size: 20,

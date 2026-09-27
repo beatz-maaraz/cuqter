@@ -23,7 +23,9 @@ import 'package:flutter_callkit_incoming/entities/notification_params.dart';
 /// Top-level background action handler for notification taps (must be a top-level or static function)
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse response) async {
-  if (response.actionId == 'reply_action' && response.input != null && response.input!.isNotEmpty) {
+  if (response.actionId == 'reply_action' &&
+      response.input != null &&
+      response.input!.isNotEmpty) {
     final text = response.input!;
     try {
       final Map<String, dynamic> data = jsonDecode(response.payload!);
@@ -61,20 +63,20 @@ void notificationTapBackground(NotificationResponse response) async {
           .doc(chatId)
           .collection('messages')
           .add({
-        'senderId': senderId,
-        'receiverId': receiverId,
-        'text': text,
-        'timestamp': FieldValue.serverTimestamp(),
-        'isRead': false,
-        'type': 'text',
-      });
+            'senderId': senderId,
+            'receiverId': receiverId,
+            'text': text,
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'type': 'text',
+          });
 
       // Ensure both users are in each other's contacts so they appear on the homepage
       await FirebaseFirestore.instance.collection('users').doc(senderId).set({
-        'contacts': FieldValue.arrayUnion([receiverId])
+        'contacts': FieldValue.arrayUnion([receiverId]),
       }, SetOptions(merge: true));
       await FirebaseFirestore.instance.collection('users').doc(receiverId).set({
-        'contacts': FieldValue.arrayUnion([senderId])
+        'contacts': FieldValue.arrayUnion([senderId]),
       }, SetOptions(merge: true));
 
       if (kDebugMode) {
@@ -85,7 +87,9 @@ void notificationTapBackground(NotificationResponse response) async {
         print('Error handling background inline reply: $e');
       }
     }
-  } else if (response.actionId == 'accept_call' || response.actionId == 'decline_call' || (response.payload?.contains('"incoming_call"') ?? false)) {
+  } else if (response.actionId == 'accept_call' ||
+      response.actionId == 'decline_call' ||
+      (response.payload?.contains('"incoming_call"') ?? false)) {
     try {
       WidgetsFlutterBinding.ensureInitialized();
       if (Firebase.apps.isEmpty) {
@@ -117,12 +121,16 @@ void notificationTapBackground(NotificationResponse response) async {
 
           final currentUser = FirebaseAuth.instance.currentUser;
           if (currentUser != null) {
-            await FirebaseDatabase.instance.ref('incoming_calls/${currentUser.uid}').remove();
+            await FirebaseDatabase.instance
+                .ref('incoming_calls/${currentUser.uid}')
+                .remove();
           }
 
           if (roomId != null) {
             await FlutterCallkitIncoming.endCall(roomId);
-            await NotificationService.localNotifications.cancel(id: roomId.hashCode & 0x7FFFFFFF);
+            await NotificationService.localNotifications.cancel(
+              id: roomId.hashCode & 0x7FFFFFFF,
+            );
           }
 
           if (response.actionId == 'decline_call') {
@@ -161,10 +169,15 @@ Future<Uint8List?> _getProfilePicBytes(String? pathOrUrl) async {
   try {
     if (pathOrUrl.startsWith('http')) {
       final HttpClient client = HttpClient();
-      final HttpClientRequest request = await client.getUrl(Uri.parse(pathOrUrl));
+      final HttpClientRequest request = await client.getUrl(
+        Uri.parse(pathOrUrl),
+      );
       final HttpClientResponse response = await request.close();
       if (response.statusCode == 200) {
-        final List<int> bytes = await response.fold<List<int>>([], (previous, element) => previous..addAll(element));
+        final List<int> bytes = await response.fold<List<int>>(
+          [],
+          (previous, element) => previous..addAll(element),
+        );
         return Uint8List.fromList(bytes);
       }
     } else if (pathOrUrl.startsWith('assets/')) {
@@ -191,20 +204,29 @@ Future<void> showMessageNotification(RemoteMessage message) async {
     WidgetsFlutterBinding.ensureInitialized();
     if (kIsWeb) {
       if (kDebugMode) {
-        print('Web message received: ${message.notification?.title} - ${message.notification?.body}');
+        print(
+          'Web message received: ${message.notification?.title} - ${message.notification?.body}',
+        );
       }
       // Show a visual notification using a SnackBar since local_notifications isn't supported on web
       if (navigatorKey.currentContext != null) {
-        final title = message.notification?.title ?? message.data['title'] ?? 'New Message';
-        final bodyText = message.notification?.body ?? message.data['body'] ?? '';
-        
+        final title =
+            message.notification?.title ??
+            message.data['title'] ??
+            'New Message';
+        final bodyText =
+            message.notification?.body ?? message.data['body'] ?? '';
+
         ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
           SnackBar(
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 if (bodyText.isNotEmpty) Text(bodyText),
               ],
             ),
@@ -224,10 +246,12 @@ Future<void> showMessageNotification(RemoteMessage message) async {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
     }
+    await NotificationService.initializeLocalNotifications();
     final data = message.data;
 
     // Resolve title and body from the notification block if available, fallback to data payload
-    final String title = message.notification?.title ?? data['title'] ?? 'New Message';
+    final String title =
+        message.notification?.title ?? data['title'] ?? 'New Message';
     String body = message.notification?.body ?? data['body'] ?? '';
     final String? messageType = data['type'];
 
@@ -244,21 +268,24 @@ Future<void> showMessageNotification(RemoteMessage message) async {
     }
 
     if (messageType == 'friend_request') {
-      final androidDetails = const AndroidNotificationDetails(
+      const androidDetails = AndroidNotificationDetails(
         'friend_requests_channel',
         'Friend Requests',
         importance: Importance.max,
         priority: Priority.high,
         playSound: true,
       );
-      final iosDetails = const DarwinNotificationDetails(
+      const iosDetails = DarwinNotificationDetails(
         categoryIdentifier: 'friend_requests_category',
       );
       await NotificationService.localNotifications.show(
         id: data['senderId'].hashCode & 0x7FFFFFFF,
         title: title,
         body: body,
-        notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+        notificationDetails: const NotificationDetails(
+          android: androidDetails,
+          iOS: iosDetails,
+        ),
         payload: jsonEncode({'type': 'friend_request'}),
       );
       return;
@@ -267,22 +294,41 @@ Future<void> showMessageNotification(RemoteMessage message) async {
     // Client-side fallback: if body looks like a URL or is empty, show a friendly type label
     if (messageType != null && messageType != 'text') {
       switch (messageType) {
-        case 'image':    body = '📷 Photo'; break;
-        case 'video':    body = '🎥 Video'; break;
-        case 'audio':    body = '🎵 Audio'; break;
-        case 'document': body = '📄 Document'; break;
-        case 'location': body = '📍 Shared a location'; break;
+        case 'image':
+          body = '📷 Photo';
+          break;
+        case 'video':
+          body = '🎥 Video';
+          break;
+        case 'audio':
+          body = '🎵 Audio';
+          break;
+        case 'document':
+          body = '📄 Document';
+          break;
+        case 'location':
+          body = '📍 Shared a location';
+          break;
       }
     } else if (body.startsWith('http')) {
       // Legacy: body is a raw URL, convert based on URL pattern
       final lower = body.toLowerCase();
-      if (lower.contains('/image/upload') || lower.endsWith('.jpg') || lower.endsWith('.png') || lower.endsWith('.jpeg')) {
+      if (lower.contains('/image/upload') ||
+          lower.endsWith('.jpg') ||
+          lower.endsWith('.png') ||
+          lower.endsWith('.jpeg')) {
         body = '📷 Photo';
-      } else if (lower.contains('/video/upload') || lower.endsWith('.mp4') || lower.endsWith('.mov')) {
+      } else if (lower.contains('/video/upload') ||
+          lower.endsWith('.mp4') ||
+          lower.endsWith('.mov')) {
         body = '🎥 Video';
-      } else if (lower.endsWith('.mp3') || lower.endsWith('.m4a') || lower.endsWith('.wav')) {
+      } else if (lower.endsWith('.mp3') ||
+          lower.endsWith('.m4a') ||
+          lower.endsWith('.wav')) {
         body = '🎵 Audio';
-      } else if (lower.contains('/raw/upload') || lower.endsWith('.pdf') || lower.endsWith('.doc')) {
+      } else if (lower.contains('/raw/upload') ||
+          lower.endsWith('.pdf') ||
+          lower.endsWith('.doc')) {
         body = '📄 Document';
       } else {
         body = '📎 Shared a file';
@@ -299,7 +345,10 @@ Future<void> showMessageNotification(RemoteMessage message) async {
     String? profilePicUrl = data['senderProfilePic'];
     if ((profilePicUrl == null || profilePicUrl.isEmpty) && senderId != null) {
       try {
-        final senderDoc = await FirebaseFirestore.instance.collection('users').doc(senderId).get();
+        final senderDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(senderId)
+            .get();
         if (senderDoc.exists && senderDoc.data() != null) {
           profilePicUrl = senderDoc.data()!['profilepic'];
         }
@@ -321,7 +370,9 @@ Future<void> showMessageNotification(RemoteMessage message) async {
     if (profilePicBytes != null) {
       try {
         final tempDir = Directory.systemTemp;
-        final file = File('${tempDir.path}/notification_profile_${senderId ?? 'user'}.jpg');
+        final file = File(
+          '${tempDir.path}/notification_profile_${senderId ?? 'user'}.jpg',
+        );
         await file.writeAsBytes(profilePicBytes);
         tempFilePath = file.path;
       } catch (e) {
@@ -335,14 +386,12 @@ Future<void> showMessageNotification(RemoteMessage message) async {
     final Person senderPerson = Person(
       name: title,
       key: senderId,
-      icon: profilePicBytes != null ? ByteArrayAndroidIcon(profilePicBytes) : null,
+      icon: profilePicBytes != null
+          ? ByteArrayAndroidIcon(profilePicBytes)
+          : null,
     );
 
-    final Message messageItem = Message(
-      body,
-      DateTime.now(),
-      senderPerson,
-    );
+    final Message messageItem = Message(body, DateTime.now(), senderPerson);
 
     final MessagingStyleInformation messagingStyle = MessagingStyleInformation(
       senderPerson,
@@ -357,11 +406,7 @@ Future<void> showMessageNotification(RemoteMessage message) async {
       const AndroidNotificationAction(
         'reply_action',
         'Reply',
-        inputs: [
-          AndroidNotificationActionInput(
-            label: 'Type your reply...',
-          ),
-        ],
+        inputs: [AndroidNotificationActionInput(label: 'Type your reply...')],
         showsUserInterface: false,
       ),
     ];
@@ -383,11 +428,14 @@ Future<void> showMessageNotification(RemoteMessage message) async {
         android: AndroidNotificationDetails(
           'chats_messages_channel',
           'Chat Messages',
-          channelDescription: 'This channel is used for real-time chat message push notifications.',
+          channelDescription:
+              'This channel is used for real-time chat message push notifications.',
           importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/launcher_icon',
-          largeIcon: tempFilePath != null ? FilePathAndroidBitmap(tempFilePath) : null,
+          largeIcon: tempFilePath != null
+              ? FilePathAndroidBitmap(tempFilePath)
+              : null,
           playSound: true,
           actions: androidActions,
           styleInformation: messagingStyle,
@@ -397,7 +445,9 @@ Future<void> showMessageNotification(RemoteMessage message) async {
           presentBadge: true,
           presentSound: true,
           categoryIdentifier: 'chats_messages_category',
-          attachments: tempFilePath != null ? [DarwinNotificationAttachment(tempFilePath)] : null,
+          attachments: tempFilePath != null
+              ? [DarwinNotificationAttachment(tempFilePath)]
+              : null,
         ),
       ),
       payload: jsonEncode(payloadData),
@@ -418,19 +468,18 @@ class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  static final FlutterLocalNotificationsPlugin localNotifications = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin localNotifications =
+      FlutterLocalNotificationsPlugin();
   static bool _isLocalNotificationsInitialized = false;
 
   static void _handleLocalNotificationClick(NotificationResponse response) {
     if (response.payload != null) {
       try {
         final Map<String, dynamic> data = jsonDecode(response.payload!);
-        
+
         if (data['type'] == 'friend_request') {
           navigatorKey.currentState?.push(
-            MaterialPageRoute(
-              builder: (context) => const NotificationScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const NotificationScreen()),
           );
           return;
         }
@@ -458,7 +507,9 @@ class NotificationService {
     }
   }
 
-  static Future<void> _handleCallNotificationAction(NotificationResponse response) async {
+  static Future<void> _handleCallNotificationAction(
+    NotificationResponse response,
+  ) async {
     try {
       if (response.payload != null) {
         final Map<String, dynamic> data = jsonDecode(response.payload!);
@@ -467,11 +518,13 @@ class NotificationService {
           final callerName = data['callerName'];
           final callerId = data['callerId'];
           final isVideoCall = data['isVideoCall'] ?? false;
-          
+
           // Stop ringing by removing node
           final currentUser = FirebaseAuth.instance.currentUser;
           if (currentUser != null) {
-            await FirebaseDatabase.instance.ref('incoming_calls/${currentUser.uid}').remove();
+            await FirebaseDatabase.instance
+                .ref('incoming_calls/${currentUser.uid}')
+                .remove();
           }
 
           if (roomId != null) {
@@ -519,13 +572,17 @@ class NotificationService {
 
     // Fetch exact user details from Firestore to guarantee actual user photo & name
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(callerId).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(callerId)
+          .get();
       if (doc.exists && doc.data() != null) {
         final data = doc.data()!;
         if (data['name'] != null && (data['name'] as String).isNotEmpty) {
           finalCallerName = data['name'];
         }
-        if (data['profilepic'] != null && (data['profilepic'] as String).isNotEmpty) {
+        if (data['profilepic'] != null &&
+            (data['profilepic'] as String).isNotEmpty) {
           finalAvatarUrl = data['profilepic'];
         }
       }
@@ -537,7 +594,9 @@ class NotificationService {
       id: roomId,
       nameCaller: finalCallerName,
       appName: 'Cuqter',
-      avatar: (finalAvatarUrl != null && finalAvatarUrl.isNotEmpty) ? finalAvatarUrl : null,
+      avatar: (finalAvatarUrl != null && finalAvatarUrl.isNotEmpty)
+          ? finalAvatarUrl
+          : null,
       handle: isVideoCall ? 'Incoming Video Call' : 'Incoming Voice Call',
       type: isVideoCall ? 1 : 0,
       duration: 30000,
@@ -646,7 +705,10 @@ class NotificationService {
       id: roomId.hashCode & 0x7FFFFFFF,
       title: callerName,
       body: 'Incoming ${isVideoCall ? "Video" : "Voice"} Call',
-      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
+      notificationDetails: NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
       payload: jsonEncode(payloadData),
     );
   }
@@ -693,9 +755,8 @@ class NotificationService {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/launcher_icon');
 
-    final DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
-      notificationCategories: darwinCategories,
-    );
+    final DarwinInitializationSettings iosSettings =
+        DarwinInitializationSettings(notificationCategories: darwinCategories);
 
     final InitializationSettings initSettings = InitializationSettings(
       android: androidSettings,
@@ -705,9 +766,13 @@ class NotificationService {
     await localNotifications.initialize(
       settings: initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) async {
-        if (response.actionId == 'reply_action' && response.input != null && response.input!.isNotEmpty) {
+        if (response.actionId == 'reply_action' &&
+            response.input != null &&
+            response.input!.isNotEmpty) {
           notificationTapBackground(response);
-        } else if (response.actionId == 'accept_call' || response.actionId == 'decline_call' || (response.payload?.contains('"incoming_call"') ?? false)) {
+        } else if (response.actionId == 'accept_call' ||
+            response.actionId == 'decline_call' ||
+            (response.payload?.contains('"incoming_call"') ?? false)) {
           _handleCallNotificationAction(response);
         } else {
           _handleLocalNotificationClick(response);
@@ -720,7 +785,8 @@ class NotificationService {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'chats_messages_channel',
       'Chat Messages',
-      description: 'This channel is used for real-time chat message push notifications.',
+      description:
+          'This channel is used for real-time chat message push notifications.',
       importance: Importance.max,
       playSound: true,
       enableVibration: true,
@@ -728,7 +794,9 @@ class NotificationService {
 
     if (Platform.isAndroid) {
       await localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(channel);
 
       const AndroidNotificationChannel callChannel = AndroidNotificationChannel(
@@ -740,25 +808,30 @@ class NotificationService {
         enableVibration: true,
       );
       await localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(callChannel);
 
-      const AndroidNotificationChannel friendRequestChannel = AndroidNotificationChannel(
-        'friend_requests_channel',
-        'Friend Requests',
-        description: 'Notifications for incoming friend requests',
-        importance: Importance.max,
-        playSound: true,
-        enableVibration: true,
-      );
+      const AndroidNotificationChannel friendRequestChannel =
+          AndroidNotificationChannel(
+            'friend_requests_channel',
+            'Friend Requests',
+            description: 'Notifications for incoming friend requests',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+          );
       await localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(friendRequestChannel);
     }
 
     FlutterCallkitIncoming.onEvent.listen((CallEvent? event) {
       if (event == null) return;
-      
+
       if (event is CallEventActionCallAccept) {
         final body = event.callKitParams;
         final roomId = body.id;
@@ -793,7 +866,9 @@ class NotificationService {
             ),
           );
         }
-      } else if (event is CallEventActionCallDecline || event is CallEventActionCallEnded || event is CallEventActionCallTimeout) {
+      } else if (event is CallEventActionCallDecline ||
+          event is CallEventActionCallEnded ||
+          event is CallEventActionCallTimeout) {
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser != null) {
           FirebaseDatabase.instance
@@ -834,14 +909,18 @@ class NotificationService {
     // Request Android local notification permissions explicitly on Android 13+
     if (!kIsWeb && Platform.isAndroid) {
       await localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.requestNotificationsPermission();
     }
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
       if (kDebugMode) {
-        print('Notification permissions granted: ${settings.authorizationStatus}');
+        print(
+          'Notification permissions granted: ${settings.authorizationStatus}',
+        );
       }
 
       // 2. Fetch and save active device token
@@ -863,7 +942,9 @@ class NotificationService {
       // 5. Handle notification tap when app is in background but not terminated
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
         if (kDebugMode) {
-          print('App opened from background notification: ${message.messageId}');
+          print(
+            'App opened from background notification: ${message.messageId}',
+          );
         }
         _handleNotificationClick(message);
       });
@@ -872,7 +953,9 @@ class NotificationService {
       RemoteMessage? initialMessage = await _fcm.getInitialMessage();
       if (initialMessage != null) {
         if (kDebugMode) {
-          print('App launched from terminated state via notification: ${initialMessage.messageId}');
+          print(
+            'App launched from terminated state via notification: ${initialMessage.messageId}',
+          );
         }
         _handleNotificationClick(initialMessage);
       }
@@ -886,7 +969,9 @@ class NotificationService {
             notificationAppLaunchDetails.notificationResponse;
         if (response != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (response.actionId == 'accept_call' || response.actionId == 'decline_call' || (response.payload?.contains('"incoming_call"') ?? false)) {
+            if (response.actionId == 'accept_call' ||
+                response.actionId == 'decline_call' ||
+                (response.payload?.contains('"incoming_call"') ?? false)) {
               _handleCallNotificationAction(response);
             } else {
               _handleLocalNotificationClick(response);
@@ -907,7 +992,7 @@ class NotificationService {
   void _listenForFriendRequests() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
-    
+
     bool isFirstFriendRequestQuery = true;
     FirebaseFirestore.instance
         .collection('friend_requests')
@@ -915,26 +1000,29 @@ class NotificationService {
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .listen((snapshot) {
-      if (isFirstFriendRequestQuery) {
-        isFirstFriendRequestQuery = false;
-        return; // Ignore existing requests on startup
-      }
-      for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data();
-          if (data != null) {
-            showMessageNotification(RemoteMessage(
-              data: {
-                'type': 'friend_request',
-                'senderId': data['senderId'],
-                'title': 'New Friend Request',
-                'body': '${data['senderName'] ?? 'Someone'} sent you a friend request',
-              }
-            ));
+          if (isFirstFriendRequestQuery) {
+            isFirstFriendRequestQuery = false;
+            return; // Ignore existing requests on startup
           }
-        }
-      }
-    });
+          for (var change in snapshot.docChanges) {
+            if (change.type == DocumentChangeType.added) {
+              final data = change.doc.data();
+              if (data != null) {
+                showMessageNotification(
+                  RemoteMessage(
+                    data: {
+                      'type': 'friend_request',
+                      'senderId': data['senderId'],
+                      'title': 'New Friend Request',
+                      'body':
+                          '${data['senderName'] ?? 'Someone'} sent you a friend request',
+                    },
+                  ),
+                );
+              }
+            }
+          }
+        });
   }
 
   /// Logic to handle app navigation/routing when a notification is clicked (not inline replied)
@@ -953,9 +1041,12 @@ class NotificationService {
         token = await _fcm.getAPNSToken();
       }
       if (kIsWeb) {
-        // NOTE: For web, a vapidKey is highly recommended/required. 
+        // NOTE: For web, a vapidKey is highly recommended/required.
         // Replace this placeholder with your actual VAPID key from the Firebase Console (Project Settings -> Cloud Messaging -> Web configuration)
-        token = await _fcm.getToken(vapidKey: "BF8MsbUwKvQ6TuATaIWu3j5V_g8vnZ5OjrRYvcHDmBlZaRvC6lqpqw0Q5At0Rj0WLq9mUjTXVfmbZbOhFPUliGg");
+        token = await _fcm.getToken(
+          vapidKey:
+              "BF8MsbUwKvQ6TuATaIWu3j5V_g8vnZ5OjrRYvcHDmBlZaRvC6lqpqw0Q5At0Rj0WLq9mUjTXVfmbZbOhFPUliGg",
+        );
       } else {
         token = await _fcm.getToken();
       }
@@ -975,10 +1066,9 @@ class NotificationService {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser != null) {
-        await _firestore
-            .collection('users')
-            .doc(currentUser.uid)
-            .update({'fcmToken': token});
+        await _firestore.collection('users').doc(currentUser.uid).update({
+          'fcmToken': token,
+        });
         if (kDebugMode) {
           print('FCM Token successfully stored to Firestore: $token');
         }
