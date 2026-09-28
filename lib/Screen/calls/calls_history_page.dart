@@ -514,63 +514,97 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
 
   Widget _buildFilterPills() {
     final colorScheme = Theme.of(context).colorScheme;
+    final isAll = _activeFilter == 'All';
     return Container(
-      height: 36,
+      height: 32,
+      width: 150,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          _buildFilterChip('All', _activeFilter == 'All'),
-          _buildFilterChip('Missed', _activeFilter == 'Missed'),
+          Positioned.fill(
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.fastOutSlowIn,
+              alignment: isAll ? Alignment.centerLeft : Alignment.centerRight,
+              child: Container(
+                width: 72,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _setFilter('All'),
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.fastOutSlowIn,
+                      style: TextStyle(
+                        color: isAll ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: isAll ? FontWeight.bold : FontWeight.w600,
+                      ),
+                      child: const Text('All'),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _setFilter('Missed'),
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.fastOutSlowIn,
+                      style: TextStyle(
+                        color: !isAll ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: !isAll ? FontWeight.bold : FontWeight.w600,
+                      ),
+                      child: const Text('Missed'),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, bool isSelected) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: () {
-        if (_activeFilter != label) {
-          int page = label == 'All' ? 0 : 1;
-          if (_pageController.hasClients) {
-            _pageController.animateToPage(
-              page,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          }
-          setState(() {
-            _activeFilter = label;
-          });
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.fastOutSlowIn,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected ? colorScheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 180),
+  void _setFilter(String label) {
+    if (_activeFilter != label) {
+      int page = label == 'All' ? 0 : 1;
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          page,
+          duration: const Duration(milliseconds: 300),
           curve: Curves.fastOutSlowIn,
-          style: TextStyle(
-            color: isSelected
-                ? colorScheme.onPrimary
-                : colorScheme.onSurfaceVariant,
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-          ),
-          child: Text(label),
-        ),
-      ),
-    );
+        );
+      }
+      setState(() {
+        _activeFilter = label;
+      });
+    }
   }
 
   PreferredSizeWidget _buildAppBar(

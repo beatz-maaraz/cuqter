@@ -11,7 +11,9 @@ import 'package:cuqter/services/status_service.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/media.dart';
+import 'package:cuqter/media.dart';
 import 'package:cuqter/Screen/media/camera_screen.dart';
+import 'package:hugeicons/hugeicons.dart' as huge;
 
 class CreateStatusScreen extends StatefulWidget {
   final String? sharedMediaPath;
@@ -34,6 +36,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   bool _isVideo = false;
   VideoPlayerController? _videoController;
   bool _isLoading = false;
+  bool _showColorPicker = false;
 
   // Track selection from custom media picker
   String? _selectedLocalPath;
@@ -407,6 +410,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     decoration: BoxDecoration(
@@ -414,24 +418,90 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedCancel01, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
                   if (isTextOnly)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.color_lens, color: Colors.white),
-                        onPressed: () {
-                          setState(() {
-                            _currentGradientIndex = (_currentGradientIndex + 1) % _statusGradients.length;
-                          });
-                        },
-                      ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.4),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedPaintBoard, color: Colors.white),
+                            onPressed: () {
+                              setState(() {
+                                _showColorPicker = !_showColorPicker;
+                              });
+                            },
+                          ),
+                        ),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          switchInCurve: Curves.fastOutSlowIn,
+                          switchOutCurve: Curves.fastOutSlowIn,
+                          transitionBuilder: (child, animation) {
+                            return ScaleTransition(
+                              scale: animation,
+                              alignment: Alignment.topCenter,
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _showColorPicker
+                              ? Container(
+                                  key: const ValueKey('color_picker'),
+                                  margin: const EdgeInsets.only(top: 12),
+                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.4),
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: List.generate(_statusGradients.length, (index) {
+                                      return GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _currentGradientIndex = index;
+                                            _showColorPicker = false;
+                                          });
+                                        },
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(vertical: 6),
+                                          width: 32,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: LinearGradient(
+                                              colors: _statusGradients[index],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            border: _currentGradientIndex == index
+                                                ? Border.all(color: Colors.white, width: 2)
+                                                : null,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.2),
+                                                blurRadius: 4,
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                )
+                              : const SizedBox.shrink(key: ValueKey('empty')),
+                        ),
+                      ],
                     ),
                 ],
               ),
@@ -445,53 +515,54 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
               child: Container(
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      spreadRadius: 1,
-                    )
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildIconButton(
-                            icon: Icons.text_fields,
-                            label: 'Text',
-                            isActive: isTextOnly,
-                            onTap: () {
-                              setState(() {
-                                _file = null;
-                                _videoFile = null;
-                                _selectedLocalPath = null;
-                                _selectedNetworkUrl = null;
-                                _isVideo = false;
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          _buildIconButton(
-                            icon: Icons.photo_library,
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        )
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildIconButton(
+                                icon: huge.HugeIcons.strokeRoundedText,
+                                label: 'Text',
+                                isActive: isTextOnly,
+                                onTap: () {
+                                  setState(() {
+                                    _file = null;
+                                    _videoFile = null;
+                                    _selectedLocalPath = null;
+                                    _selectedNetworkUrl = null;
+                                    _isVideo = false;
+                                  });
+                                },
+                              ),
+
+                              const SizedBox(width: 8),
+                              _buildIconButton(
+                                icon: huge.HugeIcons.strokeRoundedImage01,
                             label: 'Gallery',
                             isActive: _selectedLocalPath != null || _selectedNetworkUrl != null || _file != null,
                             onTap: _selectMedia,
                           ),
                           const SizedBox(width: 8),
                           _buildIconButton(
-                            icon: Icons.camera_alt,
+                            icon: huge.HugeIcons.strokeRoundedCamera01,
                             label: 'Camera',
                             isActive: false, // Camera is just a trigger
                             onTap: () async {
@@ -552,8 +623,8 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                                   end: Alignment.bottomRight,
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.send,
+                              child: huge.HugeIcon(
+                                icon: huge.HugeIcons.strokeRoundedSent,
                                 color: Colors.white,
                                 size: 22,
                               ),
@@ -572,7 +643,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   }
 
   Widget _buildIconButton({
-    required IconData icon,
+    required dynamic icon,
     required String label,
     required bool isActive,
     required VoidCallback onTap,
@@ -589,7 +660,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            huge.HugeIcon(icon: icon, color: Colors.white, size: 20),
             if (isActive) ...[
               const SizedBox(width: 6),
               Text(

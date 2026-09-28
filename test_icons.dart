@@ -1,0 +1,1 @@
+import 'package:hugeicons/hugeicons.dart' as huge; void main() { var icons = [huge.HugeIcons.strokeRoundedCancel01, huge.HugeIcons.strokeRoundedPaintBoard, huge.HugeIcons.strokeRoundedText, huge.HugeIcons.strokeRoundedCamera01, huge.HugeIcons.strokeRoundedSent]; print('Success'); }

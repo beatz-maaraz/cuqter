@@ -87,6 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Search ──────────────────────────────────────────────
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
 
   // ── Mute / Block ─────────────────────────────────────────
@@ -1452,6 +1453,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -1465,20 +1467,31 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: !widget.isDesktop,
         title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                style: TextStyle(color: colorScheme.onPrimary),
-                cursorColor: colorScheme.onPrimary,
-                decoration: InputDecoration(
-                  hintText: 'Search messages...',
-                  hintStyle: TextStyle(
-                    color: colorScheme.onPrimary.withValues(alpha: 0.6),
-                  ),
-                  border: InputBorder.none,
+            ? Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colorScheme.onPrimary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                onChanged: (value) =>
-                    setState(() => _searchQuery = value.trim().toLowerCase()),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  style: TextStyle(color: colorScheme.onPrimary, fontSize: 16),
+                  cursorColor: colorScheme.onPrimary,
+                  textAlignVertical: TextAlignVertical.center,
+                  decoration: InputDecoration(
+                    hintText: 'Search messages...',
+                    hintStyle: TextStyle(
+                      color: colorScheme.onPrimary.withValues(alpha: 0.7),
+                      fontSize: 16,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  onChanged: (value) =>
+                      setState(() => _searchQuery = value.trim().toLowerCase()),
+                ),
               )
             : StreamBuilder<DocumentSnapshot>(
                 stream: _receiverStream,
@@ -1716,15 +1729,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ] else ...[
             IconButton(
-              icon: Icon(Icons.search_rounded, color: colorScheme.onPrimary),
-              tooltip: 'Search Messages',
-              onPressed: () => setState(() {
-                _isSearching = true;
-                _searchQuery = '';
-                _searchController.clear();
-              }),
-            ),
-            IconButton(
               icon: huge.HugeIcon(
                 icon: huge.HugeIcons.strokeRoundedCall,
                 color: colorScheme.onPrimary,
@@ -1745,6 +1749,13 @@ class _ChatScreenState extends State<ChatScreen> {
             PopupMenuButton<String>(
               onSelected: (value) {
                 switch (value) {
+                  case 'search':
+                    setState(() {
+                      _isSearching = true;
+                      _searchQuery = '';
+                      _searchController.clear();
+                    });
+                    break;
                   case 'wallpaper':
                     _showWallpaperOptions();
                     break;
@@ -1766,6 +1777,28 @@ class _ChatScreenState extends State<ChatScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
               itemBuilder: (BuildContext context) => [
+                // ── Search Messages
+                PopupMenuItem<String>(
+                  value: 'search',
+                  child: Row(
+                    children: [
+                      huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedSearch01,
+                        color: colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Search Messages',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // ── Change Wallpaper
                 PopupMenuItem<String>(
                   value: 'wallpaper',
@@ -1788,7 +1821,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     ],
                   ),
                 ),
-                const PopupMenuDivider(),
                 // ── Mute Notifications
                 PopupMenuItem<String>(
                   value: 'mute',
@@ -1817,6 +1849,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ],
                   ),
                 ),
+                const PopupMenuDivider(),
                 // ── Block User
                 PopupMenuItem<String>(
                   value: 'block',
@@ -2100,8 +2133,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
                           return LayoutBuilder(
                             builder: (context, constraints) {
-                              return Scrollbar(
+                              return RawScrollbar(
+                                controller: _scrollController,
+                                thumbColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                                thickness: 3.0,
+                                radius: const Radius.circular(4),
                                 child: ListView.builder(
+                                  controller: _scrollController,
                                   cacheExtent: 1500.0,
                                   physics: const BouncingScrollPhysics(),
                                   reverse: true,
@@ -3130,8 +3168,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
-        if (_showEmojiPicker)
-          SafeArea(
+        Offstage(
+          offstage: !_showEmojiPicker,
+          child: SafeArea(
             child: SizedBox(
               height: 250,
               child: EmojiPicker(
@@ -3154,6 +3193,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
           ),
+        ),
       ],
     );
   }

@@ -127,33 +127,7 @@ class MainApp extends StatelessWidget {
           ),
         ),
       ),
-      builder: (context, child) {
-        final mediaQuery = MediaQuery.of(context);
-
-        const double scale = 0.90;
-        final scaledSize = mediaQuery.size / scale;
-
-        return MediaQuery(
-          data: mediaQuery.copyWith(
-            size: scaledSize,
-            padding: mediaQuery.padding / scale,
-            viewPadding: mediaQuery.viewPadding / scale,
-            viewInsets: mediaQuery.viewInsets / scale,
-            systemGestureInsets: mediaQuery.systemGestureInsets / scale,
-          ),
-          child: OverflowBox(
-            minWidth: scaledSize.width,
-            maxWidth: scaledSize.width,
-            minHeight: scaledSize.height,
-            maxHeight: scaledSize.height,
-            child: Transform.scale(
-              scale: scale,
-              alignment: Alignment.center,
-              child: child ?? const SizedBox.shrink(),
-            ),
-          ),
-        );
-      },
+      // builder property removed to fix severe app-wide scroll/animation jank
       home: AppLockWrapper(
         child: StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),
