@@ -310,9 +310,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                                         height: 120,
                                       )
                                     : AssetImage(profilePic) as ImageProvider)
-                              : const AssetImage(
-                                  'assets/icon/default_profile.png',
-                                ),
+                              : null,
                         ),
                       ),
                     );

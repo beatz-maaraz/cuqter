@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -175,173 +176,165 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
                 }
 
-                return CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    // Dynamic Ambient Header
-                    SliverToBoxAdapter(
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.center,
-                        children: [
-                          // Header Mesh Gradient
-                          Container(
-                            height: 230,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  colorScheme.primary,
-                                  colorScheme.primaryContainer,
-                                  colorScheme.surfaceContainerHighest.withValues(
-                                    alpha: 0.5,
+                return Stack(
+                  children: [
+                    // Dynamic Glassmorphism Background
+                    if (_selectedProfilePic.isNotEmpty)
+                      Positioned.fill(
+                        child: _selectedProfilePic.startsWith('http')
+                            ? CachedNetworkImage(
+                                imageUrl: _selectedProfilePic,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.asset(
+                                _selectedProfilePic,
+                                fit: BoxFit.cover,
+                              ),
+                      ),
+                    if (_selectedProfilePic.isEmpty)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                colorScheme.primary,
+                                colorScheme.tertiary,
+                                colorScheme.secondary,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    
+                    // Glass Blur Overlay
+                    Positioned.fill(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 35.0, sigmaY: 35.0),
+                        child: Container(
+                          color: colorScheme.surface.withOpacity(0.65),
+                        ),
+                      ),
+                    ),
+
+                    // Main Content
+                    CustomScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      slivers: [
+                        // App Bar
+                        SliverToBoxAdapter(
+                          child: SafeArea(
+                            bottom: false,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Profile',
+                                    style: TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -1.0,
+                                    ),
+                                  ),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 10,
+                                        sigmaY: 10,
+                                      ),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.surface
+                                              .withOpacity(0.5),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: Colors.white
+                                                .withOpacity(0.2),
+                                          ),
+                                        ),
+                                        child: IconButton(
+                                          tooltip: 'Settings',
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const SettingsPage(),
+                                              ),
+                                            );
+                                          },
+                                          icon: const huge.HugeIcon(
+                                            icon: huge.HugeIcons
+                                                .strokeRoundedSettings01,
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              borderRadius: const BorderRadius.vertical(
-                                bottom: Radius.circular(40),
-                              ),
-                            ),
-                            child: SafeArea(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Padding(
-                                      padding: EdgeInsets.only(
-                                        left: 12,
-                                        top: 10,
-                                      ),
-                                      child: Text(
-                                        'Profile',
-                                        style: TextStyle(
-                                          fontSize: 26,
-                                          fontWeight: FontWeight.w900,
-                                          color: Colors.white,
-                                          letterSpacing: -0.5,
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.2,
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: IconButton(
-                                        tooltip: 'Settings',
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            PageRouteBuilder(
-                                              transitionDuration:
-                                                  const Duration(
-                                                    milliseconds: 350,
-                                                  ),
-                                              reverseTransitionDuration:
-                                                  const Duration(
-                                                    milliseconds: 300,
-                                                  ),
-                                              pageBuilder:
-                                                  (
-                                                    context,
-                                                    animation,
-                                                    secondaryAnimation,
-                                                  ) => const SettingsPage(),
-                                              transitionsBuilder: (
-                                                context,
-                                                animation,
-                                                secondaryAnimation,
-                                                child,
-                                              ) {
-                                                final curvedAnimation =
-                                                    CurvedAnimation(
-                                                      parent: animation,
-                                                      curve:
-                                                          Curves.easeOutCubic,
-                                                      reverseCurve:
-                                                          Curves.easeInCubic,
-                                                    );
-                                                return SlideTransition(
-                                                  position: Tween<Offset>(
-                                                    begin: const Offset(
-                                                      0.05,
-                                                      0.0,
-                                                    ),
-                                                    end: Offset.zero,
-                                                  ).animate(curvedAnimation),
-                                                  child: FadeTransition(
-                                                    opacity: curvedAnimation,
-                                                    child: child,
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          );
-                                        },
-                                        icon: const huge.HugeIcon(
-                                          icon: huge
-                                              .HugeIcons
-                                              .strokeRoundedSettings01,
-                                          color: Colors.white,
-                                          size: 22,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
                           ),
+                        ),
 
-                          // Profile Avatar Floating Stack
-                          Positioned(
-                            top: 140,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                // Glowing Halo BoxShadow
-                                Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colorScheme.primary.withValues(
-                                          alpha: 0.35,
+                        // Avatar
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 20, bottom: 32),
+                            child: Center(
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Outer Glow
+                                  Container(
+                                    width: 140,
+                                    height: 140,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colorScheme.primary
+                                              .withOpacity(0.4),
+                                          blurRadius: 40,
+                                          spreadRadius: 10,
                                         ),
-                                        blurRadius: 28,
-                                        spreadRadius: 6,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
+                                  // Animated Gradient Border
+                                  Container(
+                                    width: 136,
+                                    height: 136,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       gradient: LinearGradient(
                                         colors: [
                                           colorScheme.primary,
-                                          colorScheme.tertiaryContainer,
+                                          colorScheme.tertiary,
                                           colorScheme.secondary,
                                         ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
                                       ),
                                     ),
+                                    padding: const EdgeInsets.all(4),
                                     child: Container(
-                                      padding: const EdgeInsets.all(3),
                                       decoration: BoxDecoration(
-                                        color: colorScheme.surface,
                                         shape: BoxShape.circle,
+                                        color: colorScheme.surface,
                                       ),
+                                      padding: const EdgeInsets.all(4),
                                       child: GestureDetector(
                                         onTap: () {
                                           if (_selectedProfilePic.isNotEmpty) {
@@ -350,11 +343,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               MaterialPageRoute(
                                                 builder: (context) =>
                                                     FullScreenProfilePicPage(
-                                                      imageUrl:
-                                                          _selectedProfilePic,
-                                                      heroTag:
-                                                          'profile_pic_hero_current_user',
-                                                    ),
+                                                  imageUrl: _selectedProfilePic,
+                                                  heroTag:
+                                                      'profile_pic_hero_current_user',
+                                                ),
                                               ),
                                             );
                                           } else {
@@ -364,212 +356,202 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         child: Hero(
                                           tag: 'profile_pic_hero_current_user',
                                           child: CircleAvatar(
-                                            radius: 54,
-                                            backgroundColor:
-                                                colorScheme
-                                                    .surfaceContainerHighest,
+                                            backgroundColor: colorScheme
+                                                .surfaceContainerHighest,
                                             backgroundImage:
                                                 _selectedProfilePic.isNotEmpty
-                                                ? (_selectedProfilePic
-                                                      .startsWith('http')
-                                                      ? CachedNetworkImageProvider(
-                                                          _selectedProfilePic,
-                                                        )
-                                                      : AssetImage(
-                                                          _selectedProfilePic,
-                                                        )
+                                                    ? (_selectedProfilePic
+                                                            .startsWith('http')
+                                                        ? CachedNetworkImageProvider(
+                                                            _selectedProfilePic)
+                                                        : AssetImage(
+                                                                _selectedProfilePic)
                                                             as ImageProvider)
-                                                : const AssetImage(
-                                                    'assets/icon/default_profile.png',
-                                                  ),
+                                                    : null,
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-
-                                // Camera Upload Action Badge
-                                Positioned(
-                                  bottom: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: _navigateToEditProfileScreen,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primary,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: colorScheme.surface,
-                                          width: 3.5,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.15,
+                                  // Camera Badge
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: GestureDetector(
+                                      onTap: _navigateToEditProfileScreen,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.primary,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: colorScheme.surface,
+                                            width: 4,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.2),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
                                             ),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 4),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt_rounded,
+                                          size: 20,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Glassmorphic Info Card
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(32),
+                              child: BackdropFilter(
+                                filter:
+                                    ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                                child: Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.surface
+                                        .withOpacity(0.4),
+                                    borderRadius: BorderRadius.circular(32),
+                                    border: Border.all(
+                                      color: Colors.white
+                                          .withOpacity(0.2),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      // Name & Badge
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              _nameController.text.isNotEmpty
+                                                  ? _nameController.text
+                                                  : 'Cuqter User',
+                                              style: const TextStyle(
+                                                fontSize: 26,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: -0.5,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: colorScheme.primary
+                                                  .withOpacity(0.15),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: huge.HugeIcon(
+                                              icon: huge.HugeIcons
+                                                  .strokeRoundedCheckmarkBadge01,
+                                              color: colorScheme.primary,
+                                              size: 22,
+                                            ),
                                           ),
                                         ],
                                       ),
-                                      child: const Icon(
-                                        Icons.camera_alt_rounded,
-                                        size: 18,
-                                        color: Colors.white,
+                                      const SizedBox(height: 12),
+                                      
+                                      // Username
+                                      GestureDetector(
+                                        onTap: _copyUsernameToClipboard,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.primary
+                                                .withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(24),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  '@${_usernameController.text}',
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: colorScheme.primary,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              huge.HugeIcon(
+                                                icon: huge.HugeIcons
+                                                    .strokeRoundedCopy01,
+                                                color: colorScheme.primary,
+                                                size: 16,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ),
+                                      const SizedBox(height: 24),
 
-                                // Active Online Status Badge
-                                Positioned(
-                                  top: 6,
-                                  right: 6,
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF10B981),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: colorScheme.surface,
-                                        width: 3,
+                                      // Divider
+                                      Container(
+                                        height: 1,
+                                        width: 100,
+                                        color: colorScheme.onSurface
+                                            .withOpacity(0.1),
                                       ),
-                                    ),
+                                      const SizedBox(height: 24),
+
+                                      // Bio
+                                      Text(
+                                        _bioController.text.isNotEmpty
+                                            ? _bioController.text
+                                            : '✨ Loving every moment on Cuqter!',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          height: 1.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.85),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                        
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 16),
+                        ),
 
-                    // Spacer for Avatar Overflow
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 70),
-                    ),
-
-                    // Profile User Identity Header
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          children: [
-                            // Display Name + Verified Badge
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  _nameController.text.isNotEmpty
-                                      ? _nameController.text
-                                      : 'Cuqter User',
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.primary.withValues(
-                                      alpha: 0.15,
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: huge.HugeIcon(
-                                    icon: huge
-                                        .HugeIcons
-                                        .strokeRoundedCheckmarkBadge01,
-                                    color: colorScheme.primary,
-                                    size: 20,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-
-                            // Username Copyable Chip
-                            GestureDetector(
-                              onTap: _copyUsernameToClipboard,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary.withValues(
-                                    alpha: 0.08,
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: colorScheme.primary.withValues(
-                                      alpha: 0.2,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      '@${_usernameController.text}',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: colorScheme.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    huge.HugeIcon(
-                                      icon: huge.HugeIcons.strokeRoundedCopy01,
-                                      color: colorScheme.primary,
-                                      size: 14,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Bio Quote Container
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 14,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.35),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: colorScheme.onSurface.withValues(
-                                    alpha: 0.08,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                _bioController.text.isNotEmpty
-                                    ? _bioController.text
-                                    : '✨ Loving every moment on Cuqter!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14.5,
-                                  height: 1.4,
-                                  color: colorScheme.onSurface.withValues(
-                                    alpha: 0.85,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Real Database Friends Stat (Friends Only)
-                            GestureDetector(
+                        // Friends Card
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: GestureDetector(
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -578,119 +560,138 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 );
                               },
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                  horizontal: 20,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerHighest
-                                      .withValues(alpha: 0.35),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha: 0.08,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(24),
+                                child: BackdropFilter(
+                                  filter:
+                                      ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 20,
+                                      horizontal: 24,
                                     ),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primary.withValues(
-                                          alpha: 0.12,
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: huge.HugeIcon(
-                                        icon:
-                                            huge
-                                                .HugeIcons
-                                                .strokeRoundedUserGroup,
-                                        color: colorScheme.primary,
-                                        size: 22,
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.surface
+                                          .withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(24),
+                                      border: Border.all(
+                                        color: Colors.white
+                                            .withOpacity(0.2),
+                                        width: 1.5,
                                       ),
                                     ),
-                                    const SizedBox(width: 14),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          '${contacts.whereType<String>().where((id) => id.trim().isNotEmpty && id != user?.uid).toSet().length}',
-                                          style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.primary
+                                                .withOpacity(0.15),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: huge.HugeIcon(
+                                            icon: huge.HugeIcons
+                                                .strokeRoundedUserGroup,
+                                            color: colorScheme.primary,
+                                            size: 24,
                                           ),
                                         ),
-                                        Text(
-                                          'Friends',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: colorScheme.onSurface
-                                                .withValues(alpha: 0.6),
-                                            fontWeight: FontWeight.w500,
+                                        const SizedBox(width: 16),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${contacts.whereType<String>().where((id) => id.trim().isNotEmpty && id != user?.uid).toSet().length}',
+                                              style: const TextStyle(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Friends',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: colorScheme.onSurface
+                                                    .withOpacity(0.7),
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const Spacer(),
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.surface
+                                                .withOpacity(0.5),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: huge.HugeIcon(
+                                            icon: huge.HugeIcons
+                                                .strokeRoundedArrowRight01,
+                                            color: colorScheme.onSurface,
+                                            size: 20,
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const Spacer(),
-                                    huge.HugeIcon(
-                                      icon:
-                                          huge
-                                              .HugeIcons
-                                              .strokeRoundedArrowRight01,
-                                      color: colorScheme.onSurface.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      size: 18,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Primary Action Row (Edit Profile)
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  backgroundColor: colorScheme.primary,
-                                  foregroundColor: colorScheme.onPrimary,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                onPressed: _navigateToEditProfileScreen,
-                                icon: const huge.HugeIcon(
-                                  icon: huge.HugeIcons.strokeRoundedEdit02,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                label: const Text(
-                                  'Edit Profile',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
 
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 40),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 24),
+                        ),
+
+                        // Edit Profile Button
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 18),
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
+                                elevation: 8,
+                                shadowColor:
+                                    colorScheme.primary.withOpacity(0.5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              onPressed: _navigateToEditProfileScreen,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const huge.HugeIcon(
+                                    icon: huge.HugeIcons.strokeRoundedEdit02,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Edit Profile',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 40),
+                        ),
+                      ],
                     ),
                   ],
                 );
@@ -698,11 +699,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
     );
   }
-
-
-
-
-
   Future<void> _navigateToEditProfileScreen() async {
     final result = await Navigator.push(
       context,

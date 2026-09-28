@@ -503,9 +503,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     backgroundImage: pic.isNotEmpty
                                         ? CachedNetworkImageProvider(pic)
                                               as ImageProvider
-                                        : const AssetImage(
-                                            'assets/icon/default_profile.png',
-                                          ),
+                                        : null,
                                   ),
                                   title: Text(name),
                                   onTap: () async {
@@ -1644,9 +1642,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                     widget.receiverProfilePic!,
                                                   )
                                                   as ImageProvider)
-                                      : const AssetImage(
-                                          'assets/icon/default_profile.png',
-                                        ),
+                                      : null,
                                 ),
                               ),
                               if (data != null

@@ -523,7 +523,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                                     ? CachedNetworkImageProvider(pic)
                                     : AssetImage(pic))
                                 as ImageProvider
-                          : const AssetImage('assets/icon/default_profile.png'),
+                          : null,
                     ),
                   ),
                   title: Text(
@@ -842,9 +842,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                                             _currentGroup.last.profilePic,
                                           ))
                                     as ImageProvider
-                              : const AssetImage(
-                                  'assets/icon/default_profile.png',
-                                ),
+                              : null,
                         ),
                         const SizedBox(width: 10),
                         Column(

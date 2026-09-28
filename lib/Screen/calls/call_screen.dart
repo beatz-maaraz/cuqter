@@ -453,9 +453,7 @@ class _CallScreenState extends State<CallScreen> {
                                 backgroundImage:
                                     profilePic != null && profilePic.isNotEmpty
                                     ? NetworkImage(profilePic)
-                                    : const AssetImage(
-                                            'assets/icon/default_profile.png',
-                                          )
+                                    : null
                                           as ImageProvider,
                               ),
                             );
@@ -468,9 +466,7 @@ class _CallScreenState extends State<CallScreen> {
                             backgroundColor: Colors.white.withValues(
                               alpha: 0.1,
                             ),
-                            backgroundImage: const AssetImage(
-                              'assets/icon/default_profile.png',
-                            ),
+                            backgroundImage: null,
                           ),
                         ),
                     ],

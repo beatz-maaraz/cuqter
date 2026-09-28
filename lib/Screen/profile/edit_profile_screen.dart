@@ -680,7 +680,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                             ? (_selectedProfilePic.startsWith('http')
                                                 ? CachedNetworkImageProvider(_selectedProfilePic)
                                                 : AssetImage(_selectedProfilePic) as ImageProvider)
-                                            : const AssetImage('assets/icon/default_profile.png'),
+                                            : null,
                                       ),
                                     ),
                                   ),

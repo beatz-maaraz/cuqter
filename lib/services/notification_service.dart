@@ -1030,7 +1030,30 @@ class NotificationService {
     if (kDebugMode) {
       print('Notification clicked, data payload: ${message.data}');
     }
-    // Deep link or navigate to the chat page based on message.data['chatId'] if desired
+    
+    final data = message.data;
+    if (data['type'] == 'friend_request') {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(builder: (context) => const NotificationScreen()),
+      );
+      return;
+    }
+
+    final chatId = data['chatId'];
+    final senderId = data['senderId'];
+    final senderName = data['title'] ?? 'Chat';
+
+    if (chatId != null && senderId != null) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => ChatScreen(
+            receiverId: senderId,
+            receiverName: senderName,
+            receiverProfilePic: data['senderProfilePic'] ?? data['profilepic'],
+          ),
+        ),
+      );
+    }
   }
 
   /// Fetches the active FCM Token and stores it in Firestore.

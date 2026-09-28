@@ -291,9 +291,7 @@ class _ContactScreenState extends State<ContactScreen> {
                                                             profilePic,
                                                           ))
                                                     as ImageProvider
-                                              : const AssetImage(
-                                                  'assets/icon/default_profile.png',
-                                                ),
+                                              : null,
                                         ),
                                         title: Text(
                                           name,

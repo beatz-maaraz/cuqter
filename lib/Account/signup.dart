@@ -505,9 +505,7 @@ class _SighuppageState extends State<Sighuppage> {
                                                           _selectedProfilePic,
                                                         )
                                                         as ImageProvider)
-                                            : const AssetImage(
-                                                'assets/icon/default_profile.png',
-                                              ),
+                                            : null,
                                       ),
                                     ),
                                     Positioned(

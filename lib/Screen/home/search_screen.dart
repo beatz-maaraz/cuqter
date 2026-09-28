@@ -289,9 +289,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                                 profilePic,
                                                               ))
                                                         as ImageProvider
-                                                  : const AssetImage(
-                                                      'assets/icon/default_profile.png',
-                                                    ),
+                                                  : null,
                                             ),
                                           ),
                                           const SizedBox(height: 12),

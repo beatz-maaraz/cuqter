@@ -143,9 +143,7 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                                       width: 120,
                                       height: 120,
                                     )
-                                  : const AssetImage(
-                                          'assets/icon/default_profile.png',
-                                        )
+                                  : null
                                         as ImageProvider,
                             ),
                             title: Text(
@@ -327,9 +325,7 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                                           width: 160,
                                           height: 160,
                                         )
-                                      : const AssetImage(
-                                              'assets/icon/default_profile.png',
-                                            )
+                                      : null
                                             as ImageProvider,
                                 ),
                                 title: Text(

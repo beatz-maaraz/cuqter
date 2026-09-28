@@ -926,9 +926,7 @@ class _HomepageState extends State<Homepage> {
                                                                     .toString(),
                                                               )
                                                               as ImageProvider)
-                                                  : const AssetImage(
-                                                      'assets/icon/default_profile.png',
-                                                    ),
+                                                  : null,
                                             ),
                                           ),
                                         ),
@@ -1321,9 +1319,7 @@ class _HomepageState extends State<Homepage> {
                                       ? CachedNetworkImageProvider(profilePic)
                                       : AssetImage(profilePic))
                                   as ImageProvider
-                            : const AssetImage(
-                                'assets/icon/default_profile.png',
-                              ),
+                            : null,
                       ),
                     ),
                     if (myStatuses.isEmpty)
@@ -1413,7 +1409,7 @@ class _HomepageState extends State<Homepage> {
                                 )
                               : AssetImage(latestStatus.profilePic))
                           as ImageProvider
-                    : const AssetImage('assets/icon/default_profile.png'),
+                    : null,
               ),
             ),
             const SizedBox(height: 4),

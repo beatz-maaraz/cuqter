@@ -353,9 +353,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                         backgroundImage:
                             profilePic != null && profilePic.isNotEmpty
                             ? NetworkImage(profilePic)
-                            : const AssetImage(
-                                    'assets/icon/default_profile.png',
-                                  )
+                            : null
                                   as ImageProvider,
                       );
                     },

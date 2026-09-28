@@ -325,7 +325,7 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                               width: 160,
                               height: 160,
                             )
-                          : const AssetImage('assets/icon/default_profile.png')
+                          : null
                                 as ImageProvider,
                     ),
                   ),
@@ -1072,7 +1072,7 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                             width: 160,
                             height: 160,
                           )
-                        : const AssetImage('assets/icon/default_profile.png')
+                        : null
                               as ImageProvider,
                   ),
                 ),

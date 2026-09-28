@@ -384,9 +384,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                           )
                                         : AssetImage(widget.profilepic))
                                     as ImageProvider
-                              : const AssetImage(
-                                  'assets/icon/default_profile.png',
-                                ),
+                              : null,
                         ),
                       ),
                     ),
