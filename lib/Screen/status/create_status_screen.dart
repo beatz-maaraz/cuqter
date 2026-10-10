@@ -11,7 +11,6 @@ import 'package:cuqter/services/status_service.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:cuqter/media.dart';
-import 'package:cuqter/media.dart';
 import 'package:cuqter/Screen/media/camera_screen.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
 
@@ -70,12 +69,11 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
       } else {
         _videoController = VideoPlayerController.file(File(path));
       }
-      _videoController!
-        ..initialize().then((_) {
-          if (mounted) setState(() {});
-          _videoController!.play();
-          _videoController!.setLooping(true);
-        });
+      _videoController!.initialize().then((_) {
+        if (mounted) setState(() {});
+        _videoController!.play();
+        _videoController!.setLooping(true);
+      });
       if (mounted) {
         setState(() {
           _videoFile = XFile(path);
@@ -154,12 +152,11 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
             _videoController = VideoPlayerController.file(File(path));
           }
         }
-        _videoController!
-          ..initialize().then((_) {
-            if (mounted) setState(() {});
-            _videoController!.play();
-            _videoController!.setLooping(true);
-          });
+        _videoController!.initialize().then((_) {
+          if (mounted) setState(() {});
+          _videoController!.play();
+          _videoController!.setLooping(true);
+        });
       }
     }
   }
@@ -208,6 +205,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
             mediaUrl = res['url']!;
             mediaType = 'video';
           } else {
+            if (!mounted) return;
             showSnackBar('Failed to upload video', context);
             setState(() => _isLoading = false);
             return;
@@ -225,6 +223,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
             mediaUrl = res['url']!;
             mediaType = 'image';
           } else {
+            if (!mounted) return;
             showSnackBar('Failed to upload image', context);
             setState(() => _isLoading = false);
             return;
@@ -259,7 +258,8 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
           mediaUrl = res['url']!;
           mediaType = 'video';
         } else {
-          showSnackBar('Failed to upload video', context);
+          if (!mounted) return;
+            showSnackBar('Failed to upload video', context);
           setState(() => _isLoading = false);
           return;
         }
@@ -274,7 +274,8 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
           mediaUrl = res['url']!;
           mediaType = 'image';
         } else {
-          showSnackBar('Failed to upload image', context);
+          if (!mounted) return;
+            showSnackBar('Failed to upload image', context);
           setState(() => _isLoading = false);
           return;
         }
@@ -290,11 +291,11 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
         colorIndex: (mediaType == 'text') ? _currentGradientIndex : 0,
       );
 
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      if (!mounted) return;
+      Navigator.pop(context);
     } catch (e) {
-      showSnackBar(e.toString(), context);
+      if (!mounted) return;
+            showSnackBar(e.toString(), context);
     } finally {
       setState(() {
         _isLoading = false;
@@ -305,7 +306,8 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
   @override
   Widget build(BuildContext context) {
     // Determine if we are showing text-only status
-    final bool isTextOnly = _selectedNetworkUrl == null &&
+    final bool isTextOnly =
+        _selectedNetworkUrl == null &&
         _selectedLocalPath == null &&
         _file == null &&
         !_isVideo;
@@ -327,25 +329,14 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
             )
           else if (_selectedNetworkUrl != null && !_isVideo)
             Positioned.fill(
-              child: Image.network(
-                _selectedNetworkUrl!,
-                fit: BoxFit.cover,
-              ),
+              child: Image.network(_selectedNetworkUrl!, fit: BoxFit.cover),
             )
           else if (_selectedLocalPath != null && !_isVideo)
             Positioned.fill(
-              child: Image.file(
-                File(_selectedLocalPath!),
-                fit: BoxFit.cover,
-              ),
+              child: Image.file(File(_selectedLocalPath!), fit: BoxFit.cover),
             )
           else if (_file != null && !_isVideo)
-            Positioned.fill(
-              child: Image.memory(
-                _file!,
-                fit: BoxFit.cover,
-              ),
-            )
+            Positioned.fill(child: Image.memory(_file!, fit: BoxFit.cover))
           else if (_isVideo &&
               _videoController != null &&
               _videoController!.value.isInitialized)
@@ -363,8 +354,10 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
           // 2. Loading Indicator Overlay
           if (_isLoading)
             Container(
-              color: Colors.black.withOpacity(0.5),
-              child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
             ),
 
           // 3. Text Input (Always shown if it's text-only, or overlays media if they type something?)
@@ -390,9 +383,11 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                     ),
                     textAlign: TextAlign.center,
                     decoration: InputDecoration(
-                      hintText: isTextOnly ? 'Type a status...' : 'Add a caption...',
+                      hintText: isTextOnly
+                          ? 'Type a status...'
+                          : 'Add a caption...',
                       hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                         fontSize: isTextOnly ? 32 : 24,
                       ),
                       border: InputBorder.none,
@@ -414,12 +409,18 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedCancel01, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
+                      icon: const huge.HugeIcon(
+                        icon: huge.HugeIcons.strokeRoundedCancel01,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                      },
                     ),
                   ),
                   if (isTextOnly)
@@ -428,11 +429,14 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withValues(alpha: 0.4),
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            icon: huge.HugeIcon(icon: huge.HugeIcons.strokeRoundedPaintBoard, color: Colors.white),
+                            icon: const huge.HugeIcon(
+                              icon: huge.HugeIcons.strokeRoundedPaintBoard,
+                              color: Colors.white,
+                            ),
                             onPressed: () {
                               setState(() {
                                 _showColorPicker = !_showColorPicker;
@@ -458,45 +462,58 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                               ? Container(
                                   key: const ValueKey('color_picker'),
                                   margin: const EdgeInsets.only(top: 12),
-                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 8,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.4),
+                                    color: Colors.black.withValues(alpha: 0.4),
                                     borderRadius: BorderRadius.circular(30),
                                   ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
-                                    children: List.generate(_statusGradients.length, (index) {
-                                      return GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _currentGradientIndex = index;
-                                            _showColorPicker = false;
-                                          });
-                                        },
-                                        child: Container(
-                                          margin: const EdgeInsets.symmetric(vertical: 6),
-                                          width: 32,
-                                          height: 32,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            gradient: LinearGradient(
-                                              colors: _statusGradients[index],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
+                                    children: List.generate(
+                                      _statusGradients.length,
+                                      (index) {
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _currentGradientIndex = index;
+                                              _showColorPicker = false;
+                                            });
+                                          },
+                                          child: Container(
+                                            margin: const EdgeInsets.symmetric(
+                                              vertical: 6,
                                             ),
-                                            border: _currentGradientIndex == index
-                                                ? Border.all(color: Colors.white, width: 2)
-                                                : null,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.2),
-                                                blurRadius: 4,
-                                              )
-                                            ],
+                                            width: 32,
+                                            height: 32,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              gradient: LinearGradient(
+                                                colors: _statusGradients[index],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                              border:
+                                                  _currentGradientIndex == index
+                                                  ? Border.all(
+                                                      color: Colors.white,
+                                                      width: 2,
+                                                    )
+                                                  : null,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.2),
+                                                  blurRadius: 4,
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    }),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 )
                               : const SizedBox.shrink(key: ValueKey('empty')),
@@ -515,49 +532,55 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
               child: Container(
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          spreadRadius: 1,
-                        )
-                      ],
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      spreadRadius: 1,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildIconButton(
-                                icon: huge.HugeIcons.strokeRoundedText,
-                                label: 'Text',
-                                isActive: isTextOnly,
-                                onTap: () {
-                                  setState(() {
-                                    _file = null;
-                                    _videoFile = null;
-                                    _selectedLocalPath = null;
-                                    _selectedNetworkUrl = null;
-                                    _isVideo = false;
-                                  });
-                                },
-                              ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildIconButton(
+                            icon: huge.HugeIcons.strokeRoundedText,
+                            label: 'Text',
+                            isActive: isTextOnly,
+                            onTap: () {
+                              setState(() {
+                                _file = null;
+                                _videoFile = null;
+                                _selectedLocalPath = null;
+                                _selectedNetworkUrl = null;
+                                _isVideo = false;
+                              });
+                            },
+                          ),
 
-                              const SizedBox(width: 8),
-                              _buildIconButton(
-                                icon: huge.HugeIcons.strokeRoundedImage01,
+                          const SizedBox(width: 8),
+                          _buildIconButton(
+                            icon: huge.HugeIcons.strokeRoundedImage01,
                             label: 'Gallery',
-                            isActive: _selectedLocalPath != null || _selectedNetworkUrl != null || _file != null,
+                            isActive:
+                                _selectedLocalPath != null ||
+                                _selectedNetworkUrl != null ||
+                                _file != null,
                             onTap: _selectMedia,
                           ),
                           const SizedBox(width: 8),
@@ -569,7 +592,8 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                               final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const CustomCameraScreen(),
+                                  builder: (context) =>
+                                      const CustomCameraScreen(),
                                 ),
                               );
                               if (result != null) {
@@ -597,14 +621,17 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
 
                                 if (isVideo) {
                                   _videoController = kIsWeb
-                                      ? VideoPlayerController.networkUrl(Uri.parse(file.path))
-                                      : VideoPlayerController.file(File(file.path));
-                                  _videoController!
-                                    ..initialize().then((_) {
-                                      if (mounted) setState(() {});
-                                      _videoController!.play();
-                                      _videoController!.setLooping(true);
-                                    });
+                                      ? VideoPlayerController.networkUrl(
+                                          Uri.parse(file.path),
+                                        )
+                                      : VideoPlayerController.file(
+                                          File(file.path),
+                                        );
+                                  _videoController!.initialize().then((_) {
+                                    if (mounted) setState(() {});
+                                    _videoController!.play();
+                                    _videoController!.setLooping(true);
+                                  });
                                 }
                               }
                             },
@@ -618,12 +645,15 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
-                                  colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                                  colors: [
+                                    Color(0xFF00C6FF),
+                                    Color(0xFF0072FF),
+                                  ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                               ),
-                              child: huge.HugeIcon(
+                              child: const huge.HugeIcon(
                                 icon: huge.HugeIcons.strokeRoundedSent,
                                 color: Colors.white,
                                 size: 22,
@@ -655,7 +685,9 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white.withOpacity(0.25) : Colors.transparent,
+          color: isActive
+              ? Colors.white.withValues(alpha: 0.25)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -670,7 +702,7 @@ class _CreateStatusScreenState extends State<CreateStatusScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ]
+            ],
           ],
         ),
       ),

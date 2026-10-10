@@ -70,8 +70,9 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
             final isVideoCall = data['isVideo'] as bool? ?? false;
 
             // Guard: skip if this room is already being shown
-            if (_isShowingIncomingCall && _currentRingingRoomId == roomId)
+            if (_isShowingIncomingCall && _currentRingingRoomId == roomId) {
               return;
+            }
 
             _currentRingingRoomId = roomId;
             _isShowingIncomingCall = true;
@@ -90,8 +91,9 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                 ),
               ).whenComplete(() {
                 _isShowingIncomingCall = false;
-                if (_currentRingingRoomId == roomId)
+                if (_currentRingingRoomId == roomId) {
                   _currentRingingRoomId = null;
+                }
               });
             }
           } else {

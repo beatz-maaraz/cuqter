@@ -692,8 +692,7 @@ class _HomepageState extends State<Homepage> {
 
                       return Scrollbar(
                         child: ListView.builder(
-                          cacheExtent: 1000.0,
-                          padding: const EdgeInsets.only(top: 8, bottom: 90),
+                          cacheExtent: 1000.0, padding: const EdgeInsets.only(top: 8, bottom: 90),
                           physics: const BouncingScrollPhysics(),
                           itemCount: users.length,
                           itemBuilder: (context, index) {
@@ -927,6 +926,11 @@ class _HomepageState extends State<Homepage> {
                                                               )
                                                               as ImageProvider)
                                                   : null,
+                                            child: !(userData['profilepic'] !=
+                                                          null &&
+                                                      userData['profilepic']
+                                                          .toString()
+                                                          .isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                                             ),
                                           ),
                                         ),
@@ -1320,6 +1324,7 @@ class _HomepageState extends State<Homepage> {
                                       : AssetImage(profilePic))
                                   as ImageProvider
                             : null,
+                                            child: !(profilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                       ),
                     ),
                     if (myStatuses.isEmpty)
@@ -1410,6 +1415,7 @@ class _HomepageState extends State<Homepage> {
                               : AssetImage(latestStatus.profilePic))
                           as ImageProvider
                     : null,
+                                            child: !(latestStatus.profilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
               ),
             ),
             const SizedBox(height: 4),

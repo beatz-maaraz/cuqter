@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cuqter/modules/message.dart';
 
@@ -63,7 +64,7 @@ class MessageService {
           .doc(messageId)
           .update({'isRead': true});
     } catch (e) {
-      print('Error marking message as read: $e');
+      debugPrint('Error marking message as read: $e');
     }
   }
 
@@ -88,7 +89,7 @@ class MessageService {
 
       await batch.commit();
     } catch (e) {
-      print('Error marking all messages as read: $e');
+      debugPrint('Error marking all messages as read: $e');
     }
   }
 
@@ -110,7 +111,7 @@ class MessageService {
           .get();
       return snapshot.count ?? 0;
     } catch (e) {
-      print('Error getting unread count: $e');
+      debugPrint('Error getting unread count: $e');
       return 0;
     }
   }
@@ -151,8 +152,9 @@ class MessageService {
 
       if (replyToId != null) messageData['replyToId'] = replyToId;
       if (replyToText != null) messageData['replyToText'] = replyToText;
-      if (replyToSenderId != null)
+      if (replyToSenderId != null) {
         messageData['replyToSenderId'] = replyToSenderId;
+      }
       if (replyToType != null) messageData['replyToType'] = replyToType;
 
       await _firestore
@@ -169,7 +171,7 @@ class MessageService {
         'contacts': FieldValue.arrayUnion([senderId]),
       }, SetOptions(merge: true));
     } catch (e) {
-      print('Error sending message: $e');
+      debugPrint('Error sending message: $e');
     }
   }
 
@@ -183,7 +185,7 @@ class MessageService {
         .limit(1)
         .snapshots()
         .map((snapshot) {
-          if (snapshot.docs.isEmpty) return null;
+          if (snapshot.docs.isEmpty) { return null; }
           return Message.fromJson(
             snapshot.docs.first.id,
             snapshot.docs.first.data(),
@@ -212,7 +214,7 @@ class MessageService {
             'timestamp': FieldValue.serverTimestamp(),
           });
     } catch (e) {
-      print('Error logging call: $e');
+      debugPrint('Error logging call: $e');
     }
   }
 }

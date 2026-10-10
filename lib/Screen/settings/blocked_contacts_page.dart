@@ -143,8 +143,7 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                                       width: 120,
                                       height: 120,
                                     )
-                                  : null
-                                        as ImageProvider,
+                                  : null,
                             ),
                             title: Text(
                               name,
@@ -325,8 +324,7 @@ class _BlockedContactsPageState extends State<BlockedContactsPage> {
                                           width: 160,
                                           height: 160,
                                         )
-                                      : null
-                                            as ImageProvider,
+                                      : null,
                                 ),
                                 title: Text(
                                   peerName,

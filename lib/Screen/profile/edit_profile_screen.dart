@@ -681,6 +681,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                 ? CachedNetworkImageProvider(_selectedProfilePic)
                                                 : AssetImage(_selectedProfilePic) as ImageProvider)
                                             : null,
+                                            child: !(_selectedProfilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey, size: 64) : null,
                                       ),
                                     ),
                                   ),

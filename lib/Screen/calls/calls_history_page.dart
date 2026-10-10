@@ -325,8 +325,7 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                               width: 160,
                               height: 160,
                             )
-                          : null
-                                as ImageProvider,
+                          : null,
                     ),
                   ),
                 ),
@@ -1072,8 +1071,7 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                             width: 160,
                             height: 160,
                           )
-                        : null
-                              as ImageProvider,
+                        : null,
                   ),
                 ),
               ],

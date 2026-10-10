@@ -47,7 +47,7 @@ class AuthMethod {
           password: password,
         );
 
-        model.user user = model.user(
+        model.AppUser user = model.AppUser(
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password: password,
@@ -241,7 +241,7 @@ class AuthMethod {
             count++;
           }
 
-          model.user newUser = model.user(
+          model.AppUser newUser = model.AppUser(
             name: name,
             email: email.toLowerCase(),
             password: "",

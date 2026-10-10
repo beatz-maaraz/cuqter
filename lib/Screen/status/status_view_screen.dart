@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:hugeicons/hugeicons.dart' as huge;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cuqter/modules/status.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,7 +11,6 @@ import 'package:cuqter/services/message_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cuqter/Screen/profile/userprofile.dart';
 import 'package:video_player/video_player.dart';
-import 'package:flutter/foundation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class StatusViewScreen extends StatefulWidget {
@@ -141,7 +141,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
             }
           })
           .catchError((error) {
-            print('Error initializing video: $error');
+            debugPrint('Error initializing video: $error');
             if (mounted && _videoController == controller) {
               _animationController.duration = const Duration(seconds: 10);
               _animationController.forward();
@@ -194,7 +194,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
           currentUserPic = data['profilepic'] ?? '';
         }
       } catch (e) {
-        print('Error fetching user info for status viewer: $e');
+        debugPrint('Error fetching user info for status viewer: $e');
       }
 
       final viewer = StatusViewer(
@@ -321,7 +321,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
       _showHeartOverlay = true;
     });
     Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _showHeartOverlay = false;
         });
@@ -350,7 +350,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
         currentUserPic = data['profilepic'] ?? '';
       }
     } catch (e) {
-      print('Error fetching user info for like: $e');
+      debugPrint('Error fetching user info for like: $e');
     }
 
     final liker = StatusLiker(
@@ -524,6 +524,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                                     : AssetImage(pic))
                                 as ImageProvider
                           : null,
+                                            child: !(pic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                     ),
                   ),
                   title: Text(
@@ -811,7 +812,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                               _currentGroup[_currentIndex].profilePic;
                         }
                       }
-                      if (mounted) {
+                      if (context.mounted) {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -843,6 +844,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                                           ))
                                     as ImageProvider
                               : null,
+                                            child: !(_currentGroup.last.profilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                         ),
                         const SizedBox(width: 10),
                         Column(
@@ -932,7 +934,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                               if (status.mediaUrl.isNotEmpty) {
                                 shareText += '\n${status.mediaUrl}';
                               }
-                              Share.share(shareText);
+                              SharePlus.instance.share(ShareParams(text: shareText));
                             },
                           ),
                           IconButton(
@@ -945,7 +947,7 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                               await _statusService.deleteStatus(
                                 _currentGroup[_currentIndex],
                               );
-                              if (mounted) {
+                              if (context.mounted) {
                                 Navigator.pop(context);
                               }
                             },

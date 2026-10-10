@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cuqter/modules/status.dart';
 import 'package:cuqter/services/cloudinary_service.dart';
@@ -31,7 +32,7 @@ class StatusService {
       );
       await docRef.set(status.toMap());
     } catch (e) {
-      print('Error adding status: $e');
+      debugPrint('Error adding status: $e');
     }
   }
 
@@ -65,7 +66,7 @@ class StatusService {
       await _deleteStatusNotifications(status.statusId);
       await _firestore.collection('statuses').doc(status.statusId).delete();
     } catch (e) {
-      print('Error deleting status: $e');
+      debugPrint('Error deleting status: $e');
     }
   }
 
@@ -92,7 +93,7 @@ class StatusService {
         await doc.reference.delete();
       }
     } catch (e) {
-      print('Error cleaning up statuses: $e');
+      debugPrint('Error cleaning up statuses: $e');
     }
   }
 
@@ -106,7 +107,7 @@ class StatusService {
         await doc.reference.delete();
       }
     } catch (e) {
-      print('Error deleting notifications for status $statusId: $e');
+      debugPrint('Error deleting notifications for status $statusId: $e');
     }
   }
 
@@ -117,7 +118,7 @@ class StatusService {
         'viewers': FieldValue.arrayUnion([viewer.toMap()]),
       });
     } catch (e) {
-      print('Error marking status as seen: $e');
+      debugPrint('Error marking status as seen: $e');
     }
   }
 
@@ -175,7 +176,7 @@ class StatusService {
             .delete();
       }
     } catch (e) {
-      print('Error toggling status like: $e');
+      debugPrint('Error toggling status like: $e');
     }
   }
 }

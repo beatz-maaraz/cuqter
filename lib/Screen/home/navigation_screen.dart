@@ -85,8 +85,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
             final isVideoCall = data['isVideo'] as bool? ?? false;
 
             // Guard: skip if this room is already being shown or ringing
-            if (_isShowingIncomingCall && _currentRingingRoomId == roomId)
+            if (_isShowingIncomingCall && _currentRingingRoomId == roomId) {
               return;
+            }
 
             _currentRingingRoomId = roomId;
             _isShowingIncomingCall = true;
@@ -311,6 +312,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                                       )
                                     : AssetImage(profilePic) as ImageProvider)
                               : null,
+                                              child: !(profilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey, size: 14) : null,
                         ),
                       ),
                     );

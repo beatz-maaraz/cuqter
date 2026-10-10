@@ -197,189 +197,134 @@ class _ChatScreenState extends State<ChatScreen> {
     final String type = message['type']?.toString() ?? 'text';
     HapticFeedback.mediumImpact();
 
+    Widget buildActionItem(BuildContext ctx, IconData icon, String label, VoidCallback onTap, {bool isDestructive = false}) {
+      final color = isDestructive ? const Color(0xFFE57373) : colorScheme.onSurface;
+      return ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isDestructive ? color.withValues(alpha: 0.1) : colorScheme.onSurface.withValues(alpha: 0.05),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(
+          label,
+          style: TextStyle(
+            color: color, 
+            fontSize: 16, 
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        onTap: () {
+          Navigator.pop(ctx);
+          onTap();
+        },
+      );
+    }
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       useRootNavigator: true,
       builder: (ctx) {
-        return Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Drag handle
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. Floating Reaction Pill
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      )
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: ['👍', '❤️', '😂', '😮', '😢', '🙏'].map((emoji) {
+                      return GestureDetector(
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          await _sendReaction(docId, emoji);
+                        },
+                        child: Text(emoji, style: const TextStyle(fontSize: 26)),
+                      );
+                    }).toList(),
+                  ),
                 ),
-              ),
-              // ── Emoji reaction bar
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: ['👍', '❤️', '😂', '😮', '😢', '🙏'].map((emoji) {
-                    return GestureDetector(
-                      onTap: () async {
-                        Navigator.pop(ctx);
-                        await _sendReaction(docId, emoji);
-                      },
-                      child: AnimatedScale(
-                        scale: 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest,
-                            shape: BoxShape.circle,
+                const SizedBox(height: 16),
+
+                // 2. Core Action Group
+                Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    children: [
+                      buildActionItem(ctx, Icons.copy_rounded, 'Copy', () {
+                        Clipboard.setData(ClipboardData(text: text));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Message copied'),
+                            duration: Duration(seconds: 1),
                           ),
-                          child: Text(
-                            emoji,
-                            style: const TextStyle(fontSize: 22),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                        );
+                      }),
+                      buildActionItem(ctx, Icons.reply_rounded, 'Reply', () {
+                        setState(() {
+                          _replyMessage = {'id': docId, ...message};
+                        });
+                        _focusNode.requestFocus();
+                      }),
+                      buildActionItem(ctx, Icons.forward_rounded, 'Forward', () {
+                        _showForwardSheet(text, type);
+                      }),
+                      Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.4), height: 1, indent: 56),
+                      buildActionItem(ctx, Icons.check_circle_outline_rounded, 'Select', () {
+                        setState(() {
+                          _isSelecting = true;
+                          _selectedMessageIds.add(docId);
+                        });
+                      }),
+                    ],
+                  ),
                 ),
-              ),
-              Divider(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-              ),
-              // ── Action items
-              _contextMenuItem(
-                ctx: ctx,
-                icon: Icons.copy_rounded,
-                label: 'Copy',
-                color: colorScheme.primary,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Clipboard.setData(ClipboardData(text: text));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Message copied'),
-                      duration: Duration(seconds: 1),
+                const SizedBox(height: 16),
+
+                // 3. Isolated Destructive Action
+                if (isMe)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  );
-                },
-              ),
-              _contextMenuItem(
-                ctx: ctx,
-                icon: Icons.reply_rounded,
-                label: 'Reply',
-                color: colorScheme.secondary,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  setState(() {
-                    _replyMessage = {'id': docId, ...message};
-                  });
-                  _focusNode.requestFocus();
-                },
-              ),
-              _contextMenuItem(
-                ctx: ctx,
-                icon: Icons.forward_rounded,
-                label: 'Forward',
-                color: Colors.blue,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showForwardSheet(text, type);
-                },
-              ),
-              _contextMenuItem(
-                ctx: ctx,
-                icon: Icons.check_circle_outline_rounded,
-                label: 'Select',
-                color: Colors.teal,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  setState(() {
-                    _isSelecting = true;
-                    _selectedMessageIds.add(docId);
-                  });
-                },
-              ),
-              if (isMe) ...[
-                Divider(
-                  height: 1,
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-                ),
-                _contextMenuItem(
-                  ctx: ctx,
-                  icon: Icons.delete_outline_rounded,
-                  label: 'Delete',
-                  color: colorScheme.error,
-                  onTap: () async {
-                    Navigator.pop(ctx);
-                    await _deleteSingleMessage(docId);
-                  },
-                ),
+                    child: buildActionItem(
+                      ctx,
+                      Icons.delete_outline_rounded, 
+                      'Delete', 
+                      () async {
+                        await _deleteSingleMessage(docId);
+                      },
+                      isDestructive: true,
+                    ),
+                  ),
               ],
-              const SizedBox(height: 8),
-            ],
+            ),
           ),
         );
       },
-    );
-  }
-
-
-  Widget _contextMenuItem({
-    required BuildContext ctx,
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(ctx).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(width: 18),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -482,16 +427,18 @@ class _ChatScreenState extends State<ChatScreen> {
                           itemCount: contactIds.length,
                           itemBuilder: (context, i) {
                             final cid = contactIds[i];
-                            if (cid == _auth.currentUser!.uid)
+                            if (cid == _auth.currentUser!.uid) {
                               return const SizedBox.shrink();
+                            }
                             return FutureBuilder<DocumentSnapshot>(
                               future: _firestore
                                   .collection('users')
                                   .doc(cid)
                                   .get(),
                               builder: (context, snap) {
-                                if (!snap.hasData)
+                                if (!snap.hasData) {
                                   return const SizedBox.shrink();
+                                }
                                 final cdata =
                                     snap.data!.data() as Map<String, dynamic>?;
                                 final name =
@@ -504,6 +451,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ? CachedNetworkImageProvider(pic)
                                               as ImageProvider
                                         : null,
+                                            child: !(pic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                                   ),
                                   title: Text(name),
                                   onTap: () async {
@@ -1643,6 +1591,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                                   )
                                                   as ImageProvider)
                                       : null,
+                                            child: !((data != null &&
+                                          data['profilepic'] != null &&
+                                          data['profilepic']
+                                              .toString()
+                                              .isNotEmpty)) ? const Icon(Icons.person, color: Colors.grey) : null,
                                 ),
                               ),
                               if (data != null
@@ -2022,11 +1975,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       ? (() {
                           int index = _wallpaperIndex;
                           if (index < 0 ||
-                              index >= ChatWallpaper.defaultWallpapers.length)
+                              index >= ChatWallpaper.defaultWallpapers.length) {
                             index = 0;
+                          }
                           final wp = ChatWallpaper.defaultWallpapers[index];
-                          if (wp.type == WallpaperType.theme)
+                          if (wp.type == WallpaperType.theme) {
                             return Colors.transparent;
+                          }
                           return wp.type == WallpaperType.color
                               ? wp.color
                               : Colors.transparent;
@@ -2043,8 +1998,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       : (() {
                           int index = _wallpaperIndex;
                           if (index < 0 ||
-                              index >= ChatWallpaper.defaultWallpapers.length)
+                              index >= ChatWallpaper.defaultWallpapers.length) {
                             index = 0;
+                          }
                           final wp = ChatWallpaper.defaultWallpapers[index];
                           if (wp.type == WallpaperType.theme) {
                             return DecorationImage(
@@ -2135,8 +2091,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 thickness: 3.0,
                                 radius: const Radius.circular(4),
                                 child: ListView.builder(
-                                  controller: _scrollController,
-                                  cacheExtent: 1500.0,
+                                  cacheExtent: 1500.0, controller: _scrollController,
                                   physics: const BouncingScrollPhysics(),
                                   reverse: true,
                                   itemCount: _isUploading
@@ -2373,8 +2328,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                                       docId,
                                                     );
                                                     if (_selectedMessageIds
-                                                        .isEmpty)
+                                                        .isEmpty) {
                                                       _isSelecting = false;
+                                                    }
                                                   } else {
                                                     _selectedMessageIds.add(
                                                       docId,

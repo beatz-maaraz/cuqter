@@ -292,6 +292,7 @@ class _ContactScreenState extends State<ContactScreen> {
                                                           ))
                                                     as ImageProvider
                                               : null,
+                                            child: !(profilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                                         ),
                                         title: Text(
                                           name,

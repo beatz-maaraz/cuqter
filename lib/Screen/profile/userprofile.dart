@@ -324,8 +324,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
       ),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width > 600
+                    ? 600
+                    : MediaQuery.of(context).size.width,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -385,6 +392,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                         : AssetImage(widget.profilepic))
                                     as ImageProvider
                               : null,
+                                            child: !(widget.profilepic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                         ),
                       ),
                     ),
@@ -514,7 +522,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ],
             ),
           ),
-          Align(
+        ),
+      ),
+      Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 32.0),
@@ -1139,8 +1149,9 @@ class _AnimatedThreeDotsMenuState extends State<AnimatedThreeDotsMenu>
                             'Favorite',
                             () {
                               _closeMenu();
-                              if (widget.onFavorite != null)
+                              if (widget.onFavorite != null) {
                                 widget.onFavorite!();
+                              }
                             },
                           ),
                         ],

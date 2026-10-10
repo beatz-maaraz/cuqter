@@ -290,6 +290,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                               ))
                                                         as ImageProvider
                                                   : null,
+                                            child: !(profilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                                             ),
                                           ),
                                           const SizedBox(height: 12),

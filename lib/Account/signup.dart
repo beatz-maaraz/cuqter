@@ -10,7 +10,6 @@ import 'package:cuqter/Screen/media/camera_screen.dart';
 import 'package:cuqter/media.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hugeicons/hugeicons.dart' as huge;
-import 'package:cuqter/widgets/floating_background_bubbles.dart';
 import 'package:cuqter/widgets/google_logo_icon.dart';
 
 class Sighuppage extends StatefulWidget {
@@ -355,18 +354,18 @@ class _SighuppageState extends State<Sighuppage> {
                 gradient: isDark
                     ? const LinearGradient(
                         colors: [
-                          Color(0xFF14142B),
-                          Color(0xFF0E0E1E),
-                          Color(0xFF1F122B),
+                          Color(0xFF0F172A), // Soft dark slate
+                          Color(0xFF1E293B),
+                          Color(0xFF0F172A),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       )
                     : const LinearGradient(
                         colors: [
-                          Color(0xFFD9E2FF),
-                          Color(0xFFFFFFFF),
-                          Color(0xFFF9D8FF),
+                          Color(0xFFF8FAFC), // Soft slate light
+                          Color(0xFFE2E8F0),
+                          Color(0xFFF1F5F9),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -374,8 +373,6 @@ class _SighuppageState extends State<Sighuppage> {
               ),
             ),
           ),
-          // Floating background animated conversation icons
-          const FloatingBackgroundBubbles(),
 
           // Main Content
           Center(
@@ -506,6 +503,7 @@ class _SighuppageState extends State<Sighuppage> {
                                                         )
                                                         as ImageProvider)
                                             : null,
+                                            child: !(_selectedProfilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                                       ),
                                     ),
                                     Positioned(

@@ -545,10 +545,10 @@ class _SettingsPageState extends State<SettingsPage> {
                             text: 'Add me on Cuqter! $qrData',
                           );
                         } else {
-                          Share.share('Add me on Cuqter! $qrData');
+                          SharePlus.instance.share(ShareParams(text: 'Add me on Cuqter! $qrData'));
                         }
                       } catch (e) {
-                        Share.share('Add me on Cuqter! $qrData');
+                        SharePlus.instance.share(ShareParams(text: 'Add me on Cuqter! $qrData'));
                       }
                     },
                     child: Container(

@@ -695,9 +695,11 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
           if (widget.onAssetSelected != null) {
             widget.onAssetSelected!(newAsset);
           } else {
+            if (!mounted) return;
             Navigator.pop(context, newAsset);
           }
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -709,6 +711,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to save file: $e'),
@@ -739,8 +742,9 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
       if (_selectedCategory != 'All' &&
           _selectedCategory != 'Favorites' &&
           _selectedCategory != 'More' &&
-          asset.category != _selectedCategory)
+          asset.category != _selectedCategory) {
         return false;
+      }
 
       return true;
     }).toList();
@@ -932,6 +936,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                         if (widget.onAssetSelected != null) {
                           widget.onAssetSelected!(null);
                         } else {
+                          if (!mounted) return;
                           Navigator.pop(context);
                         }
                       }
@@ -1223,6 +1228,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                           _isSelectionMode = false;
                           _selectedAssetIds.clear();
                         });
+                        if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -1391,6 +1397,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
               if (widget.onAssetSelected != null) {
                 widget.onAssetSelected!(asset);
               } else {
+                if (!mounted) return;
                 Navigator.pop(context, asset);
               }
             } else if (_isSelectionMode) {
@@ -1598,11 +1605,13 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
               setState(() {
                 _assets.removeWhere((item) => item.id == asset.id);
               });
+              if (!mounted) return;
               Navigator.pop(context);
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('Asset deleted')));
             } catch (e) {
+              if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Failed to delete asset: $e')),
               );
@@ -1616,6 +1625,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
       if (widget.onAssetSelected != null) {
         widget.onAssetSelected!(result);
       } else {
+        if (!mounted) return;
         Navigator.pop(context, result);
       }
     }
@@ -1635,7 +1645,10 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (!mounted) return;
+              Navigator.pop(context);
+            },
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
@@ -1662,12 +1675,16 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                   _isSelectionMode = false;
                   _selectedAssetIds.clear();
                 });
+                if (!mounted) return;
                 Navigator.pop(context);
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Selected assets deleted')),
                 );
               } catch (e) {
+                if (!mounted) return;
                 Navigator.pop(context);
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Failed to delete files: $e'),
@@ -1752,12 +1769,16 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (!mounted) return;
+            Navigator.pop(context);
+          },
         ),
         actions: [
           if (widget.isPicker)
             TextButton(
               onPressed: () {
+                if (!mounted) return;
                 Navigator.pop(context, widget.asset);
               },
               child: const Text(
@@ -1848,7 +1869,10 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (!mounted) return;
+              Navigator.pop(context);
+            },
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
@@ -1862,6 +1886,7 @@ class _FullScreenAssetPreviewState extends State<FullScreenAssetPreview> {
               ),
             ),
             onPressed: () {
+              if (!mounted) return;
               Navigator.pop(context);
               widget.onDelete();
             },
@@ -1973,7 +1998,7 @@ class _VideoPlayerPreviewState extends State<VideoPlayerPreview> {
       await _controller!.initialize();
       _controller!.play();
       _controller!.setLooping(true);
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _isInitialized = true;
         });

@@ -55,6 +55,7 @@ dependencies:
   uuid: ^4.6.0
   qr_flutter: ^4.1.0
   pretty_qr_code: ^3.6.0
+  web: ^1.1.1
 
 
 dependency_overrides:

@@ -453,8 +453,8 @@ class _CallScreenState extends State<CallScreen> {
                                 backgroundImage:
                                     profilePic != null && profilePic.isNotEmpty
                                     ? NetworkImage(profilePic)
-                                    : null
-                                          as ImageProvider,
+                                    : null,
+                                child: (profilePic == null || profilePic.isEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                               ),
                             );
                           },
@@ -467,6 +467,7 @@ class _CallScreenState extends State<CallScreen> {
                               alpha: 0.1,
                             ),
                             backgroundImage: null,
+                            child: const Icon(Icons.person, color: Colors.grey),
                           ),
                         ),
                     ],

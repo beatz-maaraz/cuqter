@@ -955,7 +955,7 @@ class _StorageSettingsPageState extends State<StorageSettingsPage> {
         ),
         value: value,
         onChanged: onChanged,
-        activeColor: colorScheme.primary,
+        activeThumbColor: colorScheme.primary,
       ),
     );
   }

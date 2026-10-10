@@ -213,15 +213,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 35.0, sigmaY: 35.0),
                         child: Container(
-                          color: colorScheme.surface.withOpacity(0.65),
+                          color: colorScheme.surface.withValues(alpha: 0.65),
                         ),
                       ),
                     ),
 
                     // Main Content
-                    CustomScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      slivers: [
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width > 600
+                              ? 600
+                              : MediaQuery.of(context).size.width,
+                        ),
+                        child: CustomScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          slivers: [
                         // App Bar
                         SliverToBoxAdapter(
                           child: SafeArea(
@@ -253,12 +260,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: colorScheme.surface
-                                              .withOpacity(0.5),
+                                              .withValues(alpha: 0.5),
                                           borderRadius:
                                               BorderRadius.circular(20),
                                           border: Border.all(
-                                            color: Colors.white
-                                                .withOpacity(0.2),
+                                            color: colorScheme.onSurface
+                                                .withValues(alpha: 0.2),
                                           ),
                                         ),
                                         child: IconButton(
@@ -272,10 +279,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               ),
                                             );
                                           },
-                                          icon: const huge.HugeIcon(
+                                          icon: huge.HugeIcon(
                                             icon: huge.HugeIcons
                                                 .strokeRoundedSettings01,
-                                            color: Colors.white,
+                                            color: colorScheme.onSurface,
                                             size: 24,
                                           ),
                                         ),
@@ -305,7 +312,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       boxShadow: [
                                         BoxShadow(
                                           color: colorScheme.primary
-                                              .withOpacity(0.4),
+                                              .withValues(alpha: 0.4),
                                           blurRadius: 40,
                                           spreadRadius: 10,
                                         ),
@@ -368,6 +375,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                                 _selectedProfilePic)
                                                             as ImageProvider)
                                                     : null,
+                                            child: !(_selectedProfilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey, size: 80) : null,
                                           ),
                                         ),
                                       ),
@@ -391,16 +399,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           boxShadow: [
                                             BoxShadow(
                                               color: Colors.black
-                                                  .withOpacity(0.2),
+                                                  .withValues(alpha: 0.2),
                                               blurRadius: 10,
                                               offset: const Offset(0, 4),
                                             ),
                                           ],
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.camera_alt_rounded,
                                           size: 20,
-                                          color: Colors.white,
+                                          color: colorScheme.onPrimary,
                                         ),
                                       ),
                                     ),
@@ -424,11 +432,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   padding: const EdgeInsets.all(24),
                                   decoration: BoxDecoration(
                                     color: colorScheme.surface
-                                        .withOpacity(0.4),
+                                        .withValues(alpha: 0.4),
                                     borderRadius: BorderRadius.circular(32),
                                     border: Border.all(
                                       color: Colors.white
-                                          .withOpacity(0.2),
+                                          .withValues(alpha: 0.2),
                                       width: 1.5,
                                     ),
                                   ),
@@ -457,7 +465,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             padding: const EdgeInsets.all(4),
                                             decoration: BoxDecoration(
                                               color: colorScheme.primary
-                                                  .withOpacity(0.15),
+                                                  .withValues(alpha: 0.15),
                                               shape: BoxShape.circle,
                                             ),
                                             child: huge.HugeIcon(
@@ -481,7 +489,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: colorScheme.primary
-                                                .withOpacity(0.1),
+                                                .withValues(alpha: 0.1),
                                             borderRadius:
                                                 BorderRadius.circular(24),
                                           ),
@@ -517,7 +525,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         height: 1,
                                         width: 100,
                                         color: colorScheme.onSurface
-                                            .withOpacity(0.1),
+                                            .withValues(alpha: 0.1),
                                       ),
                                       const SizedBox(height: 24),
 
@@ -532,7 +540,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           height: 1.5,
                                           fontWeight: FontWeight.w500,
                                           color: colorScheme.onSurface
-                                              .withOpacity(0.85),
+                                              .withValues(alpha: 0.85),
                                         ),
                                       ),
                                     ],
@@ -572,11 +580,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: colorScheme.surface
-                                          .withOpacity(0.4),
+                                          .withValues(alpha: 0.4),
                                       borderRadius: BorderRadius.circular(24),
                                       border: Border.all(
-                                        color: Colors.white
-                                            .withOpacity(0.2),
+                                        color: colorScheme.onSurface
+                                            .withValues(alpha: 0.2),
                                         width: 1.5,
                                       ),
                                     ),
@@ -586,7 +594,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
                                             color: colorScheme.primary
-                                                .withOpacity(0.15),
+                                                .withValues(alpha: 0.15),
                                             shape: BoxShape.circle,
                                           ),
                                           child: huge.HugeIcon(
@@ -613,7 +621,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 color: colorScheme.onSurface
-                                                    .withOpacity(0.7),
+                                                    .withValues(alpha: 0.7),
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
@@ -624,7 +632,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
                                             color: colorScheme.surface
-                                                .withOpacity(0.5),
+                                                .withValues(alpha: 0.5),
                                             shape: BoxShape.circle,
                                           ),
                                           child: huge.HugeIcon(
@@ -659,7 +667,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 foregroundColor: colorScheme.onPrimary,
                                 elevation: 8,
                                 shadowColor:
-                                    colorScheme.primary.withOpacity(0.5),
+                                    colorScheme.primary.withValues(alpha: 0.5),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
@@ -668,9 +676,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const huge.HugeIcon(
+                                  huge.HugeIcon(
                                     icon: huge.HugeIcons.strokeRoundedEdit02,
-                                    color: Colors.white,
+                                    color: colorScheme.onPrimary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
@@ -689,12 +697,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
 
                         const SliverToBoxAdapter(
-                          child: SizedBox(height: 40),
+                          child: SizedBox(height: 120),
                         ),
                       ],
                     ),
-                  ],
-                );
+                  ),
+                ),
+              ],
+            );
               },
             ),
     );

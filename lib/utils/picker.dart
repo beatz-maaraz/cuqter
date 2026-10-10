@@ -1,6 +1,6 @@
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 Future<Uint8List?> pickImage(ImageSource source) async {
@@ -10,7 +10,7 @@ Future<Uint8List?> pickImage(ImageSource source) async {
   if (image != null) {
     return await image.readAsBytes();
   }
-  print('No image selected');
+  debugPrint('No image selected');
   return null;
 }
 
@@ -21,7 +21,7 @@ Future<XFile?> pickVideoFile(ImageSource source) async {
   if (video != null) {
     return video;
   }
-  print('No video selected');
+  debugPrint('No video selected');
   return null;
 }
 
@@ -32,7 +32,7 @@ Future<XFile?> pickMediaFile() async {
   if (media != null) {
     return media;
   }
-  print('No media selected');
+  debugPrint('No media selected');
   return null;
 }
 

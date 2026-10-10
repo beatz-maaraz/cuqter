@@ -1,15 +1,13 @@
-import 'package:cuqter/responsive/phonepages.dart';
-import 'package:cuqter/responsive/webpage.dart';
 import 'package:flutter/material.dart';
 
 class Responsiveout extends StatefulWidget {
-  final Widget Phonepages;
-  final Widget Webpage;
+  final Widget phonepages;
+  final Widget webpage;
 
   const Responsiveout({
     super.key,
-    required this.Phonepages,
-    required this.Webpage,
+    required this.phonepages,
+    required this.webpage,
   });
 
   @override
@@ -22,9 +20,9 @@ class _ResponsiveoutState extends State<Responsiveout> {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth > 600) {
-          return const Webpage();
+          return widget.webpage;
         } else {
-          return const Phonepages();
+          return widget.phonepages;
         }
       },
     );
