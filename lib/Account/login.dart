@@ -4,6 +4,9 @@ import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/utils/picker.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/widgets/google_logo_icon.dart';
+import 'package:cuqter/Screen/home/navigation_screen.dart';
+import 'package:cuqter/Screen/home/desktop_navigation_screen.dart';
+import 'package:cuqter/responsive/responsive_layout.dart';
 
 class Loginpage extends StatefulWidget {
   const Loginpage({super.key});
@@ -45,6 +48,15 @@ class _LoginpageState extends State<Loginpage> {
         showSnackBar('Login successful', context);
         emailController.clear();
         passwordController.clear();
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const ResponsiveLayout(
+              mobileLayout: NavigationScreen(),
+              desktopLayout: DesktopNavigationScreen(),
+            ),
+          ),
+          (route) => false,
+        );
       } else {
         showSnackBar(res, context);
       }
@@ -64,6 +76,15 @@ class _LoginpageState extends State<Loginpage> {
       });
       if (res == 'success') {
         showSnackBar('Login successful', context);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const ResponsiveLayout(
+              mobileLayout: NavigationScreen(),
+              desktopLayout: DesktopNavigationScreen(),
+            ),
+          ),
+          (route) => false,
+        );
       } else if (res != 'cancelled') {
         showSnackBar(res, context);
       }

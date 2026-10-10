@@ -33,6 +33,68 @@ Cuqter is a feature-rich, cross-platform messaging and social networking applica
 ### 🔔 Notifications
 - **Push Notifications**: Stay connected with Firebase Cloud Messaging (FCM) for background and foreground notifications.
 
+## 📱 Application UI & Navigation Flow
+
+Cuqter provides a streamlined, user-friendly flow designed to minimize friction while maintaining high visual polish.
+
+```mermaid
+graph TD
+    A[App Launch] --> B{Authenticated?}
+    B -->|No| C[Login Screen]
+    B -->|Yes| D[App Lock / Biometrics Check]
+    
+    C -->|New User| E[Multi-Step Signup Wizard]
+    C -->|Forgot Password| F[Forgot Password Screen]
+    C -->|Google Login / Success| D
+    
+    subgraph "Signup Flow (Glassmorphic Wizard)"
+        E --> E1["Step 1: Email & Password"]
+        E1 -->|Validation + Next| E2["Step 2: Choose Username"]
+        E2 -.->|Auto-Suggested from Email @prefix| E2
+        E2 -->|Validation + Next| E3["Step 3: Profile Photo & Full Name"]
+        E3 -->|Upload & Complete| G[Direct Login to Home]
+    end
+    
+    G --> D
+    D -->|Passed / Unlocked| H[ResponsiveLayout]
+    
+    subgraph "Main Application (Responsive Layout)"
+        H -->|Mobile View| I[Bottom Navigation Screen]
+        H -->|Desktop/Web View| J[Desktop Master-Detail Navigation]
+        
+        I --> K[Chats Tab]
+        I --> L[Calls Tab]
+        I --> M[Status Tab]
+        I --> N[Profile & Settings Tab]
+        
+        K --> O[Direct / Group Chat Room]
+        O --> O1[Modern Floating Message Menu]
+        O --> O2[Media Sharing / Cloudinary]
+        O --> O3[AI Chatbot Assistant]
+        
+        L --> P[WebRTC Audio / Video Call Screen]
+        M --> Q[Ephemeral Status Viewer / Creator]
+        N --> R[Theme & Biometric AppLock Settings]
+    end
+```
+
+### 1. 🔐 Authentication & Onboarding
+* **Login Screen**: Glassmorphic frosted glass card supporting username or email login, biometric session restore, and single-click Google Sign-In.
+* **3-Step Signup Wizard**:
+  * **Step 1: Account Credentials** — Enter email and secure password; also features alternative Google Sign-In.
+  * **Step 2: Choose Username** — Automatically parses the email prefix (characters before `@`) and provides clickable smart suggestion chips (e.g. `@johndoe`, `@john_doe`) with live character validation.
+  * **Step 3: Profile Setup** — Instant avatar picker with camera, native gallery, or internal asset manager integration backed by Cloudinary; full name entry.
+  * **Seamless Landing** — Directly launches into the main authenticated layout without dropping users back onto the login screen.
+
+### 2. 📱 Responsive Main Layout
+* **Mobile Experience**: Ergonomic bottom navigation bar with fluid icon transitions across **Chats**, **Calls**, **Status**, and **Profile**.
+* **Desktop & Web Experience**: Adaptive two-column master-detail view with persistent side navigation bar, maximized viewing area, and centered constraint limits.
+
+### 3. 💬 Chat & Interaction Experience
+* **Floating Reaction & Action Pill**: Long-pressing a message reveals modern emoji reactions (`❤️`, `👍`, `🔥`, `😂`, `😮`, `😢`) along with reply, copy, pin, forward, and delete actions.
+* **Media & Cloudinary Pipeline**: Secure, non-blocking media upload directly to Cloudinary with real-time delivery over Firebase Firestore.
+* **Dynamic Theming**: Seamless real-time switching between curated dark mode (slate accents) and light mode with high-contrast accessibility.
+
 ## 🏗️ Tech Stack & Architecture
 
 Cuqter follows a modern mobile development architecture pattern, separating UI, state management, and core services.
