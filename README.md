@@ -4,24 +4,26 @@
   <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=24&duration=3000&pause=1000&color=2196F3&center=true&vCenter=true&width=600&lines=Welcome+to+Cuqter;A+Feature-rich+messaging+app;Built+with+Flutter+%26+Firebase;Cross-platform+Mobile+%26+Desktop" alt="Typing SVG" />
 </div>
 
-Cuqter is a feature-rich, cross-platform messaging and social networking application built with Flutter. It seamlessly operates across Mobile and Desktop environments, providing a smooth and responsive experience. Cuqter utilizes Firebase as its robust backend infrastructure and incorporates cutting-edge technologies like WebRTC for real-time communication and Google Generative AI for advanced conversational features.
+Cuqter is a feature-rich, cross-platform messaging and social networking application built with Flutter. It seamlessly operates across Mobile, Web, and Desktop environments, providing a smooth and responsive experience. Cuqter utilizes Firebase as its robust backend infrastructure and incorporates cutting-edge technologies like WebRTC for real-time communication, Google Generative AI for advanced conversational features, and a modern glassmorphic UI.
 
 ## 🌟 Key Features
 
 ### 💬 Messaging & Social
 - **Real-Time Chat**: Powered by Firebase Firestore and Realtime Database for instantaneous message delivery.
+- **Modern Message Menu**: Intuitive, segmented floating context menu for reacting, replying, copying, and deleting messages.
 - **Media & File Sharing**: Effortlessly share images, videos, audio recordings, documents, and locations.
 - **Status Updates**: Share and view ephemeral photo/video statuses with your contacts.
 - **AI Chatbot Integration**: Integrated with Google Generative AI for intelligent in-app assistance.
 
+### 🎨 UI & UX Experience
+- **Glassmorphic Design**: Beautiful frosted glass effects, subtle gradients, and modern floating UI elements.
+- **Multi-Step Onboarding**: A seamless, paginated signup flow complete with profile picture upload.
+- **Responsive Layout**: Custom adaptive UI that scales perfectly between mobile (bottom navigation) and desktop/web (centered layouts with constrained widths).
+- **Dynamic Theming**: Comprehensive Dark and Light modes using Provider-based state management that adapts safely to contrast constraints.
+
 ### 📞 Audio & Video Calls
 - **WebRTC Integration**: High-quality peer-to-peer audio and video communication using WebRTC.
 - **CallKit Integration**: Native incoming call screens using CallKit for a seamless OS-level experience.
-
-### 🎨 UI & UX Experience
-- **Responsive Layout**: Custom adaptive UI that scales perfectly between mobile (bottom navigation) and desktop (sidebar navigation).
-- **Dynamic Theming**: Comprehensive Dark and Light modes using Provider-based state management.
-- **Deep Linking**: Easily navigate to specific chats or profiles via URLs using `go_router` and `app_links`.
 
 ### 🔒 Security & Privacy
 - **App Lock**: Built-in security leveraging device biometric authentication (Fingerprint/FaceID).
@@ -56,10 +58,10 @@ lib/
 ├── Account/                # Authentication screens (Login, Signup, Forgot Password)
 ├── Screen/                 # Core application UI modules
 │   ├── calls/              # Audio & Video call interfaces (WebRTC logic integration)
-│   ├── chat/               # Messaging views, Chat AI, share intents
+│   ├── chat/               # Messaging views, Chat AI, modern action menus
 │   ├── home/               # Main navigation (Bottom nav, Sidebar for Desktop)
 │   ├── media/              # Media viewing, camera, picking, and cropping interfaces
-│   ├── profile/            # User profile management, QR scanner, contact list
+│   ├── profile/            # Responsive user profile management, QR scanner, contacts
 │   ├── settings/           # App configuration, security, privacy, AppLock, sessions
 │   └── status/             # Ephemeral status update viewing and creation
 ├── modules/                # Core data models and entities (User, Message, Status)
