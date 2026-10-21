@@ -34,6 +34,7 @@ import 'package:cuqter/services/cloudinary_service.dart';
 import 'package:cuqter/services/local_storage_service.dart';
 import 'package:cuqter/media.dart';
 import 'package:cuqter/modules/wallpaper.dart';
+import 'package:cuqter/services/web_lifecycle.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -4517,6 +4518,38 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Future<void> _downloadWebDocument(String url, String fileName) async {
+    if (_downloadProgress.containsKey(url)) return;
+    setState(() {
+      _downloadProgress[url] = 0.0;
+    });
+
+    try {
+      await downloadFileOnWeb(
+        url: url,
+        fileName: fileName,
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() {
+              _downloadProgress[url] = progress;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('Web document download failed: $e');
+      if (mounted) {
+        _showErrorSnackBar('Download failed: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _downloadProgress.remove(url);
+        });
+      }
+    }
+  }
+
   Widget _buildWebDocumentBubble(
     String text,
     String fileName,
@@ -4526,62 +4559,116 @@ class _ChatScreenState extends State<ChatScreen> {
     bool isMe,
     bool isRead,
   ) {
+    final bool isDownloading = _downloadProgress.containsKey(text);
+    final double progress = _downloadProgress[text] ?? 0.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
           onTap: () {
-            _launchURL(text);
+            if (!isDownloading) {
+              _downloadWebDocument(text, fileName);
+            }
           },
           borderRadius: BorderRadius.circular(12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.description_rounded,
+                    color: Colors.blue,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.description_rounded,
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fileName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: isMe
-                            ? colorScheme.onPrimaryContainer
-                            : colorScheme.onSurfaceVariant,
+                const SizedBox(width: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 180),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fileName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isMe
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      fileSize.isNotEmpty ? 'Document • $fileSize' : 'Document',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isMe
-                            ? colorScheme.onPrimaryContainer.withValues(
-                                alpha: 0.7,
-                              )
-                            : colorScheme.onSurfaceVariant.withValues(
-                                alpha: 0.7,
-                              ),
+                      const SizedBox(height: 2),
+                      Text(
+                        fileSize.isNotEmpty
+                            ? 'Document • $fileSize'
+                            : 'Document',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isMe
+                              ? colorScheme.onPrimaryContainer.withValues(
+                                  alpha: 0.7,
+                                )
+                              : colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.7,
+                                ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                if (isDownloading)
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: progress > 0 ? progress : null,
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isMe
+                                ? colorScheme.onPrimaryContainer
+                                : colorScheme.primary,
+                          ),
+                        ),
+                        if (progress > 0)
+                          Text(
+                            '${(progress * 100).toInt()}%',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              color: isMe
+                                  ? colorScheme.onPrimaryContainer
+                                  : colorScheme.primary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  )
+                else
+                  IconButton(
+                    icon: Icon(
+                      Icons.download_rounded,
+                      size: 22,
+                      color: isMe
+                          ? colorScheme.onPrimaryContainer
+                          : colorScheme.primary,
+                    ),
+                    onPressed: () => _downloadWebDocument(text, fileName),
+                  ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 6),
