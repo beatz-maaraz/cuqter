@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+temp_out.txt
 
 # IntelliJ related
 *.iml
@@ -18,10 +19,8 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# Visual Studio Code
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -40,8 +39,19 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Android Studio & Build Artifacts
 /android/app/debug
 /android/app/profile
 /android/app/release
-node_modules
+/android/local.properties
+/android/key.properties
+*.keystore
+*.jks
+
+# Secrets & Environment variables
+.env
+.env.*
+*.env
+
+# Node & Web Build
+node_modules/

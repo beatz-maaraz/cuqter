@@ -1,184 +1,286 @@
-# Cuqter
-
 <div align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=24&duration=3000&pause=1000&color=2196F3&center=true&vCenter=true&width=600&lines=Welcome+to+Cuqter;A+Feature-rich+messaging+app;Built+with+Flutter+%26+Firebase;Cross-platform+Mobile+%26+Desktop" alt="Typing SVG" />
+  <img src="assets/icon/icon.png" width="120" height="120" alt="Cuqter Logo" style="border-radius: 28px;" />
+  <h1>Cuqter</h1>
+  <p><strong>A Modern, Cross-Platform Real-Time Messaging, WebRTC Calling & AI-Powered Social Platform</strong></p>
+
+  <p>
+    <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white" alt="Flutter" /></a>
+    <a href="https://dart.dev"><img src="https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white" alt="Dart" /></a>
+    <a href="https://firebase.google.com"><img src="https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore%20%7C%20FCM-FFCA28?logo=firebase&logoColor=black" alt="Firebase" /></a>
+    <a href="https://webrtc.org"><img src="https://img.shields.io/badge/WebRTC-P2P%20Voice%20%26%20Video-333333?logo=webrtc&logoColor=white" alt="WebRTC" /></a>
+    <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/AI-Google%20Gemini-8E75C2?logo=google&logoColor=white" alt="Google Gemini" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License" /></a>
+  </p>
+
+  <p>
+    <img src="https://img.shields.io/badge/Platforms-Android%20%7C%20iOS%20%7C%20Web%20%7C%20Desktop-4CAF50?style=flat-square" alt="Supported Platforms" />
+    <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=flat-square" alt="PRs Welcome" /></a>
+  </p>
+
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&duration=2800&pause=1000&color=2196F3&center=true&vCenter=true&width=620&lines=Real-Time+Chat+%26+Reactions;Peer-to-Peer+WebRTC+Audio+%26+Video+Calls;Integrated+Google+Gemini+AI+Assistant;24h+Ephemeral+Status+Updates;Glassmorphic+UI+for+Mobile%2C+Web+%26+Desktop" alt="Cuqter Feature Typing" />
 </div>
 
-Cuqter is a feature-rich, cross-platform messaging and social networking application built with Flutter. It seamlessly operates across Mobile, Web, and Desktop environments, providing a smooth and responsive experience. Cuqter utilizes Firebase as its robust backend infrastructure and incorporates cutting-edge technologies like WebRTC for real-time communication, Google Generative AI for advanced conversational features, and a modern glassmorphic UI.
+---
 
-## 🌟 Key Features
+## 📖 Overview
 
-### 💬 Messaging & Social
-- **Real-Time Chat**: Powered by Firebase Firestore and Realtime Database for instantaneous message delivery.
-- **Modern Message Menu**: Intuitive, segmented floating context menu for reacting, replying, copying, and deleting messages.
-- **Media & File Sharing**: Effortlessly share images, videos, audio recordings, documents, and locations.
-- **Status Updates**: Share and view ephemeral photo/video statuses with your contacts.
-- **AI Chatbot Integration**: Integrated with Google Generative AI for intelligent in-app assistance.
+**Cuqter** is an open-source, full-featured messaging, audio/video calling, and social networking application built from the ground up with **Flutter** and **Dart**. Designed with a modern glassmorphic aesthetic, Cuqter delivers a fluid, responsive user experience across **Mobile (Android & iOS)**, **Web**, and **Desktop (Windows, macOS & Linux)** environments.
 
-### 🎨 UI & UX Experience
-- **Glassmorphic Design**: Beautiful frosted glass effects, subtle gradients, and modern floating UI elements.
-- **Multi-Step Onboarding**: A seamless, paginated signup flow complete with profile picture upload.
-- **Responsive Layout**: Custom adaptive UI that scales perfectly between mobile (bottom navigation) and desktop/web (centered layouts with constrained widths).
-- **Dynamic Theming**: Comprehensive Dark and Light modes using Provider-based state management that adapts safely to contrast constraints.
+Under the hood, Cuqter combines **Firebase** for low-latency message streaming, authentication, and push notifications, **WebRTC** for peer-to-peer encrypted audio and video calling, **Cloudinary** for non-blocking media storage, and **Google Gemini 1.5 Pro** for integrated conversational AI.
 
-### 📞 Audio & Video Calls
-- **WebRTC Integration**: High-quality peer-to-peer audio and video communication using WebRTC.
-- **CallKit Integration**: Native incoming call screens using CallKit for a seamless OS-level experience.
+---
 
-### 🔒 Security & Privacy
-- **App Lock**: Built-in security leveraging device biometric authentication (Fingerprint/FaceID).
-- **Session Management**: Monitor and manage active sessions securely across multiple devices.
-- **Block & Report**: Built-in tools for user safety and privacy management.
+## ✨ Key Features
 
-### 🔔 Notifications
-- **Push Notifications**: Stay connected with Firebase Cloud Messaging (FCM) for background and foreground notifications.
+### 💬 Real-Time Messaging & Chat
+* **Instant Delivery**: Powered by Cloud Firestore and Firebase Realtime Database for sub-second messaging.
+* **Floating Message Actions**: Long-press any message for an intuitive context menu supporting emoji reactions (`❤️`, `👍`, `🔥`, `😂`, `😮`, `😢`), replies, message forwarding, pin, and delete.
+* **Rich Media Sharing**:
+  * Photos, animated GIFs, and high-definition videos.
+  * Audio voice notes with inline streaming player and waveform feedback.
+  * Documents (PDF, DOCX, XLSX, etc.) with in-app preview and direct browser download on Web.
+  * Real-time GPS location sharing with direct Google Maps navigation.
+* **Typing Indicators & Read Receipts**: Live presence tracking, last-seen timestamps, and blue double-check delivery states.
+* **Chat Personalization**: Custom chat wallpapers, mute notifications, and message search.
 
-## 📱 Application UI & Navigation Flow
+### 📞 WebRTC Audio & Video Calling
+* **Peer-to-Peer Connection**: High-definition, low-latency voice and video calls powered by `flutter_webrtc`.
+* **CallKit Integration**: OS-level incoming call screens for mobile devices using `flutter_callkit_incoming`.
+* **Real-Time Signaling**: Effortless handshake negotiation leveraging Firebase Realtime Database.
+* **In-Call Controls**: Flip camera, mute microphone, toggle speaker, and floating picture-in-picture mode.
 
-Cuqter provides a streamlined, user-friendly flow designed to minimize friction while maintaining high visual polish.
+### 🤖 Gemini AI Chatbot
+* **AI Conversations**: Chat directly with an intelligent virtual assistant powered by Google's `google_generative_ai` (Gemini 1.5 Pro).
+* **Multilingual & Productive**: Ask questions, draft messages, summarize content, and brainstorm directly inside the app.
 
-```mermaid
-graph TD
-    A[App Launch] --> B{Authenticated?}
-    B -->|No| C[Login Screen]
-    B -->|Yes| D[App Lock / Biometrics Check]
-    
-    C -->|New User| E[Multi-Step Signup Wizard]
-    C -->|Forgot Password| F[Forgot Password Screen]
-    C -->|Google Login / Success| D
-    
-    subgraph "Signup Flow (Glassmorphic Wizard)"
-        E --> E1["Step 1: Email & Password"]
-        E1 -->|Validation + Next| E2["Step 2: Choose Username"]
-        E2 -.->|Auto-Suggested from Email @prefix| E2
-        E2 -->|Validation + Next| E3["Step 3: Profile Photo & Full Name"]
-        E3 -->|Upload & Complete| G[Direct Login to Home]
-    end
-    
-    G --> D
-    D -->|Passed / Unlocked| H[ResponsiveLayout]
-    
-    subgraph "Main Application (Responsive Layout)"
-        H -->|Mobile View| I[Bottom Navigation Screen]
-        H -->|Desktop/Web View| J[Desktop Master-Detail Navigation]
-        
-        I --> K[Chats Tab]
-        I --> L[Calls Tab]
-        I --> M[Status Tab]
-        I --> N[Profile & Settings Tab]
-        
-        K --> O[Direct / Group Chat Room]
-        O --> O1[Modern Floating Message Menu]
-        O --> O2[Media Sharing / Cloudinary]
-        O --> O3[AI Chatbot Assistant]
-        
-        L --> P[WebRTC Audio / Video Call Screen]
-        M --> Q[Ephemeral Status Viewer / Creator]
-        N --> R[Theme & Biometric AppLock Settings]
-    end
-```
+### 📸 Ephemeral Status & Stories
+* **24-Hour Stories**: Share photos, videos, and captions that automatically expire after 24 hours.
+* **Rich Story Viewer**: Segmented progress bars, gesture pauses, and reply-to-status integration.
 
-### 1. 🔐 Authentication & Onboarding
-* **Login Screen**: Glassmorphic frosted glass card supporting username or email login, biometric session restore, and single-click Google Sign-In.
-* **3-Step Signup Wizard**:
-  * **Step 1: Account Credentials** — Enter email and secure password; also features alternative Google Sign-In.
-  * **Step 2: Choose Username** — Automatically parses the email prefix (characters before `@`) and provides clickable smart suggestion chips (e.g. `@johndoe`, `@john_doe`) with live character validation.
-  * **Step 3: Profile Setup** — Instant avatar picker with camera, native gallery, or internal asset manager integration backed by Cloudinary; full name entry.
-  * **Seamless Landing** — Directly launches into the main authenticated layout without dropping users back onto the login screen.
+### 🔒 Security, Privacy & Biometrics
+* **Biometric App Lock**: Secure your chats using device fingerprint or FaceID via `local_auth`.
+* **Active Session Management**: View all active web and mobile sessions; revoke unrecognized sessions with one tap.
+* **Safety Controls**: Block unwanted contacts and submit in-app issue reports.
+* **QR Profile Exchange**: Instant contact addition by scanning QR codes via `mobile_scanner` and `pretty_qr_code`.
 
-### 2. 📱 Responsive Main Layout
-* **Mobile Experience**: Ergonomic bottom navigation bar with fluid icon transitions across **Chats**, **Calls**, **Status**, and **Profile**.
-* **Desktop & Web Experience**: Adaptive two-column master-detail view with persistent side navigation bar, maximized viewing area, and centered constraint limits.
+### 🎨 Glassmorphic UI & Adaptive Architecture
+* **Theme Engine**: Curated Dark (slate accents) and Light themes powered by Provider.
+* **Adaptive Navigation**: Ergonomic bottom navigation on mobile devices; master-detail responsive sidebar layout on tablet, web, and desktop screens.
 
-### 3. 💬 Chat & Interaction Experience
-* **Floating Reaction & Action Pill**: Long-pressing a message reveals modern emoji reactions (`❤️`, `👍`, `🔥`, `😂`, `😮`, `😢`) along with reply, copy, pin, forward, and delete actions.
-* **Media & Cloudinary Pipeline**: Secure, non-blocking media upload directly to Cloudinary with real-time delivery over Firebase Firestore.
-* **Dynamic Theming**: Seamless real-time switching between curated dark mode (slate accents) and light mode with high-contrast accessibility.
+---
 
-## 🏗️ Tech Stack & Architecture
+## 📱 Screenshots & Previews
 
-Cuqter follows a modern mobile development architecture pattern, separating UI, state management, and core services.
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>Authentication & Onboarding</b></td>
+      <td align="center"><b>Real-Time Chat & Actions</b></td>
+      <td align="center"><b>WebRTC Video Calling</b></td>
+    </tr>
+    <tr>
+      <td><img src="assets/icon/branding.png" width="240" alt="Auth Flow" /></td>
+      <td><img src="assets/icon/branding.png" width="240" alt="Chat Room" /></td>
+      <td><img src="assets/icon/branding.png" width="240" alt="Video Call" /></td>
+    </tr>
+    <tr>
+      <td align="center"><b>Status / Stories</b></td>
+      <td align="center"><b>AI Assistant (Gemini)</b></td>
+      <td align="center"><b>Responsive Web & Desktop</b></td>
+    </tr>
+    <tr>
+      <td><img src="assets/icon/branding.png" width="240" alt="Status Stories" /></td>
+      <td><img src="assets/icon/branding.png" width="240" alt="AI Chatbot" /></td>
+      <td><img src="assets/icon/branding.png" width="240" alt="Desktop Layout" /></td>
+    </tr>
+  </table>
+  <p><i>Note: Replace preview placeholders with actual captured screenshots in <code>assets/screenshots/</code>.</i></p>
+</div>
 
-### Core Technologies
-- **Frontend Framework**: [Flutter](https://flutter.dev/) (Dart) 
-- **Backend Infrastructure**: [Firebase](https://firebase.google.com/) (Authentication, Firestore, Storage, Realtime Database, Cloud Messaging, Remote Config)
-- **Real-time Communcation**: [WebRTC](https://webrtc.org/)
-- **State Management**: [Provider](https://pub.dev/packages/provider)
-- **Routing**: [GoRouter](https://pub.dev/packages/go_router)
-- **AI Engine**: Google Generative AI (`google_generative_ai`)
-- **Location Services**: Geolocator
+---
 
-### Architectural Flow
-1. **Presentation Layer (`lib/Screen/`)**: Contains the UI elements. Widgets react to state changes provided by the State Layer.
-2. **State Layer (`lib/providers/`)**: Houses `ChangeNotifier` classes that hold app state globally (e.g., `ChatProvider`, `ThemeProvider`).
-3. **Service Layer (`lib/services/`)**: Interfaces with external APIs, Firebase, WebRTC Signaling, Biometrics, and Deep linking. Abstracts the complex backend logic from the UI.
+## 🛠️ Technology Stack
 
-## 📂 Full Project Structure
+| Layer | Technologies |
+| :--- | :--- |
+| **Framework** | [Flutter](https://flutter.dev/) (v3.11+ SDK) |
+| **Language** | [Dart](https://dart.dev/) (v3.x) |
+| **Authentication** | [Firebase Auth](https://firebase.google.com/products/auth), Google Sign-In |
+| **Database & Cache** | [Cloud Firestore](https://firebase.google.com/products/firestore), [Firebase Realtime Database](https://firebase.google.com/products/realtime-database) |
+| **P2P Calling** | [Flutter WebRTC](https://pub.dev/packages/flutter_webrtc), [CallKit Incoming](https://pub.dev/packages/flutter_callkit_incoming) |
+| **Cloud Storage** | [Cloudinary](https://cloudinary.com/), [Firebase Storage](https://firebase.google.com/products/storage) |
+| **Artificial Intelligence** | [Google Generative AI](https://pub.dev/packages/google_generative_ai) (Gemini 1.5 Pro) |
+| **State Management** | [Provider](https://pub.dev/packages/provider) |
+| **Navigation** | [GoRouter](https://pub.dev/packages/go_router) |
+| **Push Notifications** | [Firebase Cloud Messaging (FCM)](https://firebase.google.com/products/cloud-messaging), [Flutter Local Notifications](https://pub.dev/packages/flutter_local_notifications) |
+| **Hardware & Sensors** | Camera, Geolocator, Local Auth (Biometrics), Mobile Scanner |
+
+---
+
+## 📂 Architecture & Directory Structure
+
+Cuqter follows a layered architectural pattern for scalability and testability:
 
 ```text
-lib/
-├── Account/                # Authentication screens (Login, Signup, Forgot Password)
-├── Screen/                 # Core application UI modules
-│   ├── calls/              # Audio & Video call interfaces (WebRTC logic integration)
-│   ├── chat/               # Messaging views, Chat AI, modern action menus
-│   ├── home/               # Main navigation (Bottom nav, Sidebar for Desktop)
-│   ├── media/              # Media viewing, camera, picking, and cropping interfaces
-│   ├── profile/            # Responsive user profile management, QR scanner, contacts
-│   ├── settings/           # App configuration, security, privacy, AppLock, sessions
-│   └── status/             # Ephemeral status update viewing and creation
-├── modules/                # Core data models and entities (User, Message, Status)
-├── providers/              # State management controllers (ThemeProvider, ChatProvider)
-├── resources/              # Authentication and Storage methods
-├── responsive/             # Responsive layout builders (Mobile/Desktop/Web logic)
-├── services/               # Core business logic and external integrations
-│   ├── biometric_service.dart     # Device authentication (App Lock)
-│   ├── signaling_service.dart     # WebRTC signaling logic for calls
-│   ├── deep_link_service.dart     # URL navigation within the app
-│   ├── session_service.dart       # User session tracking
-│   └── notification_service.dart  # FCM push notification handling
-├── utils/                  # Shared utilities, global variables, custom UI helpers
-├── widgets/                # Reusable, shared UI components across the app
-└── main.dart               # App entry point, Firebase init, MultiProvider setup
+cuqter/
+├── lib/
+│   ├── Account/             # Authentication & multi-step onboarding wizard
+│   │   ├── login.dart       # Glassmorphic login with Google & email sign-in
+│   │   ├── signup.dart      # 3-step setup (Credentials, Username, Avatar)
+│   │   └── forgot_password.dart
+│   ├── Screen/              # UI presentation screens
+│   │   ├── calls/           # WebRTC audio/video call room & call history
+│   │   ├── chat/            # Chat room, AI assistant (chatai.dart), media menus
+│   │   ├── home/            # Bottom navigation bar & desktop master-detail navigation
+│   │   ├── media/           # Full-screen media viewer, in-app camera, video player
+│   │   ├── profile/         # User profile, edit profile, contact list, QR scanner
+│   │   ├── settings/        # App Lock, active sessions, storage, network usage
+│   │   └── status/          # 24-hour status creator and story viewer
+│   ├── modules/             # Data models (User, Message, Status, Wallpaper)
+│   ├── providers/           # State management controllers (ThemeProvider, ChatProvider)
+│   ├── responsive/          # Responsive layout wrappers (Mobile / Tablet / Desktop)
+│   ├── services/            # Core business logic, APIs, and background managers
+│   │   ├── biometric_service.dart     # Device fingerprint/FaceID AppLock
+│   │   ├── cloudinary_service.dart    # Media upload and deletion pipeline
+│   │   ├── deep_link_service.dart     # App Links & universal URL handling
+│   │   ├── notification_service.dart  # Foreground/background push notifications
+│   │   ├── signaling_service.dart     # WebRTC signaling negotiation
+│   │   ├── web_lifecycle.dart         # Web browser lifecycle & file download service
+│   │   └── session_service.dart       # Device tracking & multi-device signout
+│   ├── utils/               # App configuration, theme tokens, helpers
+│   ├── widgets/             # Reusable UI components across the application
+│   ├── firebase_options.dart # Generated Firebase configuration
+│   └── main.dart            # App entry point, MultiProvider setup, background isolate
 ```
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-1. Ensure you have the [Flutter SDK](https://flutter.dev/docs/get-started/install) installed (version `^3.11.1` recommended).
-2. Install a compatible IDE (VS Code, Android Studio) with Flutter and Dart extensions.
 
-### Installation & Setup
-
-1. **Clone this repository:**
-   ```bash
-   git clone https://github.com/your-username/cuqter.git
-   cd cuqter
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   flutter pub get
-   ```
-
-3. **Firebase Configuration:**
-   - Create a project on the [Firebase Console](https://console.firebase.google.com/).
-   - Enable Authentication (Email/Password, Google Sign-In), Firestore, Storage, Realtime Database, and Cloud Messaging.
-   - Run the FlutterFire CLI to configure your project:
-     ```bash
-     flutterfire configure
-     ```
-   - This will generate the required `firebase_options.dart` file in your `lib/` directory.
-
-4. **Run the application:**
-   ```bash
-   flutter run
-   ```
-
-## ⚙️ Background Operations & Security
-- **App Lock**: Managed by the `AppLockWrapper` in `main.dart`, which monitors `AppLifecycleState` and triggers the `AppLockScreen` upon resuming from the background, leveraging `BiometricService`.
-- **Background Messaging**: Cuqter handles Firebase messages in the background using an isolated `@pragma('vm:entry-point')` handler located in `main.dart`.
-- **Active Sessions**: Users can view and manage their active sessions from the settings page, ensuring unauthorized access is mitigated.
-- **Deep Linking**: Seamlessly handles incoming URLs even when the app is in the background or terminated using `app_links` and `go_router`.
+* [Flutter SDK](https://flutter.dev/docs/get-started/install) (`^3.11.1` or newer)
+* [Dart SDK](https://dart.dev/get-dart) (`^3.0.0`)
+* A target device or emulator (Android Studio emulator, physical device, or Chrome browser)
+* Accounts on [Firebase](https://firebase.google.com/) and [Cloudinary](https://cloudinary.com/)
 
 ---
-*Built with ❤️ using Flutter.*
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/beatz-maaraz/cuqter.git
+cd cuqter
+```
+
+---
+
+### Step 2: Install Dependencies
+
+```bash
+flutter pub get
+```
+
+---
+
+### Step 3: Configure Firebase
+
+1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com/).
+2. Enable the following services in your Firebase project:
+   - **Authentication** (Email/Password and Google Provider)
+   - **Cloud Firestore**
+   - **Firebase Realtime Database** (used for WebRTC call signaling)
+   - **Firebase Storage**
+   - **Firebase Cloud Messaging (FCM)**
+3. Install and run the FlutterFire CLI:
+   ```bash
+   dart pub global activate flutterfire_cli
+   flutterfire configure
+   ```
+4. This command will update `lib/firebase_options.dart` and register platform configurations for Android, iOS, and Web.
+5. *(Android only)* Ensure `android/app/google-services.json` is placed in `android/app/`.
+
+---
+
+### Step 4: Configure Cloudinary Media Storage
+
+Cuqter uses Cloudinary for fast media, voice notes, and document delivery.
+
+1. Create a free account at [Cloudinary](https://cloudinary.com/).
+2. Navigate to your **Cloudinary Dashboard** and create an **Upload Preset**:
+   - Go to **Settings** > **Upload** > **Upload Presets** > **Add Upload Preset**.
+   - Set **Signing Mode** to `Unsigned`.
+   - Name your preset (e.g., `cuqter_preset`).
+3. Set your credentials in `lib/utils/cloudinary_config.dart`:
+   ```dart
+   class CloudinaryConfig {
+     static const String cloudName = "YOUR_CLOUD_NAME";
+     static const String apiKey = "YOUR_API_KEY";
+     static const String apiSecret = "YOUR_API_SECRET";
+     static const String uploadPreset = "YOUR_UPLOAD_PRESET";
+   }
+   ```
+   *(Tip: You can also supply these via `--dart-define` for automated builds).*
+
+---
+
+### Step 5: Configure Google Gemini AI (Optional)
+
+To enable the in-app AI assistant:
+
+1. Obtain a free Gemini API key from [Google AI Studio](https://aistudio.google.com/).
+2. Provide your key in `lib/providers/chat_provider.dart` or pass via environment variable:
+   ```dart
+   static const String _geminiApiKey = String.fromEnvironment(
+     'GEMINI_API_KEY',
+     defaultValue: 'YOUR_GEMINI_API_KEY_HERE',
+   );
+   ```
+
+---
+
+### Step 6: Run the App
+
+Launch the application on your connected device or browser:
+
+```bash
+# Run on Android / iOS
+flutter run
+
+# Run on Web (Chrome)
+flutter run -d chrome
+
+# Run on Windows Desktop
+flutter run -d windows
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are what make the open-source community an incredible place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+Please review our [Contribution Guidelines](CONTRIBUTING.md) before submitting a pull request.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
+
+---
+
+## 🌟 Support & Acknowledgments
+
+If you find this project helpful or inspiring, please give it a **⭐ Star** on [GitHub](https://github.com/beatz-maaraz/cuqter)!
+
+* Built with [Flutter](https://flutter.dev) & [Firebase](https://firebase.google.com)
+* Peer-to-peer calling powered by [WebRTC](https://webrtc.org)
+* UI Icons provided by [Hugeicons](https://hugeicons.com) and [Material Symbols](https://fonts.google.com/icons)
+* Maintained by [@beatz-maaraz](https://github.com/beatz-maaraz)

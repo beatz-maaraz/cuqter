@@ -20,7 +20,10 @@ class ChatProvider extends ChangeNotifier {
   // static const String _serverUrl = "http://10.0.2.2:8000";
 
   // Configuration for Direct Gemini API
-  static const String _geminiApiKey = "AIzaSyBRTAHDq_EltmgEo030MzDMj85QVxYv_Jw";
+  static const String _geminiApiKey = String.fromEnvironment(
+    'GEMINI_API_KEY',
+    defaultValue: "AIzaSyBRTAHDq_EltmgEo030MzDMj85QVxYv_Jw",
+  );
   GenerativeModel? _directModel;
 
   GenerativeModel _getDirectModel() {
