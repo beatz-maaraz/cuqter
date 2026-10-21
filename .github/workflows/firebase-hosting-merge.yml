@@ -1,22 +1,48 @@
-name: Deploy to Firebase Hosting on merge
+name: Deploy to Firebase Hosting and cuqter.xz on merge
 on:
   push:
     branches:
       - main
+      - master
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
+
       - run: flutter pub get
-      - run: flutter build web --release
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+
+      - name: Build Web for Firebase Hosting
+        run: flutter build web --release
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CUQTER_2FA01 }}
           channelId: live
           projectId: cuqter-2fa01
+
+      - name: Build and Push Web Build to cuqter.xz
+        env:
+          DEPLOY_TOKEN: ${{ secrets.WEB_DEPLOY_TOKEN || secrets.GH_PAT || secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$DEPLOY_TOKEN" ]; then
+            echo "::error::DEPLOY_TOKEN (WEB_DEPLOY_TOKEN, GH_PAT, or PERSONAL_ACCESS_TOKEN) secret is not set in repository secrets."
+            exit 1
+          fi
+          flutter build web --release --base-href "/cuqter.xz/"
+          git clone https://x-access-token:${DEPLOY_TOKEN}@github.com/beatz-maaraz/cuqter.xz.git cuqter_xz
+          cp -R build/web/. cuqter_xz/
+          cd cuqter_xz
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "build: update web build from ${{ github.sha }}"
+          git push origin main
+
