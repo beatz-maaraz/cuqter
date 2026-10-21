@@ -4,8 +4,44 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
+
 jobs:
-  build_and_deploy:
+  deploy_cuqter_xz:
+    name: Deploy to cuqter.xz (GitHub Pages)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build Web for GitHub Pages
+        run: flutter build web --release --base-href "/cuqter.xz/"
+
+      - name: Push to cuqter.xz
+        env:
+          DEPLOY_TOKEN: ${{ secrets.WEB_DEPLOY_TOKEN || secrets.GH_PAT || secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$DEPLOY_TOKEN" ]; then
+            echo "::error::DEPLOY_TOKEN (WEB_DEPLOY_TOKEN, GH_PAT, or PERSONAL_ACCESS_TOKEN) secret is not set in repository secrets."
+            exit 1
+          fi
+          git clone https://x-access-token:${DEPLOY_TOKEN}@github.com/beatz-maaraz/cuqter.xz.git cuqter_xz
+          cp -R build/web/. cuqter_xz/
+          cd cuqter_xz
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "build: update web build from ${{ github.sha }}"
+          git push origin main
+
+  deploy_firebase:
+    name: Deploy to Firebase Hosting
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,27 +58,12 @@ jobs:
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
+        continue-on-error: true
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CUQTER_2FA01 }}
           channelId: live
           projectId: cuqter-2fa01
+          target: cuqterz
 
-      - name: Build and Push Web Build to cuqter.xz
-        env:
-          DEPLOY_TOKEN: ${{ secrets.WEB_DEPLOY_TOKEN || secrets.GH_PAT || secrets.PERSONAL_ACCESS_TOKEN }}
-        run: |
-          if [ -z "$DEPLOY_TOKEN" ]; then
-            echo "::error::DEPLOY_TOKEN (WEB_DEPLOY_TOKEN, GH_PAT, or PERSONAL_ACCESS_TOKEN) secret is not set in repository secrets."
-            exit 1
-          fi
-          flutter build web --release --base-href "/cuqter.xz/"
-          git clone https://x-access-token:${DEPLOY_TOKEN}@github.com/beatz-maaraz/cuqter.xz.git cuqter_xz
-          cp -R build/web/. cuqter_xz/
-          cd cuqter_xz
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --staged --quiet || git commit -m "build: update web build from ${{ github.sha }}"
-          git push origin main
 
