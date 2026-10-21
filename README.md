@@ -9,6 +9,8 @@
     <a href="https://firebase.google.com"><img src="https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore%20%7C%20FCM-FFCA28?logo=firebase&logoColor=black" alt="Firebase" /></a>
     <a href="https://webrtc.org"><img src="https://img.shields.io/badge/WebRTC-P2P%20Voice%20%26%20Video-333333?logo=webrtc&logoColor=white" alt="WebRTC" /></a>
     <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/AI-Google%20Gemini-8E75C2?logo=google&logoColor=white" alt="Google Gemini" /></a>
+    <a href="https://beatz-maaraz.github.io/cuqter.xz/"><img src="https://img.shields.io/badge/Demo-Live%20Web%20App-00C853?logo=googlechrome&logoColor=white" alt="Live Demo" /></a>
+    <a href="https://github.com/beatz-maaraz/cuqter/actions/workflows/firebase-hosting-merge.yml"><img src="https://github.com/beatz-maaraz/cuqter/actions/workflows/firebase-hosting-merge.yml/badge.svg" alt="CI/CD Deploy" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License" /></a>
   </p>
 
@@ -27,6 +29,10 @@
 **Cuqter** is an open-source, full-featured messaging, audio/video calling, and social networking application built from the ground up with **Flutter** and **Dart**. Designed with a modern glassmorphic aesthetic, Cuqter delivers a fluid, responsive user experience across **Mobile (Android & iOS)**, **Web**, and **Desktop (Windows, macOS & Linux)** environments.
 
 Under the hood, Cuqter combines **Firebase** for low-latency message streaming, authentication, and push notifications, **WebRTC** for peer-to-peer encrypted audio and video calling, **Cloudinary** for non-blocking media storage, and **Google Gemini 1.5 Pro** for integrated conversational AI.
+
+> [!TIP]
+> 🌐 **Try the Live Web App**: [https://beatz-maaraz.github.io/cuqter.xz/](https://beatz-maaraz.github.io/cuqter.xz/)  
+> Production web builds are continuously compiled and deployed to the [`cuqter.xz`](https://github.com/beatz-maaraz/cuqter.xz) GitHub Pages repository on every merge/push to `master`.
 
 ---
 
@@ -253,6 +259,31 @@ flutter run -d chrome
 # Run on Windows Desktop
 flutter run -d windows
 ```
+
+---
+
+### Step 7: Web Build & Continuous Deployment (CI/CD)
+
+Cuqter supports continuous automated deployment through GitHub Actions (`.github/workflows/firebase-hosting-merge.yml`).
+
+#### Manual Web Builds
+```bash
+# Standard web build (for root hosting e.g., Firebase Hosting)
+flutter build web --release
+
+# GitHub Pages web build (serving under /cuqter.xz/ base href)
+flutter build web --release --base-href "/cuqter.xz/"
+```
+
+#### Automated GitHub Actions Pipeline
+Every push to `master` (or manual trigger via `workflow_dispatch`) triggers two independent parallel jobs:
+1. **GitHub Pages ([cuqter.xz](https://github.com/beatz-maaraz/cuqter.xz))**:
+   - Compiles web release with `--base-href "/cuqter.xz/"`.
+   - Automatically pushes to [`beatz-maaraz/cuqter.xz`](https://github.com/beatz-maaraz/cuqter.xz) using the `WEB_DEPLOY_TOKEN` secret.
+2. **Firebase Hosting**:
+   - Compiles web release and deploys live to site `cuqterz` using `FIREBASE_SERVICE_ACCOUNT_CUQTER_2FA01`.
+
+*(To enable automated push to cuqter.xz, configure `WEB_DEPLOY_TOKEN` in your repository secrets with a GitHub Personal Access Token granting repository write access).*
 
 ---
 
