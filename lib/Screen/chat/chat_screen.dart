@@ -1739,7 +1739,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Search Messages',
+                        'Search',
                         style: TextStyle(
                           color: colorScheme.onSurface,
                           fontWeight: FontWeight.w500,
@@ -1761,7 +1761,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Change Wallpaper',
+                        'Wallpaper',
                         style: TextStyle(
                           color: colorScheme.onSurface,
                           fontWeight: FontWeight.w500,
@@ -1814,7 +1814,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        _isBlocked ? 'Unblock User' : 'Block User',
+                        _isBlocked ? 'Unblock' : 'Block',
                         style: TextStyle(
                           color: _isBlocked ? Colors.green : Colors.orange,
                           fontWeight: FontWeight.w500,
