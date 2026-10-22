@@ -33,7 +33,11 @@ class CallsHistoryPage extends StatefulWidget {
   State<CallsHistoryPage> createState() => _CallsHistoryPageState();
 }
 
-class _CallsHistoryPageState extends State<CallsHistoryPage> {
+class _CallsHistoryPageState extends State<CallsHistoryPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final MessageService _messageService = MessageService();
@@ -742,6 +746,7 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return StreamBuilder<QuerySnapshot>(

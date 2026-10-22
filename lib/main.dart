@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:cuqter/Account/login.dart';
 import 'package:cuqter/Screen/home/navigation_screen.dart';
 import 'package:cuqter/Screen/home/desktop_navigation_screen.dart';
@@ -32,10 +33,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Optimize RAM usage by setting maximum image cache bounds
-  PaintingBinding.instance.imageCache.maximumSize = 100;
-  PaintingBinding.instance.imageCache.maximumSizeBytes =
-      50 * 1024 * 1024; // 50 MB
+  // Optimize RAM usage and image decoding
+  if (kIsWeb) {
+    PaintingBinding.instance.imageCache.maximumSize = 150;
+    PaintingBinding.instance.imageCache.maximumSizeBytes = 64 * 1024 * 1024;
+  } else {
+    PaintingBinding.instance.imageCache.maximumSize = 100;
+    PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024;
+  }
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   if (!kIsWeb) {
@@ -55,25 +60,56 @@ Future<void> main() async {
   );
 }
 
-class MainApp extends StatelessWidget {
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+  };
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+  }
+}
+
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_precached) {
+      _precached = true;
+      try {
+        precacheImage(const AssetImage('assets/icon/icon.png'), context);
+        precacheImage(const AssetImage('assets/icon/google_icon.png'), context);
+        precacheImage(const AssetImage('assets/Wallpaper/dark.png'), context);
+        precacheImage(const AssetImage('assets/Wallpaper/light.png'), context);
+      } catch (_) {}
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    // Pre-cache key brand assets for instant flicker-free opening
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      try {
-        precacheImage(const AssetImage('assets/icon/icon.png'), context);
-        precacheImage(const AssetImage('assets/icon/google_icon.png'), context);
-      } catch (_) {}
-    });
-
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Cuqter',
+      scrollBehavior: const AppScrollBehavior(),
       themeMode: themeProvider.themeMode,
       theme: ThemeData(
         colorScheme:
@@ -127,7 +163,6 @@ class MainApp extends StatelessWidget {
           ),
         ),
       ),
-      // builder property removed to fix severe app-wide scroll/animation jank
       home: AppLockWrapper(
         child: StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),
@@ -221,82 +256,5 @@ class _AppLockWrapperState extends State<AppLockWrapper>
       );
     }
     return widget.child;
-  }
-}
-
-class _StartupSplashScreen extends StatelessWidget {
-  const _StartupSplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: isDark
-              ? const LinearGradient(
-                  colors: [
-                    Color(0xFF14142B),
-                    Color(0xFF0E0E1E),
-                    Color(0xFF1F122B),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : const LinearGradient(
-                  colors: [
-                    Color(0xFFD9E2FF),
-                    Color(0xFFFFFFFF),
-                    Color(0xFFF9D8FF),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0057C3).withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Image.asset(
-                  'assets/icon/icon.png',
-                  height: 64,
-                  width: 64,
-                  filterQuality: FilterQuality.high,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.chat_bubble_rounded,
-                    size: 48,
-                    color: Color(0xFF0057C3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFF0057C3), Color(0xFF883CA6)],
-                ).createShader(bounds),
-                child: const Text(
-                  'Cuqter',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

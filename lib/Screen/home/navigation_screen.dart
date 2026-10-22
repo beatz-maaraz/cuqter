@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:cuqter/Screen/profile/profile_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuqter/services/update_service.dart';
@@ -26,8 +28,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   late PageController _pageController;
   bool _isProgrammaticChange = false;
   late final AppLifecycleListener _lifecycleListener;
-  // ignore: cancel_subscriptions
-  var _incomingCallSubscription;
+  StreamSubscription<DatabaseEvent>? _incomingCallSubscription;
   String? _currentRingingRoomId;
   bool _isShowingIncomingCall = false;
 
@@ -373,52 +374,96 @@ class _NavigationScreenState extends State<NavigationScreen> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: Container(
-                height: 62,
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colorScheme.surfaceContainerHigh.withValues(alpha: 0.60)
-                      : colorScheme.surface.withValues(alpha: 0.70),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: colorScheme.onSurface.withValues(
-                      alpha: isDark ? 0.12 : 0.06,
-                    ),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: isDark ? 0.3 : 0.08,
+            child: kIsWeb
+                ? Container(
+                    height: 62,
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? colorScheme.surfaceContainerHigh.withValues(alpha: 0.95)
+                          : colorScheme.surface.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: colorScheme.onSurface.withValues(
+                          alpha: isDark ? 0.12 : 0.06,
+                        ),
+                        width: 1,
                       ),
-                      blurRadius: 16,
-                      spreadRadius: 0,
-                      offset: const Offset(0, 8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.3 : 0.08,
+                          ),
+                          blurRadius: 16,
+                          spreadRadius: 0,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    _buildNavItem(
-                      0,
-                      'CHATS',
-                      huge.HugeIcons.strokeRoundedChat01,
-                      huge.HugeIcons.strokeRoundedBubbleChat,
+                    child: Row(
+                      children: [
+                        _buildNavItem(
+                          0,
+                          'CHATS',
+                          huge.HugeIcons.strokeRoundedChat01,
+                          huge.HugeIcons.strokeRoundedBubbleChat,
+                        ),
+                        _buildNavItem(
+                          1,
+                          'CALLS',
+                          huge.HugeIcons.strokeRoundedCall,
+                          huge.HugeIcons.strokeRoundedCalling,
+                        ),
+                        _buildProfileItem(2),
+                      ],
                     ),
-                    _buildNavItem(
-                      1,
-                      'CALLS',
-                      huge.HugeIcons.strokeRoundedCall,
-                      huge.HugeIcons.strokeRoundedCalling,
+                  )
+                : BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      height: 62,
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? colorScheme.surfaceContainerHigh.withValues(alpha: 0.60)
+                            : colorScheme.surface.withValues(alpha: 0.70),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: colorScheme.onSurface.withValues(
+                            alpha: isDark ? 0.12 : 0.06,
+                          ),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.3 : 0.08,
+                            ),
+                            blurRadius: 16,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          _buildNavItem(
+                            0,
+                            'CHATS',
+                            huge.HugeIcons.strokeRoundedChat01,
+                            huge.HugeIcons.strokeRoundedBubbleChat,
+                          ),
+                          _buildNavItem(
+                            1,
+                            'CALLS',
+                            huge.HugeIcons.strokeRoundedCall,
+                            huge.HugeIcons.strokeRoundedCalling,
+                          ),
+                          _buildProfileItem(2),
+                        ],
+                      ),
                     ),
-                    _buildProfileItem(2),
-                  ],
-                ),
-              ),
-            ),
+                  ),
           ),
         ),
       ),

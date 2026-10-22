@@ -314,25 +314,27 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           backgroundColor: colorScheme.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Keep Notifications For', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(options.length, (index) {
-              final val = options[index];
-              return RadioListTile<int>(
-                title: Text(labels[index]),
-                value: val,
-                groupValue: _historyDuration,
-                activeColor: colorScheme.primary,
-                onChanged: (int? newValue) {
-                  if (newValue != null) {
-                    setState(() => _historyDuration = newValue);
-                    _updateIntPref('notif_history_duration', newValue);
-                    _deleteOldNotifications(newValue);
-                    Navigator.pop(context);
-                  }
-                },
-              );
-            }),
+          content: RadioGroup<int>(
+            groupValue: _historyDuration,
+            onChanged: (int? newValue) {
+              if (newValue != null) {
+                setState(() => _historyDuration = newValue);
+                _updateIntPref('notif_history_duration', newValue);
+                _deleteOldNotifications(newValue);
+                Navigator.pop(context);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(options.length, (index) {
+                final val = options[index];
+                return RadioListTile<int>(
+                  title: Text(labels[index]),
+                  value: val,
+                  activeColor: colorScheme.primary,
+                );
+              }),
+            ),
           ),
           actions: [
             TextButton(

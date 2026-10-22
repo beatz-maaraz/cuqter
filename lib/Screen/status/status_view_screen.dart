@@ -520,7 +520,11 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                       radius: 22,
                       backgroundImage: pic.isNotEmpty
                           ? (pic.startsWith('http')
-                                    ? CachedNetworkImageProvider(pic)
+                                    ? ResizeImage(
+                                        CachedNetworkImageProvider(pic),
+                                        width: 140,
+                                        height: 140,
+                                      )
                                     : AssetImage(pic))
                                 as ImageProvider
                           : null,
@@ -836,8 +840,12 @@ class _StatusViewScreenState extends State<StatusViewScreen>
                               ? (_currentGroup.last.profilePic.startsWith(
                                           'http',
                                         )
-                                        ? CachedNetworkImageProvider(
-                                            _currentGroup.last.profilePic,
+                                        ? ResizeImage(
+                                            CachedNetworkImageProvider(
+                                              _currentGroup.last.profilePic,
+                                            ),
+                                            width: 140,
+                                            height: 140,
                                           )
                                         : AssetImage(
                                             _currentGroup.last.profilePic,

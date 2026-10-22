@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cuqter/Screen/chat/chat_screen.dart';
 
-/// Handles incoming cuqter.com/<username> deep links and navigates
+/// Handles incoming `cuqter.com/<username>` deep links and navigates
 /// to the ChatScreen for the matched user.
 class DeepLinkService {
   static final DeepLinkService _instance = DeepLinkService._internal();

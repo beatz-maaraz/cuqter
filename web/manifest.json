@@ -1,11 +1,11 @@
 {
-    "name": "cuqter",
-    "short_name": "cuqter",
+    "name": "Cuqter",
+    "short_name": "Cuqter",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#BDA6CE",
+    "theme_color": "#BDA6CE",
+    "description": "Modern cross-platform messaging, WebRTC calling, and AI chat application.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "hosting": {

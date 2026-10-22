@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cuqter/Screen/chat/chat_screen.dart';
 import 'package:cuqter/Screen/chat/chatai.dart';
@@ -34,8 +35,7 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
 
   final StatusService _statusService = StatusService();
   Stream<List<Status>>? _statusesStream;
-  // ignore: cancel_subscriptions
-  var _incomingCallSubscription;
+  StreamSubscription<DatabaseEvent>? _incomingCallSubscription;
   String? _currentRingingRoomId;
   bool _isShowingIncomingCall = false;
 
@@ -227,7 +227,11 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                     backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                     backgroundImage: profilePic.isNotEmpty
                         ? (profilePic.startsWith('http')
-                              ? CachedNetworkImageProvider(profilePic)
+                              ? ResizeImage(
+                                  CachedNetworkImageProvider(profilePic),
+                                  width: 120,
+                                  height: 120,
+                                )
                               : AssetImage(profilePic) as ImageProvider)
                         : null,
                     child: profilePic.isEmpty
@@ -452,7 +456,7 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
         ),
 
         // Index 2: Calls pane
-        Container(child: CallsHistoryPage(isActive: _selectedIndex == 2)),
+        CallsHistoryPage(isActive: _selectedIndex == 2),
       ],
     );
   }
@@ -595,7 +599,11 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
                       backgroundColor: colorScheme.surfaceContainerHighest,
                       backgroundImage: profilePic.isNotEmpty
                           ? (profilePic.startsWith('http')
-                                    ? CachedNetworkImageProvider(profilePic)
+                                    ? ResizeImage(
+                                        CachedNetworkImageProvider(profilePic),
+                                        width: 140,
+                                        height: 140,
+                                      )
                                     : AssetImage(profilePic))
                                 as ImageProvider
                           : null,
@@ -687,8 +695,12 @@ class _DesktopNavigationScreenState extends State<DesktopNavigationScreen> {
               radius: 28,
               backgroundImage: latestStatus.profilePic.isNotEmpty
                   ? (latestStatus.profilePic.startsWith('http')
-                            ? CachedNetworkImageProvider(
-                                latestStatus.profilePic,
+                            ? ResizeImage(
+                                CachedNetworkImageProvider(
+                                  latestStatus.profilePic,
+                                ),
+                                width: 140,
+                                height: 140,
                               )
                             : AssetImage(latestStatus.profilePic))
                         as ImageProvider

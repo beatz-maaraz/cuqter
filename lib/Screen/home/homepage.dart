@@ -4,8 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cuqter/Screen/chat/chat_screen.dart';
-import 'package:cuqter/Screen/profile/profile_screen.dart';
-import 'package:cuqter/Screen/settings/settings_page.dart';
 import 'package:cuqter/resources/auth_method.dart';
 import 'package:cuqter/services/message_service.dart';
 import 'package:cuqter/modules/message.dart';
@@ -44,7 +42,24 @@ class Homepage extends StatefulWidget {
   State<Homepage> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage> {
+class _HomepageState extends State<Homepage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  bool _pendingUpdateScheduled = false;
+
+  void _scheduleUpdate() {
+    if (_pendingUpdateScheduled || !mounted) return;
+    _pendingUpdateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pendingUpdateScheduled = false;
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
   String username = "";
   final TextEditingController _searchController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -369,6 +384,7 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -639,11 +655,8 @@ class _HomepageState extends State<Homepage> {
                             _lastMessageSubscriptions[chatId] = _messageService
                                 .getLastMessage(chatId)
                                 .listen((message) {
-                                  if (mounted) {
-                                    setState(() {
-                                      _lastMessages[chatId] = message;
-                                    });
-                                  }
+                                  _lastMessages[chatId] = message;
+                                  _scheduleUpdate();
                                 });
                           }
                         }
@@ -699,7 +712,7 @@ class _HomepageState extends State<Homepage> {
 
                       return Scrollbar(
                         child: ListView.builder(
-                          cacheExtent: 1000.0, padding: const EdgeInsets.only(top: 8, bottom: 90),
+                          padding: const EdgeInsets.only(top: 8, bottom: 90),
                           physics: const BouncingScrollPhysics(),
                           itemCount: users.length,
                           itemBuilder: (context, index) {
@@ -1291,12 +1304,10 @@ class _HomepageState extends State<Homepage> {
       stream: _currentUserStream,
       builder: (context, snapshot) {
         String profilePic = '';
-        String name = '';
         if (snapshot.hasData && snapshot.data!.exists) {
           var data = snapshot.data!.data() as Map<String, dynamic>?;
           if (data != null) {
             profilePic = data['profilepic'] ?? '';
-            name = data['name'] ?? data['username'] ?? '';
           }
         }
 
@@ -1340,11 +1351,15 @@ class _HomepageState extends State<Homepage> {
                         backgroundColor: colorScheme.surfaceContainerHighest,
                         backgroundImage: profilePic.isNotEmpty
                             ? (profilePic.startsWith('http')
-                                      ? CachedNetworkImageProvider(profilePic)
+                                      ? ResizeImage(
+                                          CachedNetworkImageProvider(profilePic),
+                                          width: 160,
+                                          height: 160,
+                                        )
                                       : AssetImage(profilePic))
                                   as ImageProvider
                             : null,
-                                            child: !(profilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
+                        child: !(profilePic.isNotEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
                       ),
                     ),
                     if (myStatuses.isEmpty)

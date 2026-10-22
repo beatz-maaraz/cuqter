@@ -331,7 +331,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   backgroundColor: colorScheme.primaryContainer,
                   backgroundImage: _profilepic.isNotEmpty
                       ? (_profilepic.startsWith('http')
-                            ? CachedNetworkImageProvider(_profilepic)
+                            ? ResizeImage(
+                                CachedNetworkImageProvider(_profilepic),
+                                width: 160,
+                                height: 160,
+                              )
                             : AssetImage(_profilepic) as ImageProvider)
                       : null,
                   child: _profilepic.isEmpty
@@ -540,9 +544,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           final file = File('${tempDir.path}/cuqter_qr.png');
                           await file.writeAsBytes(pngBytes);
                           
-                          await Share.shareXFiles(
-                            [XFile(file.path)],
-                            text: 'Add me on Cuqter! $qrData',
+                          await SharePlus.instance.share(
+                            ShareParams(
+                              files: [XFile(file.path)],
+                              text: 'Add me on Cuqter! $qrData',
+                            ),
                           );
                         } else {
                           SharePlus.instance.share(ShareParams(text: 'Add me on Cuqter! $qrData'));

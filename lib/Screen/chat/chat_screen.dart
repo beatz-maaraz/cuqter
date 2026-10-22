@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -55,7 +54,7 @@ class ChatScreen extends StatefulWidget {
   });
 
   @override
-  _ChatScreenState createState() => _ChatScreenState();
+  State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
@@ -2092,7 +2091,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 thickness: 3.0,
                                 radius: const Radius.circular(4),
                                 child: ListView.builder(
-                                  cacheExtent: 1500.0, controller: _scrollController,
+                                  controller: _scrollController,
                                   physics: const BouncingScrollPhysics(),
                                   reverse: true,
                                   itemCount: _isUploading
@@ -2815,11 +2814,15 @@ class _ChatScreenState extends State<ChatScreen> {
           sizeCurve: Curves.easeInOut,
         ),
         ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: _ConditionalBlur(
+            sigma: 12,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: const BoxDecoration(color: Colors.transparent),
+              decoration: BoxDecoration(
+                color: kIsWeb
+                    ? colorScheme.surface.withValues(alpha: 0.95)
+                    : Colors.transparent,
+              ),
               child: SafeArea(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
@@ -3893,7 +3896,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final result = await OpenFilex.open(localPath);
       if (result.type != ResultType.done) {
         // Fallback: use Share sheet which acts as an app chooser
-        await Share.shareXFiles([XFile(localPath)], text: 'Open document');
+        await SharePlus.instance.share(ShareParams(files: [XFile(localPath)], text: 'Open document'));
       }
     } catch (e) {
       _showErrorSnackBar('Error opening file: $e');
@@ -5461,15 +5464,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Future<void> _launchURL(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      _showErrorSnackBar('Could not launch URL');
-    }
-  }
-
   Future<void> _launchLocation(String latLngString) async {
     final Uri uri = Uri.parse(
       'https://www.google.com/maps/search/?api=1&query=$latLngString',
@@ -5488,7 +5482,7 @@ class ZigZagLoading extends StatefulWidget {
   const ZigZagLoading({super.key});
 
   @override
-  _ZigZagLoadingState createState() => _ZigZagLoadingState();
+  State<ZigZagLoading> createState() => _ZigZagLoadingState();
 }
 
 class _ZigZagLoadingState extends State<ZigZagLoading>
@@ -5592,7 +5586,7 @@ class ZigZagLoadingDotsOnly extends StatefulWidget {
   const ZigZagLoadingDotsOnly({super.key, required this.color});
 
   @override
-  _ZigZagLoadingDotsOnlyState createState() => _ZigZagLoadingDotsOnlyState();
+  State<ZigZagLoadingDotsOnly> createState() => _ZigZagLoadingDotsOnlyState();
 }
 
 class _ZigZagLoadingDotsOnlyState extends State<ZigZagLoadingDotsOnly>
@@ -5669,7 +5663,7 @@ class SwipeToReply extends StatefulWidget {
   const SwipeToReply({super.key, required this.child, required this.onReply});
 
   @override
-  _SwipeToReplyState createState() => _SwipeToReplyState();
+  State<SwipeToReply> createState() => _SwipeToReplyState();
 }
 
 class _SwipeToReplyState extends State<SwipeToReply>
@@ -5914,6 +5908,21 @@ class _AnimatedWaveformState extends State<AnimatedWaveform> {
           ),
         );
       }),
+    );
+  }
+}
+
+class _ConditionalBlur extends StatelessWidget {
+  final Widget child;
+  final double sigma;
+  const _ConditionalBlur({required this.child, this.sigma = 10});
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsWeb) return child;
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+      child: child,
     );
   }
 }

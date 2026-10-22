@@ -657,13 +657,12 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
 
     if (result == null || result['file'] == null) return;
     final XFile media = result['file'] as XFile;
-    final String type = result['type'] as String;
+    final String type = result['type'] as String? ?? '';
 
     String name = media.name;
-    bool isVideoFile = false;
-    if (media.mimeType != null && media.mimeType!.startsWith('video/')) {
-      isVideoFile = true;
-    } else {
+    bool isVideoFile = type == 'video' ||
+        (media.mimeType != null && media.mimeType!.startsWith('video/'));
+    if (!isVideoFile) {
       final nameLower = name.toLowerCase();
       isVideoFile =
           nameLower.endsWith('.mp4') ||

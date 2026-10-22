@@ -1,100 +1,85 @@
-<!DOCTYPE html><html><head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
+<!DOCTYPE html>
+<html>
+<head>
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Cuqter - Modern cross-platform messaging, WebRTC calling, and AI chat application.">
+
+  <!-- Performance Preconnects & DNS Prefetch -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="dns-prefetch" href="https://www.gstatic.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+  <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
 
   <!-- Google Sign In Client ID -->
   <meta name="google-signin-client_id" content="1060732250259-604f13h2492t56g83eap952f31c7i82i.apps.googleusercontent.com">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="cuqter">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cuqter">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
+  <meta name="theme-color" content="#BDA6CE">
 
-  <title>cuqter</title>
+  <title>Cuqter</title>
   <link rel="manifest" href="manifest.json">
-  
-  
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
 
   <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBOvtzNFHyoCeq8pZZ_JdaG0dmd4a1DPHs",
-      authDomain: "cuqter-2fa01.firebaseapp.com",
-      databaseURL: "https://cuqter-2fa01-default-rtdb.firebaseio.com",
-      projectId: "cuqter-2fa01",
-      storageBucket: "cuqter-2fa01.firebasestorage.app",
-      messagingSenderId: "921725231252",
-      appId: "1:921725231252:web:a2dbfa0c97694cbf299481",
-      measurementId: "G-5TKLZ0RS2M"
-    };
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
+    function initFirebase() {
+      if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+        const firebaseConfig = {
+          apiKey: "AIzaSyBOvtzNFHyoCeq8pZZ_JdaG0dmd4a1DPHs",
+          authDomain: "cuqter-2fa01.firebaseapp.com",
+          databaseURL: "https://cuqter-2fa01-default-rtdb.firebaseio.com",
+          projectId: "cuqter-2fa01",
+          storageBucket: "cuqter-2fa01.firebasestorage.app",
+          messagingSenderId: "921725231252",
+          appId: "1:921725231252:web:a2dbfa0c97694cbf299481",
+          measurementId: "G-5TKLZ0RS2M"
+        };
+        firebase.initializeApp(firebaseConfig);
+        try { firebase.analytics(); } catch(_) {}
+      }
+    }
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initFirebase);
+    } else {
+      initFirebase();
+    }
   </script>
-  
-  
+
   <style id="splash-screen-style">
     html {
-      height: 100%
+      height: 100%;
     }
 
     body {
       margin: 0;
       min-height: 100%;
       background-color: #BDA6CE;
-          background-size: 100% 100%;
+      background-size: 100% 100%;
+      overflow: hidden;
     }
 
     .center {
@@ -107,19 +92,22 @@
     }
 
     .contain {
-      display:block;
-      width:100%; height:100%;
+      display: block;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
     }
 
     .stretch {
-      display:block;
-      width:100%; height:100%;
+      display: block;
+      width: 100%;
+      height: 100%;
     }
 
     .cover {
-      display:block;
-      width:100%; height:100%;
+      display: block;
+      width: 100%;
+      height: 100%;
       object-fit: cover;
     }
 
@@ -142,13 +130,32 @@
       bottom: 0;
       right: 0;
     }
+
+    #splash, #splash-branding {
+      transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
   </style>
   <script id="splash-screen-script">
     function removeSplashFromWeb() {
-      document.getElementById("splash")?.remove();
-      document.getElementById("splash-branding")?.remove();
+      const splash = document.getElementById("splash");
+      const branding = document.getElementById("splash-branding");
+      if (splash) {
+        splash.style.opacity = "0";
+        setTimeout(function() { splash.remove(); }, 320);
+      }
+      if (branding) {
+        branding.style.opacity = "0";
+        setTimeout(function() { branding.remove(); }, 320);
+      }
       document.body.style.background = "transparent";
+      document.body.style.overflow = "auto";
     }
+
+    // Automatically remove web splash as soon as the Flutter engine renders first frame
+    window.addEventListener('flutter-first-frame', function() {
+      removeSplashFromWeb();
+    });
   </script>
 </head>
 <body>
@@ -158,39 +165,12 @@
     <img class="bottom" aria-hidden="true" src="splash/img/branding-1x.png" alt="">
   </picture>
   <picture id="splash">
-      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
-      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
-      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
+    <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
+    <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
+    <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
   </picture>
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async=""></script>
-
-
-</body></html>
+  <!-- Flutter bootstrap loader -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
