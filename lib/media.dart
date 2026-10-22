@@ -1227,7 +1227,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                           _isSelectionMode = false;
                           _selectedAssetIds.clear();
                         });
-                        if (!mounted) return;
+                        if (!mounted || !context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -1587,7 +1587,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
     final result = await Navigator.push<AppAsset>(
       context,
       MaterialPageRoute(
-        builder: (context) => FullScreenAssetPreview(
+        builder: (_) => FullScreenAssetPreview(
           asset: asset,
           isPicker: widget.isPicker,
           onFavoriteChanged: (val) async {
@@ -1633,7 +1633,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
   void _showBulkDeleteConfirmation() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Delete assets?',
@@ -1645,8 +1645,7 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              if (!mounted) return;
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
             },
             child: const Text(
               'Cancel',
@@ -1674,15 +1673,17 @@ class _AssetManagerScreenState extends State<AssetManagerScreen> {
                   _isSelectionMode = false;
                   _selectedAssetIds.clear();
                 });
-                if (!mounted) return;
-                Navigator.pop(context);
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Selected assets deleted')),
                 );
               } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

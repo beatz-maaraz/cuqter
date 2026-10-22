@@ -723,7 +723,7 @@ class RippleAnimation extends StatefulWidget {
   const RippleAnimation({super.key, required this.child});
 
   @override
-  _RippleAnimationState createState() => _RippleAnimationState();
+  State<RippleAnimation> createState() => _RippleAnimationState();
 }
 
 class _RippleAnimationState extends State<RippleAnimation>

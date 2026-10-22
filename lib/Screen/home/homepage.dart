@@ -100,7 +100,7 @@ class _HomepageState extends State<Homepage>
           if (value.isNotEmpty) _handleIncomingSharing(value);
         },
         onError: (err) {
-          print("getIntentDataStream error: $err");
+          debugPrint("getIntentDataStream error: $err");
         },
       );
 
@@ -151,7 +151,7 @@ class _HomepageState extends State<Homepage>
         });
       }
     } catch (e) {
-      print(e.toString());
+      debugPrint(e.toString());
     }
   }
 
@@ -316,7 +316,7 @@ class _HomepageState extends State<Homepage>
   void _showDeleteConfirmDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Delete conversations?',
@@ -327,7 +327,7 @@ class _HomepageState extends State<Homepage>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
@@ -341,7 +341,7 @@ class _HomepageState extends State<Homepage>
               ),
             ),
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               setState(() {
                 _isLoading = true;
               });
@@ -349,24 +349,30 @@ class _HomepageState extends State<Homepage>
                 for (var userId in _selectedUserIds) {
                   await _deleteChat(userId);
                 }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Selected chats deleted successfully'),
-                  ),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Selected chats deleted successfully'),
+                    ),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to delete chats: $e'),
-                    backgroundColor: Colors.redAccent,
-                  ),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete chats: $e'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
               } finally {
-                setState(() {
-                  _isLoading = false;
-                  _isSelectionMode = false;
-                  _selectedUserIds.clear();
-                });
+                if (mounted) {
+                  setState(() {
+                    _isLoading = false;
+                    _isSelectionMode = false;
+                    _selectedUserIds.clear();
+                  });
+                }
               }
             },
             child: const Text(

@@ -49,7 +49,7 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
       });
       _resetTransformation();
     } catch (e) {
-      print('Error decoding image: $e');
+      debugPrint('Error decoding image: $e');
     }
   }
 
@@ -125,9 +125,11 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
         throw Exception("Failed to convert cropped image to byte data");
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error cropping image: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error cropping image: $e')));
+      }
     } finally {
       if (mounted) {
         setState(() {

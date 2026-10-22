@@ -184,7 +184,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
         );
       }
 
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       Navigator.pop(context); // Close bottom sheet
       Navigator.pushReplacement(
         context,

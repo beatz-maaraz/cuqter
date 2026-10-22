@@ -395,14 +395,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       .doc(_auth.currentUser!.uid)
                       .collection('contacts')
                       .snapshots(),
-                  builder: (context, snapshot) {
+                  builder: (_, snapshot) {
                     // Fallback: load from users contacts array
                     return StreamBuilder<DocumentSnapshot>(
                       stream: _firestore
                           .collection('users')
                           .doc(_auth.currentUser!.uid)
                           .snapshots(),
-                      builder: (context, userSnap) {
+                      builder: (_, userSnap) {
                         List<String> contactIds = [];
                         if (userSnap.hasData && userSnap.data!.exists) {
                           final data =
@@ -425,7 +425,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         }
                         return ListView.builder(
                           itemCount: contactIds.length,
-                          itemBuilder: (context, i) {
+                          itemBuilder: (_, i) {
                             final cid = contactIds[i];
                             if (cid == _auth.currentUser!.uid) {
                               return const SizedBox.shrink();
@@ -435,7 +435,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   .collection('users')
                                   .doc(cid)
                                   .get(),
-                              builder: (context, snap) {
+                              builder: (_, snap) {
                                 if (!snap.hasData) {
                                   return const SizedBox.shrink();
                                 }
@@ -527,20 +527,24 @@ class _ChatScreenState extends State<ChatScreen> {
       }
       await batch.commit();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('All messages deleted'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All messages deleted'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
-      print('Error deleting all messages: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error deleting messages'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      debugPrint('Error deleting all messages: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error deleting messages'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -796,7 +800,7 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     } catch (e) {
-      print('Error loading wallpaper: $e');
+      debugPrint('Error loading wallpaper: $e');
       if (mounted) {
         setState(() {
           _isLoadingWallpaper = false;
@@ -817,7 +821,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
       await prefs.setInt('wallpaper_${chatId}_index', _wallpaperIndex);
     } catch (e) {
-      print('Error saving wallpaper: $e');
+      debugPrint('Error saving wallpaper: $e');
     }
   }
 
@@ -1119,10 +1123,11 @@ class _ChatScreenState extends State<ChatScreen> {
       String type = 'document';
       if (media.type == SharedMediaType.image) {
         type = 'image';
-      } else if (media.type == SharedMediaType.video)
+      } else if (media.type == SharedMediaType.video) {
         type = 'video';
-      else if (media.type == SharedMediaType.file)
+      } else if (media.type == SharedMediaType.file) {
         type = 'document';
+      }
 
       await _uploadFileAndSendMessage(file, type);
     }
@@ -1147,10 +1152,11 @@ class _ChatScreenState extends State<ChatScreen> {
       String folderPath = 'cuqter_media/Document';
       if (type == 'image') {
         folderPath = 'cuqter_media/Photo';
-      } else if (type == 'video')
+      } else if (type == 'video') {
         folderPath = 'cuqter_media/Video';
-      else if (type == 'audio')
+      } else if (type == 'audio') {
         folderPath = 'cuqter_media/Audio';
+      }
 
       final uploadResult = await CloudinaryService.uploadFile(
         fileBytes: kIsWeb ? bytes : null,
@@ -1235,9 +1241,11 @@ class _ChatScreenState extends State<ChatScreen> {
           });
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Microphone permission denied.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission denied.')),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error starting record: $e');
@@ -1368,15 +1376,19 @@ class _ChatScreenState extends State<ChatScreen> {
           replyToType: replyParams['replyToType'],
         );
       } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to send voice message.')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error sending voice message: $e');
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to send voice message.')),
         );
       }
-    } catch (e) {
-      debugPrint('Error sending voice message: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send voice message.')),
-      );
     } finally {
       if (mounted) {
         setState(() {
@@ -2833,7 +2845,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         return FadeTransition(
                           opacity: animation,
                           child: SizeTransition(
-                            axisAlignment: 0.0,
+                            alignment: Alignment.center,
                             sizeFactor: animation,
                             child: child,
                           ),
@@ -3057,7 +3069,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       return SizeTransition(
                                         axis: Axis.horizontal,
                                         sizeFactor: animation,
-                                        axisAlignment: -1.0,
+                                        alignment: Alignment.centerLeft,
                                         child: SlideTransition(
                                           position: Tween<Offset>(
                                             begin: const Offset(1.0, 0.0),
@@ -3560,19 +3572,11 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.any,
-        withData: true,
       );
       if (result == null) return;
 
       PlatformFile file = result.files.first;
-      final Uint8List bytes;
-      if (file.bytes != null) {
-        bytes = file.bytes!;
-      } else if (file.path != null) {
-        bytes = await File(file.path!).readAsBytes();
-      } else {
-        throw Exception('Cannot read file data');
-      }
+      final Uint8List bytes = await file.readAsBytes();
 
       final fileBytes = bytes;
 

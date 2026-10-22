@@ -94,7 +94,7 @@ class _SighuppageState extends State<Sighuppage> {
           );
         }
       } catch (e) {
-        print('Error caching signup details: $e');
+        debugPrint('Error caching signup details: $e');
       }
 
       if (mounted) {
